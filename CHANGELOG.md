@@ -2,6 +2,12 @@
 
 CM 01/02 Bosman Edition uses semantic versioning. A patch release (0.1.1) fixes bugs. A minor release (0.2.0) adds features. A major release (1.0.0 and later) can break saved games or settings. Releases below 1.0.0 are test releases.
 
+## 0.5.1 (pre-release)
+
+A Mac fix.
+
+- On a Mac, a game with Brazil selected could not save the São Paulo, Gaúcho, Goiás and Paraná state championships, because their names have accents. Saving showed "league..cpp 5095", and the saved game then stopped with "league..cpp 3214". These competitions now save.
+
 ## 0.5.0 (pre-release)
 
 An options box in the game, positions on the tactics screen, foreign players in colour, and fixes for rare faults of the original. Each new option has a line in `settings.txt` in the save folder.

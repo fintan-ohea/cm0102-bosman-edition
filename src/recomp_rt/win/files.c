@@ -308,6 +308,55 @@ static const char *drive_root(char drive, char *buf, size_t room)
     return NULL;
 }
 
+/* The length of the valid UTF-8 sequence at s, or 0. */
+static int utf8_length(const unsigned char *s)
+{
+    int n = s[0] >= 0xf0 && s[0] <= 0xf4 ? 4 : s[0] >= 0xe0 ? 3 : s[0] >= 0xc2 && s[0] <= 0xdf ? 2 : 0;
+    if (s[0] >= 0xf5) n = 0;
+    for (int i = 1; i < n; i++) if ((s[i] & 0xc0) != 0x80) return 0;
+    if (n == 3 && ((s[0] == 0xe0 && s[1] < 0xa0) || (s[0] == 0xed && s[1] >= 0xa0))) return 0;
+    if (n == 4 && ((s[0] == 0xf0 && s[1] < 0x90) || (s[0] == 0xf4 && s[1] >= 0x90))) return 0;
+    return n;
+}
+
+/* A name of the game in UTF-8 for the host. The game writes names in Windows-1252, for example the
+ * temp file of a competition, which League::save_to_temp_file 0x6891c0 names "<competition name>_<id>.tmp"
+ * (format 0x99b838): "Brazilian S\xe3o Paulo State Championship_67.tmp". macOS refuses a name that is not
+ * UTF-8 (EILSEQ), so the fopen at 0x689282 failed with "league..cpp 5095" and the save had no part for
+ * that competition (a player's 3.9.60 save of 0.4.0 with every league, 2026-10-18: it then stopped with
+ * "league..cpp 3214"). A byte that starts a valid UTF-8
+ * sequence keeps it (a host folder name, which win_windows_path gives the game in UTF-8); every other
+ * byte above 0x7f is a Windows-1252 letter. The five bytes that Windows-1252 leaves free keep their
+ * Latin-1 code point. */
+static void name_to_utf8(const char *in, char *out, size_t room)
+{
+    static const uint16_t cp1252[32] = {
+        0x20ac, 0x0081, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030, 0x0160, 0x2039,
+        0x0152, 0x008d, 0x017d, 0x008f, 0x0090, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014,
+        0x02dc, 0x2122, 0x0161, 0x203a, 0x0153, 0x009d, 0x017e, 0x0178};
+    const unsigned char *s = (const unsigned char *)in;
+    size_t len = 0;
+    while (*s && len + 4 < room) {
+        int n = *s < 0x80 ? 1 : utf8_length(s);
+        if (n) {
+            memcpy(out + len, s, (size_t)n);
+            len += (size_t)n;
+            s += n;
+            continue;
+        }
+        unsigned c = *s >= 0xa0 ? *s : cp1252[*s - 0x80];
+        if (c < 0x800) {
+            out[len++] = (char)(0xc0 | (c >> 6));
+        } else {
+            out[len++] = (char)(0xe0 | (c >> 12));
+            out[len++] = (char)(0x80 | ((c >> 6) & 0x3f));
+        }
+        out[len++] = (char)(0x80 | (c & 0x3f));
+        s++;
+    }
+    out[len] = 0;
+}
+
 int win_host_path(const char *winpath, char *out, size_t room)
 {
     char full[2048], rootbuf[1024];
@@ -316,7 +365,9 @@ int win_host_path(const char *winpath, char *out, size_t room)
     if (!root) return 0;
     size_t len = (size_t)snprintf(out, room, "%s", root);
     char *save = NULL;
-    for (char *part = strtok_r(full + 2, "\\", &save); part; part = strtok_r(NULL, "\\", &save)) {
+    for (char *game_part = strtok_r(full + 2, "\\", &save); game_part; game_part = strtok_r(NULL, "\\", &save)) {
+        char part[1024];
+        name_to_utf8(game_part, part, sizeof part);
         /* Windows drops trailing dots and spaces of a name. */
         size_t pl = strlen(part);
         while (pl > 1 && (part[pl - 1] == '.' || part[pl - 1] == ' ')) part[--pl] = 0;
