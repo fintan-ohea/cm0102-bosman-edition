@@ -2,12 +2,38 @@
 
 CM 01/02 Bosman Edition uses semantic versioning. A patch release (0.1.1) fixes bugs. A minor release (0.2.0) adds features. A major release (1.0.0 and later) can break saved games or settings. Releases below 1.0.0 are test releases.
 
-## Next release
+## 0.6.0 (pre-release)
 
+<!-- TODO slice 30: the publish date goes in the GitHub release and the posts; bump CMakeLists.txt to 0.6.0 in the same commit. -->
+
+Play any season from 2001/02 to 2025/26 with that season's squads, leagues, cups and rules. In a long game the rules change each July as they did in real life. New lines in `settings.txt`: `season` and `changing_rules`.
+
+- Choose Season (`season`): a screen with a tile for each season from 2001/02 to 2025/26, in rows for the 2000s, 2010s and 2020s. Click the season strip at the top of Setup Game to open it. Each tile starts one database, so you never install a database by hand. The details under the tiles show the database and who made it, the European format of the season ("Europe: ...") and the start date. The line "More versions of each season are on the Update Team's forum" has a button that opens champman0102.co.uk.
+- A database for every season is in the download: the official 3.9.68 data for 2001/02 and 2002/03, 21 databases of the CM 01/02 Update Team, and our own Summer 2004 and Summer 2006 for 2004/05 and 2006/07 (facts from public sources, ratings by the Update Team). Each season database is zipped and unpacks into the save folder the first time you pick its season. Unpacked, the Update Team databases take about 1.4 GB together.
+- Custom database: a tile for a database folder of your own in `Databases`. You choose the folder and say which season it holds, and that season's rules apply. A `database = 3.9.60` or `3.9.65` line in `settings.txt` still starts that data set.
+- A new game starts in July of its season. Every person has the right age and year of birth for that July, and contract, joined and history dates fit the season. For seasons before 2010/11, the competition history lists the real winners from 2001/02 up to the start season.
+- Leagues by season: the number of clubs, promotion and relegation places, play-offs and splits of each season, for all divisions of the 27 nations in the game. New divisions at tiers the original already plays, such as the 3. Liga, the Primera Federación and Liga 3, and Brazil's state championships. When a season's database lacks a real top or second tier club, the game adds the club with a squad. Your results decide which clubs go up and down.
+- Domestic cups by season: replays or none, single-leg or two-leg ties, group stages, four-club super cups, and cups that start, stop or come back.
+- Substitutes, bench size, foreign player rules, work permits and transfer windows follow the season. The Brexit work permit rule applies from 1 January 2021 in England, Scotland, Wales and Northern Ireland. With changing rules on, England has no limit of three non-EU players in a match squad, as in real life.
+- European cups of each season: two Champions League group stages until 2002/03, then one group stage and a round of 16; UEFA Cup groups from 2004/05; the Intertoto Cup until 2008; the Europa League and the Champions and League Paths from 2009/10; the Conference League and no away goals from 2021/22; a league phase of 36 clubs in all three cups from 2024/25. The places of each nation come from that season's UEFA access list.
+- International football by year: the UEFA and CONCACAF Nations Leagues, Euro qualifying with Nations League paths, Euros of 24 nations from 2016, the 24-team Africa Cup of Nations and Asian Cup from 2019, the 2022 World Cup in November and December, the 48-team World Cup of 2026 with its qualifying, the Gold Cup and the Finalissima. The Confederations Cup ends, golden goal goes, Australia moves to Asia and nations carry their name of each year.
+- Competitions and rounds carry their name of each season, such as the Championship or the Europa League, with no sponsor names.
+- Changing rules (`changing_rules`, on by default): set it for each new game on the Choose Season screen. The save keeps it, and a game cannot change it after the start. With it on, each rule changes in the July it changed in real life, also in a game that starts in 2001/02, and a news item at the start of the season lists the changes. After 2025/26 the changes already announced with a date come in, such as the Championship play-offs for 3rd to 8th from 2026/27, and then the rules stay. With it off, the rules of the start season stay for the whole game. The Game tab of Bosman Edition Options sets the default.
+- Seasons are written in full, for example "2009/10" in place of the original's "2009/0".
+- Saves from 0.5.0 and earlier load with changing rules off.
+- Setup Game: a strip at the top shows the season, its database and whether the rules change. Click it to open Choose Season. Hall Of Fame, Game Credits and Web Sites are on a new Extras screen.
+- The start screens have the title "Championship Manager: Bosman Edition".
+- Bosman Edition Options: the Screen tab is now called Graphics.
+- Bosman Edition Options: the Save folder row has a Change button that opens your computer's folder picker. The game uses the new folder from the next start. Saved games already in the old folder stay there.
+- Team views: Best XI and Squad depth are one screen. The pitch lies on its side with a card for each of the 11 places: the Best XI player, then the next two for that position. Stars show how well each player fits the place, and players who cannot play the next match are grey.
 - HD mode is gone. On a Mac screen it showed bars around the picture and small text, while widescreen fills a large screen with sharp, bigger pixels. A `display = hd` line in `settings.txt` now gives widescreen.
 - Display report: if the picture looks wrong, press Ctrl+Shift+D (Cmd+Shift+D on a Mac). The game saves `display-report.txt` in the save folder, puts the same text on the clipboard and shows where the file is. The report lists your system, your screens and their scale, the window size and how the game scales its picture, and the last 10 changes of the window. The game also writes the file at each start and quit. Paths in it show `<user>` in place of your account name.
 - Windows: text stays sharp with display scaling at 125 % or 150 %. Before, Windows stretched the whole window and blurred it. A new window opens at the size of the picture, as at 100 %. With `sharp_picture` on, a larger window or full screen keeps the picture at its own size, with bars round it, until it holds the picture 2 times. This also applies at 100 %.
 - The Linux download is now `CM0102-Bosman-Edition-<version>-x86_64.AppImage`, and it has the icon file that AppImage tools look for.
+- The fix of 0.5.1 is in every download: a game with Brazil selected can save the São Paulo, Gaúcho, Goiás and Paraná state championships.
+- The code is under GPL-3.0 from 0.6.0. Releases up to 0.5.0 stay CC0. The function and data maps stay CC BY 4.0.
+- Same game: the base game is 2001/02 with the 3.9.68 data and changing rules off. In the base game the season code changes nothing: the same clicks with the season code turned off by a test switch give the same save. The new Setup Game moves the original's memory blocks, so a base game of 0.6.0 is not byte for byte the same as one of 0.5.0 (Q342).
+- Limits in 0.6.0: the bench and the substitutes stay at 9 or fewer, because the match engine holds 9, so a bench of 12 plays as 9. The MLS stays at 12 clubs. Careers that a season database never updated stop in 2001. In databases from September 2009 most players joined their club in 2008. The award history keeps the years of the data. The 2000/01 Portuguese Second League runner-up is Varzim (three clubs ended on 64 points).
 
 ## 0.5.0 (pre-release)
 
