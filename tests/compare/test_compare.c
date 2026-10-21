@@ -8,6 +8,20 @@
 
 static int failures;
 
+/* A width of 7 pixels a character, as font 1 is about. */
+static int width7(const char *text, void *ctx)
+{
+    (void)ctx;
+    return 7 * (int)strlen(text);
+}
+
+/* A width where a long text measures more than its parts, as the game's font 7 does for the heading. */
+static int width_uneven(const char *text, void *ctx)
+{
+    (void)ctx;
+    return 7 * (int)strlen(text) + (strlen(text) > 30 ? 12 : 0);
+}
+
 #define CHECK(cond) do { if (!(cond)) { printf("FAIL line %d: %s\n", __LINE__, #cond); failures++; } } while (0)
 
 /* 1 when axis a has the name and exactly the attributes of want (ended by 0). */
@@ -128,6 +142,57 @@ int main(void)
     CHECK(!strcmp(t, "20.0"));
     compare_value_text(-1, t, sizeof t);
     CHECK(!strcmp(t, "-"));
+
+    /* 7. Texts that must fit their box (Tousled12, 2026-10-21): the worst cases of names and lines. */
+    char f[160], line[2][96];
+    compare_fit("Arsenal", 70, width7, NULL, f, sizeof f);
+    CHECK(!strcmp(f, "Arsenal"));
+    compare_fit("Van Bronckhorst", 61, width7, NULL, f, sizeof f);        /* the classic legend */
+    CHECK(!strcmp(f, "Van Bro.") && width7(f, NULL) <= 61);
+    compare_fit("Gilberto Silva", 61, width7, NULL, f, sizeof f);         /* no space before the "." */
+    CHECK(!strcmp(f, "Gilbert.") && width7(f, NULL) <= 61);
+    compare_fit("Liverpool, GK", 70, width7, NULL, f, sizeof f);
+    CHECK(!strcmp(f, "Liverpo.") || !strcmp(f, "Liverpool."));
+    CHECK(width7(f, NULL) <= 70);
+    compare_fit("Wolverhampton", 5, width7, NULL, f, sizeof f);           /* nothing fits: the first letter */
+    CHECK(!strcmp(f, "W"));
+
+    compare_fit_name("Edson", "Gilberto Silva", "Gilberto Silva", 300, width7, NULL, f, sizeof f);
+    CHECK(!strcmp(f, "Gilberto Silva"));                                  /* the common name */
+    compare_fit_name("Giovanni", "Van Bronckhorst", "", 226, width7, NULL, f, sizeof f);
+    CHECK(!strcmp(f, "Giovanni Van Bronckhorst"));
+    compare_fit_name("Giovanni", "Van Bronckhorst", NULL, 140, width7, NULL, f, sizeof f);
+    CHECK(!strcmp(f, "G. Van Bronckhorst"));
+    compare_fit_name("Giovanni", "Van Bronckhorst", NULL, 110, width7, NULL, f, sizeof f);
+    CHECK(!strcmp(f, "Van Bronckhorst"));
+    compare_fit_name("Jan", "Vennegoor of Hesselink", NULL, 120, width7, NULL, f, sizeof f);
+    CHECK(width7(f, NULL) <= 120 && !strncmp(f, "Vennegoor", 9) && f[strlen(f) - 1] == '.');
+
+    CHECK(compare_info_lines("Arsenal", "DM LC", 26, 226, width7, NULL, line) == 1);
+    CHECK(!strcmp(line[0], "Arsenal, DM LC, age 26") && !line[1][0]);
+    /* A long club and a long positions text: club on the first line, positions and age on the second. */
+    CHECK(compare_info_lines("Universidad de Concepcion", "D/WB/M/AM RLC", 33, 226, width7, NULL, line) == 2);
+    CHECK(!strcmp(line[0], "Universidad de Concepcion") && !strcmp(line[1], "D/WB/M/AM RLC, age 33"));
+    CHECK(compare_info_lines("Universidad de Concepcion", "D/WB/M/AM RLC", 33, 150, width7, NULL, line) == 2);
+    CHECK(width7(line[0], NULL) <= 150 && width7(line[1], NULL) <= 150);
+
+    compare_fit_heading("David Seaman", "David", "Seaman", "", "Rami Shaaban", "Rami", "Shaaban", "", 690, width7,
+                        NULL, f, sizeof f);
+    CHECK(!strcmp(f, "David Seaman ~ Rami Shaaban"));
+    compare_fit_heading("Giovanni Van Bronckhorst", "Giovanni", "Van Bronckhorst", "", "Jan Vennegoor of Hesselink",
+                        "Jan", "Vennegoor of Hesselink", "", 300, width7, NULL, f, sizeof f);
+    CHECK(width7(f, NULL) <= 300 && strstr(f, " ~ "));
+    CHECK(!strcmp(f, "G. Van Bronckhorst ~ Vennegoor of Hesse."));
+    /* A short name leaves its room to the long one. */
+    compare_fit_heading("Jan Vennegoor of Hesselink", "Jan", "Vennegoor of Hesselink", "", "Pegguy Arphexad", "Pegguy",
+                        "Arphexad", "", 300, width7, NULL, f, sizeof f);
+    CHECK(!strcmp(f, "Vennegoor of Hesselink ~ Pegguy Arphexad"));
+    for (int box = 200; box <= 320; box += 3) {
+        compare_fit_heading("Jan Vennegoor of Hesselink", "Jan", "Vennegoor of Hesselink", "", "Pegguy Arphexad",
+                            "Pegguy", "Arphexad", "", box, width_uneven, NULL, f, sizeof f);
+        CHECK(width_uneven(f, NULL) <= box && strstr(f, " ~ "));
+        CHECK(box < 260 || strstr(f, " ~ Pegguy Arphexad"));       /* the short name stays when it can */
+    }
 
     if (failures) printf("%d failures\n", failures);
     else printf("compare: all checks passed\n");

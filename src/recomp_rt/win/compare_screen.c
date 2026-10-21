@@ -105,7 +105,8 @@ RT_WRAP(00876520, compare_screen_build)
         snprintf(names[i], sizeof names[i], "%s", win_str(text));
     }
     char heading[0x200];
-    snprintf(heading, sizeof heading, "%s ~ %s", names[0], names[1]);
+    /* The original's heading, with shorter names when the two do not fit the bar (Tousled12, 2026-10-21). */
+    compare_heading(text, p1, p2, names[0], names[1], 100, 790, heading, sizeof heading);
     win_put_str(text, heading, TEXT_SIZE);
     uint32_t h[3] = {rd16(g_mem, RED), rd16(g_mem, GREY), text};
     call_this(HEADING, SCREENS, 3, h);
