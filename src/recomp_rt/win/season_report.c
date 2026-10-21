@@ -21,9 +21,9 @@
  *     +2 (league_round_set_date 0x68a160 at 0x68a1a5, 0x68a1ac). These are the dates that the Schedule and
  *     Fixtures tabs of the competition screen show. An object waiting for an edition in 2999 or later (slices 21b,
  *     26) is left out;
- *   - empty: a league (kind league) that has drawn its fixtures (+0x45 1, Comp::Comp 0x48c5bb) while the rules
- *     table gives its season clubs, with no club in its table (+0x3e 0) or an empty row (table +0xb1, rows of
- *     0x3b bytes, the club at +0, 0x6826d0).
+ *   - empty: a league (kind league, not the Club World Championship in a form of slice 26) that has drawn its
+ *     fixtures (+0x45 1, Comp::Comp 0x48c5bb) while the rules table gives its season clubs, with no club in its
+ *     table (+0x3e 0) or an empty row (table +0xb1, rows of 0x3b bytes, the club at +0, 0x6826d0).
  * It only reads memory.
  * RECOMP_SEASON_JUMP=<year>: the game plays on with no match engine, and the program ends with code 0 after
  * the end report of the season that starts in that year. The test steps put the manager on holiday
@@ -181,6 +181,10 @@ static void sweep_comp(FILE *f, int season, const char *phase, const char *file,
         else if (g_mem[st + 0x43] == 2) sweep_rounds_of(f, season, phase, file, obj, st, 0);  /* a League_Stage */
     }
     if (!c || c->kind != SEASON_KIND_LEAGUE || rd32(g_mem, obj + 0x45) != 1) return;
+    /* The Club World Championship in Form K (one knockout stage) or Form G (8 stages) of slice 26: its parent
+     * League holds no club by design, club count +0x3e 0 and one zeroed row (season_kind_club_world.c, part b).
+     * Only the original form has 3 stage slots (+0x2c). */
+    if (rd32(g_mem, obj) == 0x97119cu && (int32_t)rd32(g_mem, obj + 0x2c) != 3) return;
     const SeasonRule *r = season_rules_find(season, file, 0);
     if (!r || r->clubs <= 0) return;
     int n = (int16_t)rd16(g_mem, obj + 0x3e);
