@@ -70,7 +70,12 @@ int main(void)
     }
     int rows[COMPARE_ROWS];
     CHECK(compare_rows(0, rows, COMPARE_ROWS) == 32);    /* 29 attributes and 3 headings */
-    CHECK(compare_rows(1, rows, COMPARE_ROWS) == 28);    /* 24 attributes and 4 headings */
+    /* 24 attributes and 3 headings: a goalkeeper has no Technical heading, and One On Ones and Consistency
+     * are not rows of the comparison (Q111). */
+    CHECK(compare_rows(1, rows, COMPARE_ROWS) == 27);
+    compare_rows(1, rows, COMPARE_ROWS);
+    CHECK(!row_has(rows, 27, CELL_HEAD_TECHNICAL) && !row_has(rows, 27, CELL_ONE_ON_ONES) &&
+          !row_has(rows, 27, CELL_CONSISTENCY));
 
     /* 3. Two goalkeepers get other axes, from shown goalkeeper attributes. */
     const CompareAxis *k = compare_axes(1);
