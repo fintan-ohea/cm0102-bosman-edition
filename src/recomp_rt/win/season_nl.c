@@ -203,18 +203,20 @@ int season_nl_nation_of_club(uint32_t club)
  * nation id + 0x43 for a senior side, 0x775555..0x775576). A nation with size 0 there gets no players and no virtual
  * players (0x90dd3e..0x90dd45): Martinique (reputation 0 in the October 2022 database) had 0 squad slots in its
  * first CONCACAF Nations League match of 2023/24 in a 2022 start, and init_match 0x6b7f20 stopped at
- * match_eng.cpp 652 (fewer than 11 at 0x6b89be). Before the table holds any size (the draw at game creation), a
- * nation with reputation 0 is left out instead. */
+ * match_eng.cpp 652 (fewer than 11 at 0x6b89be). The size is not a fixed value of the nation: init_tables 0x76a840
+ * picks each squad and then clears it (0x76abb1), and only a later squad pick for a fixture writes it again
+ * (select_squad 0x76c120 passes [edi + 0x43] at 0x76c551). So a nation with no pick since then has size 0. A draw
+ * after the first picks of the season (the 2023-24 CONCACAF draw on day 227 of a 2023 start) left out every
+ * CONCACAF nation that way, and its finals took a club with no nation, which stopped the squad pick on 1 March
+ * 2024 (box "Database.cpp 13126" at 0x53b3da, from 0x76c266). So a nation with a size can play, and a nation
+ * with size 0 can play when its reputation is above 0 (Martinique, reputation 0, stays out). */
 int season_nl_nation_can_play(int id)
 {
     if (id < 0 || id >= nation_count()) return 0;
     uint32_t nt = rd32(g_mem, NATIONAL_TEAMS), table = readable(nt) ? rd32(g_mem, nt + 4) : 0;
-    int ready = 0;
-    if (readable(table))
-        for (int k = 0; k < nation_count() && !ready; k++) ready = g_mem[table + 110u * (uint32_t)k + SENIOR_SIZE] != 0;
-    if (!ready) return (int16_t)rd16(g_mem, nation_at(id) + NATION_REPUTATION) > 0;
     uint32_t nid = rd32(g_mem, nation_at(id));
-    return nid < 0x10000u && g_mem[table + 110u * nid + SENIOR_SIZE] != 0;
+    if (readable(table) && nid < 0x10000u && g_mem[table + 110u * nid + SENIOR_SIZE] != 0) return 1;
+    return (int16_t)rd16(g_mem, nation_at(id) + NATION_REPUTATION) > 0;
 }
 
 /* The national team of a nation: national_team 0x53b3d0 gives the club of the nation's row, which in some
