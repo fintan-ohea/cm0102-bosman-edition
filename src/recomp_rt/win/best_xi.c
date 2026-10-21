@@ -275,44 +275,69 @@ static int item(uint32_t buf, uint32_t flags, int x1, int y1, int x2, int y2, ui
 }
 
 /* The width of a text in font 2, in classic numbers. */
-static int width2(uint32_t buf, const char *text)
+static int width_in(uint32_t buf, uint32_t font, const char *text)
 {
     win_put_str(buf, text, VIEWS_TEXT_SIZE);
-    return across_px((int32_t)call(TEXT_WIDTH, 2, (uint32_t[2]){2, buf}));
+    return across_px((int32_t)call(TEXT_WIDTH, 2, (uint32_t[2]){font, buf}));
+}
+
+/* A text that fits room (classic numbers): font 2 when it fits, else font 1, else font 1 with letters cut at
+ * the end and a full stop. A text wider than its widget would show nothing. Returns its width and font. */
+static int fit_text(uint32_t buf, char *text, int room, uint32_t *font)
+{
+    *font = 2;
+    int w = width_in(buf, 2, text);
+    if (w <= room) return w;
+    *font = 1;
+    w = width_in(buf, 1, text);
+    for (size_t len = strlen(text); w > room && len > 2; len--) {
+        text[len - 1] = '.';
+        text[len] = 0;
+        if (len > 1 && text[len - 2] == ' ') continue;
+        w = width_in(buf, 1, text);
+    }
+    return w;
 }
 
 /* One card: the dark panel, the position box, then up to three rows of a name and its stars. Classic numbers. */
-static void card(uint32_t buf, int x1, int y1, int x2, int head, int row, const char *pos, uint32_t const *staff,
-                 const int *score, const int *out, int n)
+static void card(uint32_t buf, int x1, int y1, int x2, int head, int row, int star_row, const char *pos,
+                 uint32_t const *staff, const int *score, const int *out, int n)
 {
-    int y2 = y1 + head + 3 * row + 4;
+    /* star_row not 0: a narrow card, each player on two lines, the name, then the stars under it. */
+    int line = row + star_row, y2 = y1 + head + 3 * line + 4;
     uint32_t a[11] = {(uint32_t)x1, (uint32_t)y1, (uint32_t)x2, (uint32_t)y2, 1, 0, 1, 0, 2, 0, 0xffffffffu};
     call_this(AREA_CREATE, display(), 11, a);
     item(buf, 1, x1 + 2, y1 + 2, x2 - 2, y1 + 2 + head, 0x30, rd16(g_mem, DARK_BLUE), 0xc, 1, rd16(g_mem, PALE), pos);
-    int star_w = across_px(5 * 12 + 4 + 6);
+    /* The stars take 70 screen pixels; in a narrow card (a formation with many lines) less, so that the names
+     * keep 64, but at least 56 (stars of 10 pixels). The names get the rest, in font 1 when font 2 does not
+     * fit. */
+    int star_w = across_px(5 * 12 + 4 + 6), least = across_px(5 * 10 + 6), names = across_px(64);
+    if (x2 - x1 - across_px(6) - star_w < names) star_w = x2 - x1 - across_px(6) - names;
+    if (star_w < least) star_w = least;
+    if (star_row) star_w = 0;
     static const char *const tags[4] = {"", "Inj", "Int", "Out"};
     for (int r = 0; r < n && r < 3; r++) {
-        int ry = y1 + 3 + head + r * row, nx = x1 + across_px(5), nx2 = x2 - star_w;
-        char name[64];
+        int ry = y1 + 3 + head + r * line, nx = x1 + across_px(4), nx2 = x2 - star_w - across_px(2);
+        char name[64], tag[8];
+        uint32_t font, tag_font = 2;
         short_name(staff[r], name, sizeof name);
         uint32_t colour = r == 0 ? rd16(g_mem, ITEM_HIGHLIGHT) : rd16(g_mem, PALE);
+        int tw = 0;
         if (out[r] > 0 && out[r] < 4) {
-            /* The tag after the name, the name cut to the room that is left. */
-            int tw = width2(buf, tags[out[r]]) + across_px(4), room = nx2 - nx - tw;
-            int w = width2(buf, name);
-            /* A name wider than the room loses letters at its end and gets a full stop. */
-            for (size_t len = strlen(name); w > room && len > 3; len--) {
-                name[len - 1] = '.';
-                name[len] = 0;
-                if (len > 1 && name[len - 2] == ' ') continue;
-                w = width2(buf, name);
+            /* The tag after the name; in a narrow card in font 1, the name cut to the room that is left. */
+            snprintf(tag, sizeof tag, "%s", tags[out[r]]);
+            tw = width_in(buf, 2, tag);
+            if (tw * 3 > nx2 - nx) {
+                tag_font = 1;
+                tw = width_in(buf, 1, tag);
             }
-            item(buf, 1, nx, ry, nx + w + across_px(2), ry + row - 1, 1, 0, 1, 2, colour, name);
-            item(buf, 1, nx + w + across_px(4), ry, nx2, ry + row - 1, 1, 0, 1, 2, rd16(g_mem, ORANGE), tags[out[r]]);
-        } else {
-            item(buf, 1, nx, ry, nx2, ry + row - 1, 1, 0, 1, 2, colour, name);
+            tw += across_px(3);
         }
-        int st = item(buf, 1, x2 - star_w, ry + 2, x2 - across_px(5), ry + row - 3, 0, 0, 0xc, 1, 0, "");
+        int w = fit_text(buf, name, nx2 - nx - tw, &font);
+        item(buf, 1, nx, ry, nx + w + across_px(2), ry + row - 1, 1, 0, 1, font, colour, name);
+        if (tw) item(buf, 1, nx + w + across_px(3), ry, nx2, ry + row - 1, 1, 0, 1, tag_font, rd16(g_mem, ORANGE), tag);
+        int st = star_row ? item(buf, 1, nx, ry + row - 1, nx + across_px(5 * 12 + 4), ry + row + star_row - 2, 0, 0, 0xc, 1, 0, "")
+                          : item(buf, 1, x2 - star_w, ry + 2, x2 - across_px(5), ry + row - 3, 0, 0, 0xc, 1, 0, "");
         views_stars(st, halves(shown_score(score[r])));
     }
     if (log_on()) {
@@ -379,48 +404,97 @@ static void cards(uint32_t buf, uint32_t club, uint32_t team, const Tactic *t, c
             k = 0;
         }
     }
+    /* Each card starts as wide as a card of a formation of three lines (230 screen pixels at most) and is
+     * narrowed only where it meets a card of another column at the same height, at the middle between the two
+     * columns: a formation of many lines keeps wide cards wherever its cards are staggered. */
     int w = x2 - x1, h = y2 - y1, gap = across_px(8);
-    int card_w = w / columns - gap, widest = across_px(230);
+    int card_w = w / 3 - gap, widest = across_px(230);
     if (card_w > widest) card_w = widest;
     /* Rows of font 2 (18 pixels) and a position box of font 1, smaller when the most cards of a column do not
      * fit. The fonts do not scale with the screen. */
     int row = down_px(19), head = down_px(14);
     while ((head + 3 * row + 4 + down_px(6)) * most > h && row > down_px(14)) row--;
-    int card_h = head + 3 * row + 4;
+    int card_h = head + 3 * row + 4, star_row = down_px(13), tall_h = card_h + 3 * star_row;
+    int narrow = across_px(70 + 64 + 8);               /* a narrower card has less room for its stars */
     if (log_on())
         fprintf(stderr, "recomp: best xi pitch %d %d %d %d columns %d most %d card %d x %d\n", x1, y1, x2, y2, columns,
                 most, card_w, card_h);
+    struct { int s, cx, cy, k, left, right, top, h; char label[12]; } at[SLOTS];
+    int n_at = 0;
     for (int i = 0, c = columns - 1; i < SLOTS; c--) {
         int j = i;
         while (j < SLOTS && spots[j].down == spots[i].down) j++;
         int k = j - i, cx = x1 + w * (2 * c + 1) / (2 * columns);
         for (int m = i; m < j; m++) {
             int s = spots[m].slot, r = row_of[s], cy = y1 + h * (2 * (m - i) + 1) / (2 * k);
-            char label[12];
-            if (size[r] == 1) snprintf(label, sizeof label, "%s", pos[r]);
-            else if (size[r] == 2) snprintf(label, sizeof label, "%s%s", pos[r], nth[s] ? "R" : "L");
-            else if (size[r] == 3) snprintf(label, sizeof label, "%s%s", pos[r], nth[s] == 0 ? "L" : nth[s] == 2 ? "R" : "");
-            else snprintf(label, sizeof label, "%s %d", pos[r], nth[s] + 1);
-            /* The slot's player, then the next two of the slot's own row (Q420). */
-            uint32_t staff[3];
-            int score[3], out[3], n = 0;
-            if (p->staff[s]) {
-                staff[n] = p->staff[s];
-                score[n] = p->score[s];
-                out[n++] = 0;
-            }
-            for (int q = 0; q < d.n[s] && n < 3; q++) {
-                if (d.staff[s][q] == p->staff[s]) continue;
-                staff[n] = d.staff[s][q];
-                score[n] = d.score[s][q];
-                out[n++] = d.out[s][q];
-            }
+            char *label = at[n_at].label;
+            if (size[r] == 1) snprintf(label, 12, "%s", pos[r]);
+            else if (size[r] == 2) snprintf(label, 12, "%s%s", pos[r], nth[s] ? "R" : "L");
+            else if (size[r] == 3) snprintf(label, 12, "%s%s", pos[r], nth[s] == 0 ? "L" : nth[s] == 2 ? "R" : "");
+            else snprintf(label, 12, "%s %d", pos[r], nth[s] + 1);
             int top = cy - card_h / 2;
             if (top < y1 + 2) top = y1 + 2;
             if (top + card_h > y2 - 2) top = y2 - 2 - card_h;
-            card(buf, cx - card_w / 2, top, cx + card_w / 2, head, row, label, staff, score, out, n);
+            int left = cx - card_w / 2;
+            if (left < x1 + 2) left = x1 + 2;
+            if (left + card_w > x2 - 2) left = x2 - 2 - card_w;
+            at[n_at].s = s;
+            at[n_at].cy = cy;
+            at[n_at].k = k;
+            at[n_at].h = card_h;
+            at[n_at].cx = cx;
+            at[n_at].top = top;
+            at[n_at].left = left;
+            at[n_at++].right = left + card_w;
         }
         i = j;
+    }
+    /* Twice: the widths with the usual height; then a card left narrow takes two lines for each player (the
+     * stars under the name) when its column has the room, and the widths again with the new heights. */
+    for (int pass = 0; pass < 2; pass++) {
+        if (pass)
+            for (int a = 0; a < n_at; a++) {
+                if (at[a].right - at[a].left >= narrow || at[a].k * (tall_h + down_px(6)) > h) continue;
+                at[a].h = tall_h;
+                at[a].top = at[a].cy - tall_h / 2;
+                if (at[a].top < y1 + 2) at[a].top = y1 + 2;
+                if (at[a].top + tall_h > y2 - 2) at[a].top = y2 - 2 - tall_h;
+            }
+        for (int a = 0; a < n_at; a++) {
+            int left = at[a].cx - card_w / 2;
+            if (left < x1 + 2) left = x1 + 2;
+            if (left + card_w > x2 - 2) left = x2 - 2 - card_w;
+            at[a].left = left;
+            at[a].right = left + card_w;
+        }
+        for (int a = 0; a < n_at; a++)
+            for (int b = 0; b < n_at; b++) {
+                if (at[a].cx >= at[b].cx) continue;             /* a left of b, in another column */
+                int meet_y = at[a].top < at[b].top + at[b].h + down_px(2) && at[b].top < at[a].top + at[a].h + down_px(2);
+                if (!meet_y || at[a].right + gap <= at[b].left) continue;
+                int mid = (at[a].cx + at[b].cx) / 2;
+                if (at[a].right > mid - gap / 2) at[a].right = mid - gap / 2;
+                if (at[b].left < mid + gap / 2) at[b].left = mid + gap / 2;
+            }
+    }
+    for (int a = 0; a < n_at; a++) {
+        int s = at[a].s;
+        /* The slot's player, then the next two of the slot's own row (Q420). */
+        uint32_t staff[3];
+        int score[3], out[3], n = 0;
+        if (p->staff[s]) {
+            staff[n] = p->staff[s];
+            score[n] = p->score[s];
+            out[n++] = 0;
+        }
+        for (int q = 0; q < d.n[s] && n < 3; q++) {
+            if (d.staff[s][q] == p->staff[s]) continue;
+            staff[n] = d.staff[s][q];
+            score[n] = d.score[s][q];
+            out[n++] = d.out[s][q];
+        }
+        card(buf, at[a].left, at[a].top, at[a].right, head, row, at[a].h > card_h ? star_row : 0, at[a].label, staff,
+             score, out, n);
     }
 }
 
