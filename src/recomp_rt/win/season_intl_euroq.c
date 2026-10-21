@@ -30,6 +30,7 @@
  * these), so they are set again after a load (ctor epilogue 0x57d03b). */
 #include "win.h"
 #include "season_intl.h"
+#include "season_nl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,8 @@
 #define EURO_VTABLE 0x96a020u
 #define GROUP_STAGE 0x0057ed10u         /* group stage builder, thiscall (index, teams, 6), ret 0xc */
 #define NATION_NAME 0x4u
+#define F_MALLOC 0x00944e46u            /* malloc, cdecl (size) */
+#define F_FREE 0x009452cau              /* free, cdecl (block) */
 
 enum { ORIGINAL, NINE_GROUPS, TEN_GROUPS };
 
@@ -53,6 +56,14 @@ static int logging(void)
 }
 
 static int readable(uint32_t p) { return p >= 0x10000u && p < 0xfff00000u; }
+
+static uint32_t call_cdecl(uint32_t fn, int nargs, const uint32_t *args)
+{
+    Cpu saved = cpu;
+    uint32_t r = rt_callback(fn, nargs, args);
+    if (!rt_unwinding) cpu = saved;
+    return r;
+}
 
 static uint32_t call_this(uint32_t fn, uint32_t self, int nargs, const uint32_t *args)
 {
@@ -81,8 +92,10 @@ void rt_euroq_rules(uint32_t self)
     int f = format_of(self);
     if (f < 0) return;
     static const uint8_t bytes[3][5] = {{1, 1, 7, 8, 9}, {2, 1, 7, 8, 9}, {2, 0, 8, 0xff, 9}};
-    wr8(g_mem, self + 0xbeu, bytes[f][0]);
-    wr8(g_mem, self + 0xbfu, bytes[f][1]);
+    if (!season_nl_in_ctor()) {                 /* a Nations League keeps its own (saved) places */
+        wr8(g_mem, self + 0xbeu, bytes[f][0]);
+        wr8(g_mem, self + 0xbfu, bytes[f][1]);
+    }
     wr8(g_mem, self + 0xffu, bytes[f][2]);
     wr8(g_mem, self + 0x100u, bytes[f][3]);
     wr8(g_mem, self + 0x101u, bytes[f][4]);
@@ -191,6 +204,24 @@ RT_WRAP(0057ed10, euroq_group_stage)
         return;
     }
     uint32_t stages = rd32(g_mem, self + 0xcu);
+    int32_t count = (int32_t)rd32(g_mem, self + 0x2cu);
+    if (index == 0u && readable(stages) && count >= 0 && count < 10) {
+        /* A campaign after one that ended with no stage after the groups (+0x2c 9, euroq_advance below): +0x2c
+         * stays 9, as start_new_season 0x57eb20 does not set it, and after a load League::load gave the array
+         * only 9 slots, so stage[9] would be past its end. A new array of 10 slots and +0x2c 10 (load sweep). */
+        uint32_t size[1] = {40}, fresh = call_cdecl(F_MALLOC, 1, size);
+        if (rt_unwinding) return;
+        if (readable(fresh)) {
+            memset(g_mem + fresh, 0, 40);
+            memcpy(g_mem + fresh, g_mem + stages, 4u * (uint32_t)count);
+            wr32(g_mem, self + 0xcu, fresh);
+            wr32(g_mem, self + 0x2cu, 10);
+            uint32_t old[1] = {stages};
+            call_cdecl(F_FREE, 1, old);
+            if (rt_unwinding) return;
+            stages = fresh;
+        }
+    }
     if (index == 0u && readable(stages)) {      /* the array is not cleared: stage[8] held a stale pointer */
         wr32(g_mem, stages + 32u, 0);
         wr32(g_mem, stages + 36u, 0);

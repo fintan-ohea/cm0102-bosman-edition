@@ -470,6 +470,22 @@ int win_existing_file(const char *name, char *out, size_t room)
 static int fds[MAX_FILES];
 static int fd_used[MAX_FILES];
 
+/* Saves above 2 GB. The save container keeps the offset of each part in an unsigned 32-bit word (savfile.py),
+ * and the game's C library passes file positions as signed 32-bit values. The seek and tell sites take them as
+ * unsigned (tools/recomp/save_size.py, SetFilePointer below), so positions reach FILE_LIMIT. A write that
+ * would take a file past WRITE_LIMIT writes nothing and fails as on a full disk. WRITE_LIMIT leaves room for the
+ * season part that season.c adds after the save (at most 2 MB stored), so that part always fits. During a save (win_save_begin to
+ * win_save_end) such a write makes the save fail: the game cannot delete or rename a .sav file, so the earlier
+ * save stays as it was, and win_save_end deletes the file that grew too large. A file below 2 GB takes the same
+ * path as before. */
+#define FILE_LIMIT 0xfffffffeu     /* 0xffffffff is the error result of SetFilePointer and ftell */
+#define WRITE_LIMIT (FILE_LIMIT - 0x200000u)
+static char *fd_path[MAX_FILES];   /* the host path of a handle that may write, or NULL */
+static int in_save;
+static char too_big_path[2048];    /* the file of the first refused write of this save, or "" */
+static int too_big_told;           /* 1 when stderr has the first refused write (once per save) */
+static int save_deleted;           /* 1 when this save deleted a .sav file before a refused write */
+
 static int fd_of(uint32_t h)
 {
     if (h < FILE_BASE || h >= FILE_BASE + 4 * MAX_FILES || (h & 3)) return -1;
@@ -521,6 +537,10 @@ int win_is_file_handle(uint32_t h) { return fd_of(h) >= 0 || mem_slot(h) >= 0; }
 
 int win_close_file(uint32_t h)
 {
+    if (fd_of(h) >= 0) {
+        free(fd_path[(h - FILE_BASE) / 4]);
+        fd_path[(h - FILE_BASE) / 4] = NULL;
+    }
     int m = mem_slot(h);
     if (m >= 0) {
         fd_used[m] = 0;
@@ -614,6 +634,7 @@ RT_IMPORT(CreateFileA)
         if (!fd_used[i]) {
             fd_used[i] = 1;
             fds[i] = fd;
+            fd_path[i] = write_intent ? strdup(target) : NULL;
             win_last_error = existed && (disposition == 2 || disposition == 4) ? ERROR_ALREADY_EXISTS : 0;
             rt_ret_stdcall(FILE_BASE + 4 * i, 7);
             return;
@@ -632,7 +653,7 @@ RT_IMPORT(ReadFile)
         const MemFile *f = &mem_file[mem_of[m]];
         size_t left = mem_pos[m] < f->size ? f->size - mem_pos[m] : 0;
         got = count < left ? count : (uint32_t)left;
-        memcpy(g_mem + buf, f->data + mem_pos[m], got);
+        if (got) memcpy(g_mem + buf, f->data + mem_pos[m], got);
         mem_pos[m] += got;
     } else if (fd >= 0) {
         while (got < count) {
@@ -657,6 +678,17 @@ RT_IMPORT(WriteFile)
     int fd = fd_of(h);
     uint32_t put = 0;
     if (fd >= 0) {
+        int64_t at = host_seek(fd, 0, SEEK_CUR);
+        if (at >= 0 && at + count > WRITE_LIMIT) {
+            const char *path = fd_path[(h - FILE_BASE) / 4];
+            if (in_save && !too_big_path[0] && path) snprintf(too_big_path, sizeof too_big_path, "%s", path);
+            if (!too_big_told) fprintf(stderr, "cm0102_recomp: a write would take %s past 4 GB, so it is refused.\n", path ? path : "a file");
+            too_big_told = 1;
+            win_last_error = 112;                   /* ERROR_DISK_FULL */
+            if (done) wr32(g_mem, done, 0);
+            rt_ret_stdcall(0, 5);
+            return;
+        }
         while (put < count) {
             long r = host_write(fd, g_mem + buf + put, count - put);
             if (r <= 0) break;
@@ -675,14 +707,28 @@ RT_IMPORT(WriteFile)
     rt_ret_stdcall(put == count, 5);
 }
 
+/* The distance of a SetFilePointer call without a high word. Windows takes it as signed, so the game's C
+ * library (_lseek 0x94c552, from fseek 0x946a22 and ftell 0x946aae) cannot reach a position from 2 GB on. A move
+ * from the start of the file to a negative distance fails on Windows, and the game makes none below 2 GB, so the
+ * runtime takes the distance of FILE_BEGIN as unsigned: positions up to 4 GB. A relative move stays signed. */
+static int64_t seek_distance(uint32_t low, uint32_t method)
+{
+    return method == 0 ? (int64_t)low : (int64_t)(int32_t)low;
+}
+
 /* SetFilePointer(handle, low, &high, method) */
 RT_IMPORT(SetFilePointer)
 {
     uint32_t h = rt_arg(0), low = rt_arg(1), high_at = rt_arg(2), method = rt_arg(3);
     int fd = fd_of(h), m = mem_slot(h);
+    int64_t off = high_at ? (int64_t)((uint64_t)rd32(g_mem, high_at) << 32 | low) : seek_distance(low, method);
     if (m >= 0) {
-        int64_t off = high_at ? (int64_t)((uint64_t)rd32(g_mem, high_at) << 32 | low) : (int64_t)(int32_t)low;
         int64_t base = method == 0 ? 0 : method == 1 ? (int64_t)mem_pos[m] : (int64_t)mem_file[mem_of[m]].size;
+        if (!high_at && base + off > FILE_LIMIT) {
+            win_last_error = 87;                    /* ERROR_INVALID_PARAMETER */
+            rt_ret_stdcall(0xffffffffu, 4);
+            return;
+        }
         if (base + off < 0) {
             win_last_error = 131;                   /* ERROR_NEGATIVE_SEEK */
             rt_ret_stdcall(0xffffffffu, 4);
@@ -699,8 +745,15 @@ RT_IMPORT(SetFilePointer)
         rt_ret_stdcall(0xffffffffu, 4);
         return;
     }
-    int64_t off = high_at ? (int64_t)((uint64_t)rd32(g_mem, high_at) << 32 | low) : (int64_t)(int32_t)low;
+    int64_t was = host_seek(fd, 0, SEEK_CUR);
     int64_t r = host_seek(fd, off, method == 0 ? SEEK_SET : method == 1 ? SEEK_CUR : SEEK_END);
+    if (r >= 0 && !high_at && r > FILE_LIMIT) {
+        /* Windows fails a move to a position that does not fit the low word and leaves the pointer. */
+        host_seek(fd, was, SEEK_SET);
+        win_last_error = 87;                        /* ERROR_INVALID_PARAMETER */
+        rt_ret_stdcall(0xffffffffu, 4);
+        return;
+    }
     if (r < 0) {
         win_last_error = 131;                       /* ERROR_NEGATIVE_SEEK */
         rt_ret_stdcall(0xffffffffu, 4);
@@ -749,6 +802,34 @@ RT_IMPORT(GetFileAttributesA)
     rt_ret_stdcall(st.is_dir ? 0x10u : 0x20u, 1);
 }
 
+/* 1 while a save that had a refused write (WRITE_LIMIT) would delete or rename the .sav file name. */
+static int save_refused(const char *name)
+{
+    return in_save && too_big_path[0] && has_sav_ending(name);
+}
+
+void win_save_begin(void)
+{
+    in_save = 1;
+    too_big_path[0] = 0;
+    too_big_told = 0;
+    save_deleted = 0;
+}
+
+int win_save_end(void)
+{
+    in_save = 0;
+    if (!too_big_path[0]) return 0;
+    int deleted = save_deleted;
+    /* The file holds parts that could not be written. Its handles are closed: the game closes the container
+     * after each part (zclose 0x932b00). */
+    if (host_unlink(too_big_path)) fprintf(stderr, "cm0102_recomp: cannot delete %s (%s).\n", too_big_path, strerror(errno));
+    fprintf(stderr, "cm0102_recomp: the save would pass 4 GB, so it is not written.%s\n",
+            deleted ? " The game deleted the earlier save of this name before it wrote." : " The earlier save stays.");
+    too_big_path[0] = 0;
+    return deleted ? 2 : 1;
+}
+
 /* Delete and rename act on the user folder only. A file that exists only in the game folder stays. A save
  * that the game deletes to make room for a new one goes to backups/; a save that the player deletes does not. */
 RT_IMPORT(DeleteFileA)
@@ -756,9 +837,15 @@ RT_IMPORT(DeleteFileA)
     const char *name = win_str(rt_arg(0));
     char h[2048], u[2048];
     int ok = 0;
-    if (win_paths(name, h, u, sizeof h)) {
+    if (save_refused(name)) {
+        errno = ENOSPC;
+    } else if (win_paths(name, h, u, sizeof h)) {
         if (temp_save_beside(u) && save_backup(h, u, 0)) ok = 1;   /* a new save follows: the old moved to backups/ */
         else if (exists(u)) ok = host_unlink(u) == 0;
+        /* A save without the temp file (no option bit 0x20000000) deletes the old .sav before it writes (0x82e62d). */
+        size_t nl = strlen(name);
+        if (ok && in_save && has_sav_ending(name) && (nl < 18 || strcasecmp(name + nl - 18, "temp_save_file.sav")))
+            save_deleted = 1;
         else if (exists(h)) { errno = EACCES; }
         else errno = ENOENT;
     }
@@ -771,7 +858,10 @@ RT_IMPORT(MoveFileA)
 {
     char fh[2048], fu[2048], th[2048], tu[2048];
     int ok = win_paths(win_str(rt_arg(0)), fh, fu, sizeof fh) && win_paths(win_str(rt_arg(1)), th, tu, sizeof th);
-    if (ok && (exists(tu) || exists(th))) { win_last_error = ERROR_ALREADY_EXISTS; ok = 0; }
+    if (save_refused(win_str(rt_arg(0))) || save_refused(win_str(rt_arg(1)))) {
+        win_last_error = 112;                       /* ERROR_DISK_FULL */
+        ok = 0;
+    } else if (ok && (exists(tu) || exists(th))) { win_last_error = ERROR_ALREADY_EXISTS; ok = 0; }
     else if (ok && exists(fu)) {
         make_parents(tu);
         if (host_rename(fu, tu)) { win_error_from_errno(); ok = 0; }

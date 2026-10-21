@@ -6,7 +6,7 @@ save near each season change that a new program loads and plays on.
 Usage:
     python3 tests/seasons/soak_run.py <cm0102_recomp> <game folder> --keep <folder> [--start 2001] [--last 2027]
         [--seed 1] [--nations all|England,...] [--database <folder>] [--changing-rules on|off] [--leg-days 365]
-        [--timeout 14400]
+        [--extra regional,c2,spain,...] [--timeout 14400]
 
 The legs. Leg 0 makes the game (tests/seasons/rules_report_check.py: the steps of a new game, the season jump to
 --last, the rules report) with RECOMP_SAVE_AFTER_DAYS=<leg days>: at the first human turn that many game days after
@@ -115,8 +115,11 @@ def settings(user, rules, database):
 def new_game_leg(o, work, save_days):
     user, home, shots = folders(work)
     settings(user, o["rules"], o["database"])
-    steps = rrc.league_steps(o["nations"], [])
+    steps = rrc.league_steps(o["nations"], o["extra"])
     extra = {"RECOMP_START_SEASON": str(o["start"])}
+    test_extra = [e for e in o["extra"] if e in rrc.ENV_EXTRA]     # Spain and Portugal: a test switch, no click
+    if test_extra:
+        extra["RECOMP_TEST_EXTRA"] = ",".join(test_extra)
     if save_days:
         extra["RECOMP_SAVE_AFTER_DAYS"] = str(save_days)
     env = leg_env(o["program"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
@@ -148,7 +151,8 @@ def main(argv):
          "seed": int(arg(argv, "--seed", 1)), "nations": nations.split(","),
          "database": os.path.abspath(arg(argv, "--database")) if "--database" in argv else None,
          "rules": arg(argv, "--changing-rules", "on"), "days": int(arg(argv, "--leg-days", 365)),
-         "timeout": int(arg(argv, "--timeout", 14400))}
+         "timeout": int(arg(argv, "--timeout", 14400)),
+         "extra": [e for e in arg(argv, "--extra", "").split(",") if e]}
     if o["last"] < o["start"]:
         print("soak_run.py: --last is before --start")
         return 2

@@ -93,6 +93,7 @@ int season_intl_host_ids(uint32_t key, int year, int ids[6]);
 /* The inter-confederation ties of the World Cup of a year that this run built (season_intl_qual.c): up to max
  * pairs into teams (two teams each). Gives the pair count. */
 int season_intl_wc_ties(int year, uint32_t *teams, int max);
+void season_intl_qual_reset(void);             /* a load or new game: no ties (load sweep) */
 
 /* The classes of the code sites (cls of the calls above). */
 enum {

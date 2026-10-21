@@ -303,7 +303,7 @@ static int europe_on(uint32_t self) { return is(self, VT_EUROPE) && season_wcq26
  * old shape (10 groups and the runners-up table, 11 stages: a save of a build before slice 29, the gate 2023 leg
  * loaded in July 2024) keeps the original's code, else its runners-up table 0x91a240 read stage 9 (that table) and
  * stage 10 (none) as groups and passed clubs with no nation to slot +0x68 0x91b510 (box Database.cpp 13126 on day
- * 243 of 2024). The wraps and the load sites test this; the sites that make the shape test europe_on. */
+ * 243 of 2024). The wraps test this; the sites that make the shape test europe_on. */
 static int europe_shape(uint32_t self)
 {
     return europe_on(self) && (int)rd32(g_mem, self + F_STAGE_COUNT) == EU_GROUPS + 1;
@@ -433,7 +433,7 @@ RT_WRAP(00919e30, wcq26_europe_pool)
     cpu.eax = 1;
 }
 
-/* 0x91a0c2, 0x91a0c9, 0x91a0d0 (pool, esi) and 0x91aa96, 0x91aa9d, 0x91aaa4 (load 0x91a9f0, edi): the last group
+/* 0x91a0c2, 0x91a0c9, 0x91a0d0 (pool, esi; at a load see the ctor wrap below): the last group
  * stage +0xff, the runners-up stage +0x100 and the play-off stage +0x101 (8, 9, 10: ten groups). +2 in the gate:
  * twelve groups. 0x918348, 0x91950c: the stage count (0xb), 0x91a6cf: the group count of the draw (0xa). */
 uint32_t rt_wcq26_europe_index(uint32_t self, uint32_t original)
@@ -441,11 +441,23 @@ uint32_t rt_wcq26_europe_index(uint32_t self, uint32_t original)
     return europe_on(self) ? original + 2u : original;
 }
 
-/* The same three at the load 0x91a9f0 (0x91aa96, 0x91aa9d, 0x91aaa4, this in edi): only for an object of the
- * 12-group shape (europe_shape; League::load 0x687b10 has read its stage count +0x2c, 0x688e11). */
-uint32_t rt_wcq26_europe_index_loaded(uint32_t self, uint32_t original)
+void o_00918200(void);
+
+/* The ctor 0x918200 (thiscall (year, record), ret 8), at a load: League::load 0x687b10 (0x918321) reads the
+ * three at load_extra_data 0x91a9f0 (vtable +0x20, called at 0x687ccd; 8, 9, 10 at 0x91aa96..0x91aaa4) before it
+ * reads the stage count +0x2c (0x688e19), so they cannot depend on the shape there. After the ctor the stage
+ * count is the save's: an object of the 12-group shape gets 10, 11, 12. Else a loaded 2030 campaign drew its
+ * pool into 10 groups (0x918ec0) and the group builder 0x919722 read groups 11 and 12 past the grid: an empty
+ * slot to the group draw news (0x9198f0, 0x684298) and box Database.cpp 13126 at 0x53b4ac on day 84 of 2028.
+ * An old-shape campaign (11 stages) keeps the original's 8, 9, 10. */
+RT_WRAP(00918200, wcq26_europe_ctor)
 {
-    return europe_shape(self) ? original + 2u : original;
+    uint32_t self = cpu.ecx;
+    o_00918200();
+    if (rt_unwinding || !europe_shape(self)) return;
+    wr8(g_mem, self + EU_LAST_GROUP, EU_GROUPS - 2);
+    wr8(g_mem, self + EU_RUNNERS_UP, EU_GROUPS - 1);
+    wr8(g_mem, self + EU_PLAYOFF, EU_GROUPS);
 }
 
 /* The size of group g (0 = A): the last (nations - 48) groups of 5, the others of 4 (the real 2026 groups G to L
