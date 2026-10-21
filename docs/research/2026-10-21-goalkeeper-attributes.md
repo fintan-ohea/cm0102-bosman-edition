@@ -1,6 +1,6 @@
 # Goalkeeper attributes from the player data (2026-10-21)
 
-Max chose to show One On Ones and Consistency in the Goalkeeping group of the profile (attribute groups on, goalkeepers only). Source: `clean-3968/cm0102.exe` and `clean-3968/Editor/cm0102ed.exe`. Code: `src/recomp_rt/win/groups.c` (`hidden_cell`), `groups_layout.c`.
+Max chose to show One On Ones and Consistency in the Goalkeeping group of the profile (attribute groups on, goalkeepers only). He also moved Set Pieces and Technique into that group, so a goalkeeper has no Technical heading. Source: `clean-3968/cm0102.exe` and `clean-3968/Editor/cm0102ed.exe`. Code: `src/recomp_rt/win/groups.c` (`hidden_cell`), `groups_layout.c`.
 
 ## The player record
 
@@ -35,4 +35,4 @@ Aerial Reach, Command of Area, Communication, Eccentricity, First Touch, Kicking
 
 ## Same save
 
-The two cells take the place of two blank cells of the first column, so the profile makes the same number of labels with the option on (39 cells, 13 rows). The runtime calls 0x543280 and 0x544380, which the profile build also calls for its own cells. 0x543280 reaches 0x5b02f0, which writes the cache global 0xae1080 with the same club lookup. Proof: the attribute groups check and the same-save sets on the branch (handover report).
+The two cells take the place of two blank cells of the first column, and the Technical heading becomes a blank cell, so the profile makes the same number of labels with the option on (39 cells, 13 rows). The runtime calls 0x543280 and 0x544380, which the profile build also calls for its own cells. 0x543280 reaches 0x5b02f0, which writes the cache global 0xae1080 with the same club lookup. Proof: the attribute groups check and the same-save sets on the branch (handover report).

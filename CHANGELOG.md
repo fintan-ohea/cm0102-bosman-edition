@@ -8,7 +8,7 @@ CM 01/02 Bosman Edition uses semantic versioning. A patch release (0.1.1) fixes 
 - Choose Season: each season has one database, so the version choice is gone. The changing rules switch is on this screen now, under the season details.
 - The start screens have the title "Championship Manager: Bosman Edition".
 - Bosman Edition Options: the Screen tab is now called Graphics.
-- Attribute groups: a goalkeeper's profile shows One On Ones and Consistency in the Goalkeeping group. Both come from the game's own player data, which the original does not show. Attributes that your scouts do not know show as " -", as the others do.
+- Attribute groups: a goalkeeper's profile shows One On Ones and Consistency in the Goalkeeping group, and Set Pieces and Technique move into it from the Technical group. Both come from the game's own player data, which the original does not show. Attributes that your scouts do not know show as " -", as the others do.
 - Bosman Edition Options: the Save folder row has a Change button that opens your computer's folder picker. The game uses the new folder from the next start. Saved games already in the old folder stay there.
 - Team views: Best XI and Squad depth are one screen. The pitch lies on its side with a card for each of the 11 places: the Best XI player, then the next two for that position. Stars show how well each player fits the place, and players who cannot play the next match are grey.
 - HD mode is gone. On a Mac screen it showed bars around the picture and small text, while widescreen fills a large screen with sharp, bigger pixels. A `display = hd` line in `settings.txt` now gives widescreen.

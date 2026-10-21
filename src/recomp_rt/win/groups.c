@@ -1,6 +1,7 @@
 /* Attribute groups (#43): the player profile shows its attributes in Technical, Mental and Physical
- * columns with heading rows, and a Goalkeeping group for a goalkeeper (spec 2026-10-15-features-0.4.0,
- * Q122 to Q129; layout in groups_layout.c; evidence in docs/research/2026-10-15-attribute-groups.md).
+ * columns with heading rows, and one Goalkeeping group in place of Technical for a goalkeeper (spec
+ * 2026-10-15-features-0.4.0, Q122 to Q129; layout in groups_layout.c; evidence in
+ * docs/research/2026-10-15-attribute-groups.md).
  *
  * The profile build 0x87a510 fills a table of 36 cells of 0x65 bytes at 0xddf570 (a name of 100 bytes,
  * then a value byte), sorts the 31 attributes by name and adds Preferred Foot, Form, Morale, Condition and
