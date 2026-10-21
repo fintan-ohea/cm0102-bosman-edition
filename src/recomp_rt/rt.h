@@ -393,7 +393,6 @@ void rt_wcq26_asia_format(uint32_t self);
 uint32_t rt_wcq26_oceania_stages(uint32_t self, uint32_t original);
 void rt_wcq26_europe_format(uint32_t self);
 uint32_t rt_wcq26_europe_index(uint32_t self, uint32_t original);
-uint32_t rt_wcq26_europe_index_loaded(uint32_t self, uint32_t original);
 /* The African Cup of Nations and the Asian Cup of 24 teams (win/season_intl_cups.c): the team count (16, 12),
  * the group count of the draw (4, 3), the knockout stage index (3, 2) and a new stage array after the step of
  * start_new_season. Each gives the original's value for another edition, another class and the base game. */
