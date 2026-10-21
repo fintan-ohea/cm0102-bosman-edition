@@ -651,11 +651,26 @@ uint32_t rt_por_stage_clubs(uint32_t obj, uint32_t original)
  * 0x856fd6, 0x7d26f6), and the stage count +0x2c becomes 1, so League::update_for_date 0x6847c0 calls no
  * advance_stage (it calls it while +0x30 is below +0x2c - 1, 0x6849d1..0x6849e3): no promotion play-off stage
  * (Spain's 0x857570 reads the four groups). The stage takes the places of a group. */
-static void group_build(void (*original)(void))
+static void group_build(void (*original)(void), uint32_t class_bytes)
 {
     uint32_t self = cpu.ecx;
     int slot = (int8_t)(rt_arg(0) & 0xff);
     if (!group_new_form(self)) {
+        /* A season of the class's form after a load of a season in the new form: League::load gave the array
+         * the saved count of slots (1), and the class's builder fills its own count (SpaSecondB 9 slots, push
+         * 0x24 at 0x855fa5; PorSecondB 2, push 8 at 0x7d1985). The array grows to the class's size first (load
+         * sweep). A new game and the base game have the constructor's array, so nothing changes there. */
+        uint32_t stages = rd32(g_mem, self + OBJ_STAGES);
+        if (divisions_on() && readable(stages) && rt_is_block(stages) && rt_block_size(stages) < class_bytes) {
+            uint32_t old_bytes = rt_block_size(stages), grown = game_malloc(class_bytes);
+            if (rt_unwinding) return;
+            if (grown) {
+                memcpy(g_mem + grown, g_mem + stages, old_bytes);
+                wr32(g_mem, self + OBJ_STAGES, grown);
+                game_free(stages);
+                if (rt_unwinding) return;
+            }
+        }
         original();
         return;
     }
@@ -686,9 +701,9 @@ static void group_build(void (*original)(void))
 }
 
 void o_00857210(void);
-RT_WRAP(00857210, spa_group_build) { group_build(o_00857210); }
+RT_WRAP(00857210, spa_group_build) { group_build(o_00857210, 0x24u); }
 void o_007d2870(void);
-RT_WRAP(007d2870, por_group_build) { group_build(o_007d2870); }
+RT_WRAP(007d2870, por_group_build) { group_build(o_007d2870, 8u); }
 
 /* The Portuguese Cup's lower clubs (PorCup::collect_entrants 0x7ce220, second pass 0x7ce378..0x7ce3ed): the Third
  * Division and Portuguese clubs of A Lower Division. With Liga 3 the club moves leave the clubs that the real Liga 3

@@ -308,7 +308,9 @@ int season_intl_wc_ties(int year, uint32_t *teams, int max)
     static const struct { uint32_t key, stage; } tie_stages[2] = {{KEY_ASIA, 12u}, {KEY_OCEANIA, 2u}};
     for (int i = 0; i < 2 && n < max; i++) {
         uint32_t comp = comp_of(tie_stages[i].key), pair[2];
-        if (!comp || wc_year(comp) != year || !stage_pair(stage_of(comp, tie_stages[i].stage), pair)) continue;
+        /* Only a built stage: the tie stage goes into slot +0x30 (Asia 0x913eba, Oceania 0x91f9d4). */
+        if (!comp || wc_year(comp) != year || (int32_t)rd32(g_mem, comp + 0x30u) < (int32_t)tie_stages[i].stage ||
+            !stage_pair(stage_of(comp, tie_stages[i].stage), pair)) continue;
         teams[2 * n] = pair[0];
         teams[2 * n + 1] = pair[1];
         n++;

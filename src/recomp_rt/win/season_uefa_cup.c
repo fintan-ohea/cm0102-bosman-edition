@@ -306,12 +306,10 @@ static int uc_access_round_table(uint32_t uc, const UcGroups *f, uint32_t out_ro
 }
 
 /* The sizes of Q1, Q2 and R1 of row r for a UEFA Cup with count slots (see the head of the file), or 0. The
- * original's format of 2004/05 to 2008/09: 8 groups of 5. setup 0: a reader of a season set up with groups, which
- * does not test +0xb2: the save does not keep it (Cup::load_from_disk 0x51fc00 reads to +0xb1, and the constructor
- * skips build_entrants at a load, 0x902366), so after a load it holds old heap bytes (load sweep). */
-static int qual_sizes(uint32_t uc, const SeasonUefa *r, int *q1, int *q2, int *r1, int setup)
+ * original's format of 2004/05 to 2008/09: 8 groups of 5. */
+static int qual_sizes(uint32_t uc, const SeasonUefa *r, int *q1, int *q2, int *r1)
 {
-    int count = (int16_t)rd16(g_mem, uc + 0x3e), b2 = setup ? (int8_t)g_mem[uc + 0xb2] : 0;
+    int count = (int16_t)rd16(g_mem, uc + 0x3e), b2 = (int8_t)g_mem[uc + 0xb2];
     UcGroups f;
     *r1 = r ? season_uefa_uc_round(r, "R1") : 0, *q2 = r ? season_uefa_uc_round(r, "Q2") : 0;
     *q1 = 2 * (count - 8 - *r1) - *q2;
@@ -381,7 +379,7 @@ RT_WRAP(009025c0, uc_round_table)
         if (access && (int8_t)g_mem[uc + 0xb2] == 0 && uc_access_round_table(uc, &f, out_rounds)) return;
         if (rt_unwinding) return;
         /* Slice 24: the format of 2004/05 to 2008/09 is the Europa League's only. */
-        if (kind != 'e' || !qual_sizes(uc, r, &q1, &q2, &r1, 1)) {
+        if (kind != 'e' || !qual_sizes(uc, r, &q1, &q2, &r1)) {
             if ((int32_t)rd32(g_mem, uc + 0x2c) != 0) wr32(g_mem, uc + 0x2c, 0);
             if (r && (r->uc_groups || kind == 'k'))
                 fprintf(stderr, "recomp: uefa: %s %u groups not possible here (b2 %d, %d slots)\n",
@@ -421,7 +419,7 @@ RT_WRAP(009025c0, uc_round_table)
     int rounds = 0, name = 0, league = 0;
     if (stage == -1) {
         if (access) t = uc_saved_table(uc, &rounds);
-        else if (kind == 'e' && qual_sizes(uc, r, &q1, &q2, &r1, 0)) t = qual_table(uc, q1, q2, r1), rounds = 3;
+        else if (kind == 'e' && qual_sizes(uc, r, &q1, &q2, &r1)) t = qual_table(uc, q1, q2, r1), rounds = 3;
     } else if (stage < f.groups && f.league) {
         int weekday = 0;
         const SeasonLeagueDay *days = season_uefa_league_days((char)kind, &weekday);
