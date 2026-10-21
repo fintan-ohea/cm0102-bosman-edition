@@ -87,8 +87,8 @@ def play(args, env, log, timeout):
     return code, time.time() - start, box or first_box(log)
 
 
-def leg_env(program, user, home, shots, steps, last, report, extra):
-    table = os.path.join(os.path.dirname(os.path.abspath(program)), "seasons", "rules.tsv")
+def leg_env(program, game, user, home, shots, steps, last, report, extra):
+    table = rrc.rules_table(program, game)
     return dict(os.environ, HOME=home, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", RECOMP_NO_BOX="1",
                 RECOMP_USER_DIR=user, RECOMP_FIXED_CLOCK="1", RECOMP_SEASON_JUMP=str(last), RECOMP_SCREEN_LOG="1",
                 RECOMP_RULES_REPORT=report, RECOMP_RULES_TABLE=table,
@@ -119,7 +119,7 @@ def new_game_leg(o, work, save_days):
     extra = {"RECOMP_START_SEASON": str(o["start"])}
     if save_days:
         extra["RECOMP_SAVE_AFTER_DAYS"] = str(save_days)
-    env = leg_env(o["program"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
+    env = leg_env(o["program"], o["game"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
     return play([o["program"], "--game", o["game"], "-seed", str(o["seed"])], env, os.path.join(work, "stderr.txt"),
                 o["timeout"])
 
@@ -133,7 +133,7 @@ def load_leg(o, work, save, save_days):
     load = smoke_run.without_intro_click(fixtures.LOAD_STEPS)
     steps = [x for x in load if x != "wait first-news"] + [f"{o['timeout'] * 1000} quit"]
     extra = {"RECOMP_SAVE_AFTER_DAYS": str(save_days)} if save_days else {}
-    env = leg_env(o["program"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
+    env = leg_env(o["program"], o["game"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
     return play([o["program"], "--game", o["game"], "-seed", str(o["seed"])], env, os.path.join(work, "stderr.txt"),
                 o["timeout"])
 
