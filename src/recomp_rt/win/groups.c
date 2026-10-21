@@ -13,6 +13,10 @@
  * cell has a name that starts with byte 1: the name label (call site profile_name) drops the byte and
  * draws a heading in yellow, and the value label after it gets an empty text.
  *
+ * A goalkeeper also gets One On Ones and Consistency, two attributes of the player data that the original
+ * does not show (Max, 2026-10-21; evidence in docs/research/2026-10-21-goalkeeper-attributes.md). Their
+ * cells take the place of blank cells, so the profile makes the same labels.
+ *
  * The runtime only reads the game's data and copies the game's own cells, so no value and no game state
  * changes. With the option off the constants keep their values. */
 #include "win.h"
@@ -31,6 +35,9 @@ extern const uint32_t rt_site_profile_value;
 #define CELLS 36u
 #define ATTRIBUTE_NAME 0x5428a0u /* cdecl (attribute 1..31, text, size, 0): the attribute's name */
 #define POSITIONS 0x53ee50u      /* cdecl (player data, text, size, 1): the positions text, "GK" first */
+#define KNOWN 0x543280u       /* cdecl (viewer, staff, attribute): 1 when the viewer knows the attribute */
+#define RATING 0x544380u      /* cdecl (player data, byte): a relative attribute as a 1 to 20 rating */
+#define MASKED 0xf9u          /* the value of an attribute that the viewer does not know (0x5434c6) */
 #define YELLOW 0xaebdecu         /* the colour global of the values and the "Born" line */
 #define MARK 1                   /* first byte of the name of a heading or blank cell */
 
@@ -84,8 +91,31 @@ static uint32_t attribute_cell(int k)
     return 0;
 }
 
+/* The cell of a hidden attribute of the player data (CELL_ONE_ON_ONES or CELL_CONSISTENCY) at to, with its
+ * value as the profile's getter 0x543440 gives the others: 0xf9 when the viewer does not know it.
+ * One On Ones (+0x35) is stored relative to current ability, as Handling and Passing: the game's own
+ * conversion 0x544380 makes the rating. Consistency (+0x21) is stored as the rating. The knowledge
+ * check 0x543280 takes the attribute number only for its pattern of known attributes, so the two cells
+ * get the numbers 32 and 33 that follow the game's 31. */
+static void hidden_cell(uint32_t to, int k, uint32_t viewer, uint32_t staff)
+{
+    uint32_t data = rd32(g_mem, staff + 0x61);
+    memset(g_mem + to, 0, CELL);
+    win_put_str(to, groups_hidden_name(k), VALUE - 1);
+    uint32_t known[3] = {viewer, staff, k == CELL_ONE_ON_ONES ? 32u : 33u};
+    uint8_t value;
+    if (!data) value = 0;
+    else if (!(call_cdecl(KNOWN, 3, known) & 0xff)) value = MASKED;
+    else if (k == CELL_ONE_ON_ONES) {
+        uint32_t a[2] = {data, (uint32_t)(int32_t)(int8_t)rd8(g_mem, data + 0x35)};
+        value = (uint8_t)call_cdecl(RATING, 2, a);
+    } else value = rd8(g_mem, data + 0x21);
+    wr8(g_mem, to + VALUE, value);
+}
+
 /* Called by the build 0x87a510 at 0x87a81e, when the game's table is full. esp is the build's stack
- * pointer: [esp+0x20] is the staff record. Returns the count of cells. */
+ * pointer: [esp+0x20] is the staff record and [esp+0x70] the viewer that the build gives 0x543440
+ * (0x87a74a..0x87a754, one push deeper). Returns the count of cells. */
 uint32_t rt_groups_cells(uint32_t esp)
 {
     groups.first = TABLE + VALUE;
@@ -98,7 +128,7 @@ uint32_t rt_groups_cells(uint32_t esp)
      * below the build's own stack. */
     uint32_t keep_esp = cpu.esp;
     cpu.esp = esp - 64;
-    uint32_t staff = rd32(g_mem, esp + 0x20);
+    uint32_t staff = rd32(g_mem, esp + 0x20), viewer = rd32(g_mem, esp + 0x70);
     GroupLayout l;
     groups_layout(staff ? is_keeper(rd32(g_mem, staff + 0x61)) : 0, &l);
     uint32_t to = groups.table;
@@ -109,6 +139,10 @@ uint32_t rt_groups_cells(uint32_t esp)
                 : k >= CELL_FOOT && k <= CELL_ON_LOAN ? TABLE + (uint32_t)(31 + k - CELL_FOOT) * CELL : 0;
             if (from) {
                 memcpy(g_mem + to, g_mem + from, CELL);
+                continue;
+            }
+            if (groups_hidden_name(k) && staff) {
+                hidden_cell(to, k, viewer, staff);
                 continue;
             }
             const char *h = groups_heading(k);
