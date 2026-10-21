@@ -240,7 +240,8 @@ static int add_part(const char *host)
     else memcpy(stored, data, size);
     free(data);
     int64_t end = host_seek(fd, 0, SEEK_END);
-    if (end < 12 + (int64_t)HEADER_ROWS * ROW_SIZE || end > 0x7fffffff) goto done;
+    /* The row holds an unsigned 32-bit offset: the part must end below 4 GB, as the parts of the game (files.c). */
+    if (end < 12 + (int64_t)HEADER_ROWS * ROW_SIZE || end + n > 0xfffffffe) goto done;
     /* The bytes first, then the row, then the count: a write that stops half way leaves the old file whole.
      * A part that is there already gets the new bytes at the end, and its row points to them. */
     int wrote = write_at(fd, end, stored, n);
@@ -327,19 +328,32 @@ int season_of_save(const char *host, int *year)
 
 void o_0082e430(void);
 
+/* A save above 4 GB fails (files.c, win_save_begin): the box says so, the result is that of a failed save. */
+static int save_too_big(void)
+{
+    if (!win_save_end()) return 0;
+    if (rt_unwinding) return 1;
+    season_box("Save Game", "The game is not saved: the saved game would be larger than 4 GB. Your earlier saved "
+               "game is not changed.");
+    cpu.eax = 0;
+    return 1;
+}
+
 /* The save of a game, cdecl (path, flags): 1 when the file is written. The file at path is whole when it
  * returns: with the option bit 0x20000000 the save writes temp_save_file.sav and renames it to path first
  * (0x82e5cb, 0x82f684). The test saves of testrun.c and the Auto Save (0x7617d8) come here too. */
 RT_WRAP(0082e430, save_game)
 {
+    win_save_begin();
     if (!season_code_on()) {
         o_0082e430();
+        save_too_big();
         return;
     }
     char path[1024];
     snprintf(path, sizeof path, "%.1023s", win_str(rt_arg(0)));
     o_0082e430();
-    if (rt_unwinding) return;
+    if (save_too_big() || rt_unwinding) return;
     if (cpu.eax != 1 || !part_needed()) return;
     char host[2048];
     if (win_existing_file(path, host, sizeof host) && !add_part(host)) return;
