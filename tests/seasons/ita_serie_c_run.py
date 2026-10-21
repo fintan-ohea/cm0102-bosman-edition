@@ -124,9 +124,9 @@ def run_change(name, extra):
             fails.append(f"{name}: group C made in the change did not get its table and fixtures once")
         # Q529: a 2013/14 start with the flag is a two-group C2 season, so C2/C ends at the new game; its one club
         # goes to the Serie D, and at the change into the era the ended C2/C holds no club.
-        if extra and not re.search(r"serie c: [^\n]*girone C: its club goes to the Serie D", log):
+        if extra and not re.search(r"serie c: [^\n]*(girone C|C2/C): its club goes to the Serie D", log):
             fails.append(f"{name}: the one club of the ended C2/C did not go to the Serie D at the new game")
-        if extra and not re.search(r"serie c: [^\n]*girone C \(ended\): 0 clubs to the Serie C", log):
+        if extra and not re.search(r"serie c: [^\n]*(girone C|C2/C) \(ended\): 0 clubs to the Serie C", log):
             fails.append(f"{name}: the ended C2/C held clubs at the change into the era")
         return fails + check_moves(name, log)
     return run
