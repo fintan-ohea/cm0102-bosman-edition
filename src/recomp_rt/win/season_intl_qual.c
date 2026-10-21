@@ -69,6 +69,7 @@
 #define COMPS 0xadadfcu                 /* competition objects by key id ([0xadadfc][key], 0x90fc89) */
 #define KEY_OCEANIA 0x9cf76cu           /* key ids (sweep-international section 2) */
 #define KEY_CONCACAF 0x9cf770u
+#define KEY_ASIA 0x9cf774u
 #define KEY_SOUTH_AMERICA 0x9cf778u
 #define STAGES 0xcu                     /* stage array of a competition, count at +0x2c */
 #define STAGE_COUNT 0x2cu
@@ -260,7 +261,7 @@ void rt_wcq_asia_format(uint32_t self)
  * World Cup draw. In a 2001 game that jumps to 2010 the Oceania final ended so late that the CONCACAF v CONMEBOL
  * tie (Oceania stage 2) was built after mid November 2009 and played after the draw of December 2009, which then
  * held 31 teams and stopped at "world_cup.cpp 1438" (0x92f24c, 0x92f2ac). Not in the save: after a load the
- * draw fill gives the slot by the general rule. */
+ * ties are read again from their stages (season_intl_wc_ties). */
 static struct { int year; uint32_t team[2]; } built[8];
 static int n_built;
 
@@ -278,6 +279,20 @@ static void note_tie(int y, uint32_t a, uint32_t b)
     n_built++;
 }
 
+/* A load and a new game start with no ties (a second load in the same run kept the first game's teams). */
+void season_intl_qual_reset(void) { n_built = 0; }
+
+/* The two teams of a tie stage (a Cup round of 2 teams), 1 when found. */
+static int stage_pair(uint32_t st, uint32_t *pair)
+{
+    if (!readable(st) || (int16_t)rd16(g_mem, st + TEAM_COUNT) != 2) return 0;
+    uint32_t rows = rd32(g_mem, st + CUP_ROWS);
+    if (!readable(rows)) return 0;
+    pair[0] = rd32(g_mem, rows);
+    pair[1] = rd32(g_mem, rows + CUP_ROW);
+    return readable(pair[0]) && readable(pair[1]);
+}
+
 int season_intl_wc_ties(int year, uint32_t *teams, int max)
 {
     int n = 0;
@@ -287,6 +302,17 @@ int season_intl_wc_ties(int year, uint32_t *teams, int max)
             teams[2 * n + 1] = built[i].team[1];
             n++;
         }
+    if (n) return n;
+    /* After a load the list is empty, but the save holds the tie stages: the AFC tie, Asia stage 12, and the
+     * other tie, Oceania stage 2 (load sweep). */
+    static const struct { uint32_t key, stage; } tie_stages[2] = {{KEY_ASIA, 12u}, {KEY_OCEANIA, 2u}};
+    for (int i = 0; i < 2 && n < max; i++) {
+        uint32_t comp = comp_of(tie_stages[i].key), pair[2];
+        if (!comp || wc_year(comp) != year || !stage_pair(stage_of(comp, tie_stages[i].stage), pair)) continue;
+        teams[2 * n] = pair[0];
+        teams[2 * n + 1] = pair[1];
+        n++;
+    }
     return n;
 }
 

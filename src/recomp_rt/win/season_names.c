@@ -355,8 +355,8 @@ void o_008386f0(void);
  * 0xae2378). A new game calls it at 0x829640, a load at 0x82c5f6 (return addresses 0x829645 and 0x82c5fb).
  * A load reads the season part before the original's load runs (load_game 0x82a9c0 in season.c), so here the
  * renames of the part are known. A save whose part holds names has them in its data already, so a load
- * changes no name; a part with no names (version 1, or a save made before the names went into the part)
- * takes the names of the season of the game date. */
+ * changes no name, and nor does a part with news fields and no names; a part of version 1 (or a save made
+ * before the names went into the part) takes the names of the season of the game date. */
 RT_WRAP(008386f0, build_comp_table)
 {
     int load = rd32(g_mem, cpu.esp) == 0x82c5fbu;
@@ -369,6 +369,13 @@ RT_WRAP(008386f0, build_comp_table)
     if (load && season_change_renames()) {
         fprintf(stderr, "recomp: names of the save: %d competition records keep the names of the season part\n",
                 season_change_renames());
+        return;
+    }
+    /* A part with news fields (version 2 on: its season point is above 0) and no renames: no name has changed
+     * in this game, and the data of the save holds the names. The names of the season of the date would
+     * rename a competition before its update day, and its "is now called" news would not come (load sweep). */
+    if (load && season_change_point() > 0) {
+        fprintf(stderr, "recomp: names of the save: no renames, the names of the data stay\n");
         return;
     }
     /* A new game: the date is 1 January of the start year here, so this gives the start season. */

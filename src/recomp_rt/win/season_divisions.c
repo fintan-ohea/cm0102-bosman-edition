@@ -1,5 +1,6 @@
 /* New divisions (season_divisions.h). Evidence: docs/research/2026-10-20-new-divisions.md. */
 #include "win.h"
+#include "../rt_host.h"
 #include "season.h"
 #include "season_change.h"
 #include "season_comps.h"
@@ -60,6 +61,7 @@
 
 /* Functions of the original (tools/recomp/callbacks.py). */
 #define F_MALLOC 0x00944e46u        /* cdecl (size) */
+#define GER_REGIONAL_VTABLE 0x0096b250u
 #define F_FREE 0x009452cau          /* cdecl (block) */
 #define F_PROMOTE 0x00689c80u       /* league_promote_and_relegate, stdcall (upper, lower, expire, pairwise, up, down) */
 #define F_MOVE 0x006830b0u          /* League::move_club_to_division, thiscall (club, record, 1), ret 0xc */
@@ -315,6 +317,18 @@ RT_WRAP(005ddc50, ger_regional_south)
 }
 
 static int no_stage(uint32_t obj) { return (int32_t)rd32(g_mem, obj + OBJ_STAGE_NOW) < 0; }
+
+/* After League::load 0x687b10 of a GerRegional object (vtable 0x96b250, set at 0x5dcc17 before the load call at
+ * 0x5dcc25) that holds the 3. Liga: the save keeps +0x2c 0, so the load makes no stage array (0x688e49) and +0xc
+ * stays 0, where a new game has the constructor's one slot (0x5dcc44) cleared above. GerFirst's season start
+ * reads that slot with no test (0x5dbf7f..0x5dbf82, called at 0x5db4c1). A cleared slot again (load sweep). */
+void season_divisions_loaded(uint32_t obj)
+{
+    if (!readable(obj) || rd32(g_mem, obj) != GER_REGIONAL_VTABLE || !liga3_object(obj)) return;
+    if (readable(rd32(g_mem, obj + OBJ_STAGES))) return;
+    uint32_t slot = game_malloc(4);
+    if (slot) wr32(g_mem, obj + OBJ_STAGES, slot);
+}
 
 /* The clubs of a table (+0x3e rows of 0x3b bytes at +0xb1, the club at +0). */
 static uint32_t row_club(uint32_t league, int i)
@@ -647,7 +661,11 @@ static void group_build(void (*original)(void))
     }
     uint32_t stages = rd32(g_mem, self + OBJ_STAGES);
     if (slot >= 1) {
-        if (readable(stages)) wr32(g_mem, stages + 4u * (uint32_t)slot, 0);
+        /* After a load the array has only the saved count of slots (League::load 0x688e3a..0x688e5b: 1 in the
+         * new form), so a slot past the block is not written (load sweep). */
+        uint32_t room = readable(stages) && rt_is_block(stages) ? rt_block_size(stages) / 4u
+                                                                 : rd32(g_mem, self + 0x2cu);
+        if (readable(stages) && (uint32_t)slot < room) wr32(g_mem, stages + 4u * (uint32_t)slot, 0);
         rt_ret_stdcall(0, 1);
         return;
     }
