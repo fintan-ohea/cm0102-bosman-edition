@@ -55,7 +55,8 @@ extern char win_cwd[1024];             /* current folder, as a Windows path */
 int win_is_file_handle(uint32_t h);
 int win_close_file(uint32_t h);
 /* A save of the game (season.c): between the two calls, a write that would take a file past 4 GB makes the save
- * fail and keeps the earlier save. win_save_end gives 1 when the save failed so. */
+ * fail. win_save_end gives 0 for a good save, 1 when the save failed and the earlier save stays, 2 when the save
+ * failed after the game deleted the earlier save of the name. */
 void win_save_begin(void);
 int win_save_end(void);
 /* Memory files (season_records.c, 0.6.0 slice 15b): a read-only open of the host path gives these bytes in place

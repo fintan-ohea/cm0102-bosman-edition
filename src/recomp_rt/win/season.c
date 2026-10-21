@@ -331,10 +331,12 @@ void o_0082e430(void);
 /* A save above 4 GB fails (files.c, win_save_begin): the box says so, the result is that of a failed save. */
 static int save_too_big(void)
 {
-    if (!win_save_end()) return 0;
+    int failed = win_save_end();
+    if (!failed) return 0;
     if (rt_unwinding) return 1;
-    season_box("Save Game", "The game is not saved: the saved game would be larger than 4 GB. Your earlier saved "
-               "game is not changed.");
+    season_box("Save Game", failed == 1 ? "The game is not saved: the saved game would be larger than 4 GB. Your "
+               "earlier saved game is not changed." : "The game is not saved: the saved game would be larger than "
+               "4 GB. The game deleted the earlier saved game of this name before it saved.");
     cpu.eax = 0;
     return 1;
 }

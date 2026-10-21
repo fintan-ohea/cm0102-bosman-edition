@@ -472,16 +472,19 @@ static int fd_used[MAX_FILES];
 
 /* Saves above 2 GB. The save container keeps the offset of each part in an unsigned 32-bit word (savfile.py),
  * and the game's C library passes file positions as signed 32-bit values. The seek and tell sites take them as
- * unsigned (tools/recomp/save_size.py, SetFilePointer below), so a file can grow to FILE_LIMIT. A write that
- * would take a file past FILE_LIMIT writes nothing and fails as on a full disk. During a save (win_save_begin to
+ * unsigned (tools/recomp/save_size.py, SetFilePointer below), so positions reach FILE_LIMIT. A write that
+ * would take a file past WRITE_LIMIT writes nothing and fails as on a full disk. WRITE_LIMIT leaves room for the
+ * season part that season.c adds after the save (at most 2 MB stored), so that part always fits. During a save (win_save_begin to
  * win_save_end) such a write makes the save fail: the game cannot delete or rename a .sav file, so the earlier
  * save stays as it was, and win_save_end deletes the file that grew too large. A file below 2 GB takes the same
  * path as before. */
 #define FILE_LIMIT 0xfffffffeu     /* 0xffffffff is the error result of SetFilePointer and ftell */
+#define WRITE_LIMIT (FILE_LIMIT - 0x200000u)
 static char *fd_path[MAX_FILES];   /* the host path of a handle that may write, or NULL */
 static int in_save;
 static char too_big_path[2048];    /* the file of the first refused write of this save, or "" */
 static int too_big_told;           /* 1 when stderr has the first refused write (once per save) */
+static int save_deleted;           /* 1 when this save deleted a .sav file before a refused write */
 
 static int fd_of(uint32_t h)
 {
@@ -650,7 +653,7 @@ RT_IMPORT(ReadFile)
         const MemFile *f = &mem_file[mem_of[m]];
         size_t left = mem_pos[m] < f->size ? f->size - mem_pos[m] : 0;
         got = count < left ? count : (uint32_t)left;
-        memcpy(g_mem + buf, f->data + mem_pos[m], got);
+        if (got) memcpy(g_mem + buf, f->data + mem_pos[m], got);
         mem_pos[m] += got;
     } else if (fd >= 0) {
         while (got < count) {
@@ -676,7 +679,7 @@ RT_IMPORT(WriteFile)
     uint32_t put = 0;
     if (fd >= 0) {
         int64_t at = host_seek(fd, 0, SEEK_CUR);
-        if (at >= 0 && at + count > FILE_LIMIT) {
+        if (at >= 0 && at + count > WRITE_LIMIT) {
             const char *path = fd_path[(h - FILE_BASE) / 4];
             if (in_save && !too_big_path[0] && path) snprintf(too_big_path, sizeof too_big_path, "%s", path);
             if (!too_big_told) fprintf(stderr, "cm0102_recomp: a write would take %s past 4 GB, so it is refused.\n", path ? path : "a file");
@@ -799,7 +802,7 @@ RT_IMPORT(GetFileAttributesA)
     rt_ret_stdcall(st.is_dir ? 0x10u : 0x20u, 1);
 }
 
-/* 1 while a save that had a refused write (FILE_LIMIT) would delete or rename the .sav file name. */
+/* 1 while a save that had a refused write (WRITE_LIMIT) would delete or rename the .sav file name. */
 static int save_refused(const char *name)
 {
     return in_save && too_big_path[0] && has_sav_ending(name);
@@ -810,18 +813,21 @@ void win_save_begin(void)
     in_save = 1;
     too_big_path[0] = 0;
     too_big_told = 0;
+    save_deleted = 0;
 }
 
 int win_save_end(void)
 {
     in_save = 0;
     if (!too_big_path[0]) return 0;
+    int deleted = save_deleted;
     /* The file holds parts that could not be written. Its handles are closed: the game closes the container
      * after each part (zclose 0x932b00). */
     if (host_unlink(too_big_path)) fprintf(stderr, "cm0102_recomp: cannot delete %s (%s).\n", too_big_path, strerror(errno));
-    fprintf(stderr, "cm0102_recomp: the save would pass 4 GB, so it is not written. The earlier save stays.\n");
+    fprintf(stderr, "cm0102_recomp: the save would pass 4 GB, so it is not written.%s\n",
+            deleted ? " The game deleted the earlier save of this name before it wrote." : " The earlier save stays.");
     too_big_path[0] = 0;
-    return 1;
+    return deleted ? 2 : 1;
 }
 
 /* Delete and rename act on the user folder only. A file that exists only in the game folder stays. A save
@@ -836,6 +842,10 @@ RT_IMPORT(DeleteFileA)
     } else if (win_paths(name, h, u, sizeof h)) {
         if (temp_save_beside(u) && save_backup(h, u, 0)) ok = 1;   /* a new save follows: the old moved to backups/ */
         else if (exists(u)) ok = host_unlink(u) == 0;
+        /* A save without the temp file (no option bit 0x20000000) deletes the old .sav before it writes (0x82e62d). */
+        size_t nl = strlen(name);
+        if (ok && in_save && has_sav_ending(name) && (nl < 18 || strcasecmp(name + nl - 18, "temp_save_file.sav")))
+            save_deleted = 1;
         else if (exists(h)) { errno = EACCES; }
         else errno = ENOENT;
     }
