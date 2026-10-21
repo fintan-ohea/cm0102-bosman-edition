@@ -13,6 +13,9 @@
 #define RT_RETURN_ADDR 0x40000000u
 #define RT_HEAP_BASE 0x70000000u
 #define RT_HEAP_SIZE 0x40000000u
+/* The arena of the free-list heap: up to 0xEF000000, below the standard handles at 0xF0000000 (heap.c). The first
+ * RT_HEAP_SIZE of it is the arena of 0.5.0. */
+#define RT_HEAP_ARENA 0x7F000000u
 /* Host functions (COM methods, GetProcAddress results) get addresses from here up; see rt_host_fn. */
 #define RT_HOST_FN_BASE 0x63000000u
 
@@ -38,6 +41,11 @@ uint32_t rt_block_size(uint32_t addr);
 void rt_set_block_size(uint32_t addr, uint32_t size);
 int rt_is_block(uint32_t addr);
 uint32_t rt_heap_top(void);
+uint32_t rt_heap_free_bytes(void);     /* the free bytes below the top (heap.c) */
+void rt_heap_free_parts(uint32_t *small_bytes, uint32_t *small_blocks, uint32_t *spans);
+/* The arena in bytes (a test: the ctest of heap.c; the game reads RECOMP_HEAP_ARENA_MB). 0: RT_HEAP_ARENA. */
+void rt_heap_set_arena(uint32_t bytes);
+uint32_t rt_heap_arena_bytes(void);       /* the arena: RT_HEAP_ARENA, or RECOMP_HEAP_ARENA_MB */
 
 /* A host function at a fake address that the original can call (stdcall: it pops its own arguments).
  * The same function under another name gets another address; rt_call_target tells them apart. */
