@@ -65,6 +65,8 @@ uint32_t season_uefa_league_make(uint32_t parent, uint32_t *clubs, int days, int
 
 /* League::send_group_draw_news of a stage. */
 void season_uefa_league_news(uint32_t stage);
+/* A load or a new game: no fixed list is pending (season_change_reset, load sweep). */
+void season_uefa_league_reset(void);
 
 /* The club at table place (1 is the top) of a stage, or 0. */
 uint32_t season_uefa_league_club_at(uint32_t stage, int place);
