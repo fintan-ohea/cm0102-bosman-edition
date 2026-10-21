@@ -12,7 +12,9 @@ at the same time. The tour:
       box > Seaman > the second name box > (classic: More players > the box again) > Shaaban > Back;
     - Seaman's profile > Action > Compare Players > Set as 1st player > Yes > Back > Shaaban's profile >
       Set as 2nd player > Yes > Compare two chosen players (the comparison screen) > Back > the manager's
-      menu > Compare two chosen players (side bar item 0x434) > the first name box (the profile).
+      menu > Compare two chosen players (side bar item 0x434) > the first name box (the profile);
+    - Liverpool's Compare tab, then the worst case for space on the comparison screen (WORST): Van Bronckhorst
+      against the goalkeeper Arphexad of another club.
 Screen dumps of each step in <out>/<mode>.
 
 The runtime writes a line for each build of a comparison (RECOMP_VIEWS_LOG=1), and "recomp: comparison
@@ -34,6 +36,8 @@ Checks:
       holds every flagged attribute as 0 (hidden_check.py)
     - after the Compare tab, the Best XI tab has no pixel of the polygon colours (4b dump), while the Compare
       tab's dump has them
+    - no text of the tour is cut by its box (RECOMP_TEXT_CUT_LOG=1): the names, the lines under them, the
+      legend and the heading fit in both modes (Tousled12, 2026-10-21)
 """
 import os
 import re
@@ -136,6 +140,47 @@ HIDDEN_CLASSIC = [
     "18000 dump {d}/9-hidden-attributes.bmp",
 ]
 
+# The worst case for space (Tousled12, 2026-10-21): Liverpool's goalkeeper Pegguy Arphexad as the 2nd player
+# (another club's profile has a shorter Action drop-down) and Arsenal's Giovanni Van Bronckhorst as the 1st, on
+# the comparison screen: the longest heading of the save, a long name in the legend and a goalkeeper's side.
+WORST = [
+    "22000 click 358 573",                  # Back from Liverpool's Team views screen
+    "wait screen:0x454900",
+    "1500 click 228 208",                   # Pegguy Arphexad
+    "wait screen:0x870700",
+    "1500 click 722 14",                    # Action
+    "3000 move 700 183 | 1170 191",
+    "3500 move 695 183 | 1166 191",  # Compare Players
+    "4500 move 530 206 | 1001 214",
+    "5000 click 530 206 | 1001 214",  # Set as 2nd player in comparison
+    "wait screen:0x8f4210",
+    "1500 click 704 572",                   # Yes
+    "wait screen:0x870700",
+    "1500 click 45 165",                    # the manager's menu
+    "4000 click 150 156 | 199 203",  # Arsenal Squad
+    "wait screen:0x454900",
+    "1500 click 595 346",                   # Giovanni Van Bronckhorst
+    "wait screen:0x870700",
+    "1500 click 722 14",                    # Action
+    "3000 move 700 267 | 1170 275",
+    "3500 move 695 267 | 1166 275",  # Compare Players
+    "4500 move 530 269 | 1001 277",
+    "5000 click 530 269 | 1001 277",  # Set as 1st player in comparison
+    "wait screen:0x8f4210",
+    "1500 click 704 572",                   # Yes
+    "wait screen:0x870700",
+    "1500 click 722 14",                    # Action
+    "3000 move 700 267 | 1170 275",
+    "3500 move 695 267 | 1166 275",  # Compare Players
+    "4500 move 520 310 | 1001 318",
+    "5000 click 520 310 | 1001 318",  # Compare two chosen players
+    "wait screen:0x876520",
+    "2000 dump {d}/10-worst-case.bmp",
+]
+
+# The text box writes "recomp: text cut ..." for a text wider than its box (RECOMP_TEXT_CUT_LOG=1, names.c).
+CUT = re.compile(r"recomp: text cut .*")
+
 # The attributes of each axis (src/recomp_rt/win/compare_layout.c), by the getter's numbers 1 to 31.
 A = {n: i + 1 for i, n in enumerate(
     "acceleration aggression agility anticipation balance bravery creativity crossing decisions determination "
@@ -161,10 +206,11 @@ def run(program, game, folder, mode, out):
     os.makedirs(user)
     shutil.copyfile(os.path.join(folder, "start.sav"), os.path.join(user, "start.sav"))
     fixtures.write_settings(user, mode, [])
-    tour = TOUR + (HIDDEN_CLASSIC if mode == "classic" else [])
+    tour = TOUR + (HIDDEN_CLASSIC if mode == "classic" else []) + WORST
     steps = smoke_run.scaled_steps(mode, out, fixtures.LOAD_STEPS) + smoke_run.scaled_steps(mode, out, tour)
     steps.append("20000 quit" if mode == "classic" else "13000 quit")
-    r, took = fixtures.run(program, game, mode, user, steps, {"RECOMP_SCREEN_LOG": "1", "RECOMP_VIEWS_LOG": "1"},
+    r, took = fixtures.run(program, game, mode, user, steps, {"RECOMP_SCREEN_LOG": "1", "RECOMP_VIEWS_LOG": "1",
+                                                            "RECOMP_TEXT_CUT_LOG": "1"},
                            1200)
     with open(os.path.join(out, "stderr.txt"), "w") as f:
         f.write(r.stderr)
@@ -297,14 +343,18 @@ def check(name, code, log, folder=None):
     if not keepers["keepers"] or first["staff"][0] in keepers["staff"] or first["staff"][1] in keepers["staff"]:
         problems.append(f"{name}: the drop-downs did not choose two goalkeepers: {keepers['staff']}")
     screens = log.count("recomp: comparison screen built")
-    if screens < 2:
-        problems.append(f"{name}: the comparison screen was built {screens} times, expected 2 (profile, side bar)")
+    if screens < 3:
+        problems.append(f"{name}: the comparison screen was built {screens} times, expected 3 (profile, side bar, "
+                        "worst case)")
+    for cut in CUT.findall(log):
+        problems.append(f"{name}: {cut}")
     tail = log[log.find("recomp: comparison screen built") - 2000:] if screens else ""
     shown = [b for b in builds(tail) if b["keepers"]]
     if not shown or shown[-1]["staff"] != keepers["staff"] or not shown[-1]["keepers"]:
         problems.append(f"{name}: the comparison screen does not show the two chosen goalkeepers "
                         f"{keepers['staff']}: {[b['staff'] for b in shown]}")
-    if "screen 0x870700" not in log[log.rfind("recomp: comparison screen built"):]:
+    built = [m.start() for m in re.finditer("recomp: comparison screen built", log)]
+    if len(built) < 2 or "screen 0x870700" not in log[built[1]:built[2] if len(built) > 2 else len(log)]:
         problems.append(f"{name}: the name box of the comparison screen did not open the profile")
     return problems
 
