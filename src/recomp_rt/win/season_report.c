@@ -76,6 +76,7 @@
 #include "season_uefa.h"
 #include "season_comps.h"
 #include "../host.h"
+#include "../rt_host.h"
 
 #include <SDL.h>
 #include <stdio.h>
@@ -318,6 +319,16 @@ static void write_season(int season, const char *phase)
     fflush(report);
     fprintf(stderr, "recomp: rules report: season %d/%02d %s on %02d.%02d.%04d\n", season, (season + 1) % 100, phase,
             d, m, y);
+    /* The game's heap at each report (the arena from RT_HEAP_BASE): the top, the free bytes below it,
+     * and the bytes in use. A text line only. */
+    uint32_t top = rt_heap_top() - RT_HEAP_BASE, freed = rt_heap_free_bytes();
+    fprintf(stderr, "recomp: heap at season %d/%02d %s: top %u MB of %u MB, free below the top %u MB, in use %u MB\n",
+            season, (season + 1) % 100, phase, top >> 20, rt_heap_arena_bytes() >> 20, freed >> 20,
+            (top - freed) >> 20);
+    uint32_t sb, sn, spans;
+    rt_heap_free_parts(&sb, &sn, &spans);
+    fprintf(stderr, "recomp: heap free parts: small blocks %u MB in %u blocks, large spans %u MB in %u spans\n", sb >> 20,
+            sn, (freed - sb) >> 20, spans);
 }
 
 void season_report_init(void)
