@@ -162,3 +162,9 @@ from league_load import INSNS as LOAD_INSNS  # noqa: E402
 
 assert not set(LOAD_INSNS) & (set(INSNS) | set(PATCHES))
 INSNS.update(LOAD_INSNS)
+
+# Saves above 2 GB (0.6.0): unsigned file positions in ftell and the seek of a save part (save_size.py).
+from save_size import INSNS as SAVE_SIZE_INSNS  # noqa: E402
+
+assert not set(SAVE_SIZE_INSNS) & (set(INSNS) | set(PATCHES))
+INSNS.update(SAVE_SIZE_INSNS)
