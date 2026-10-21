@@ -3,7 +3,7 @@
 
 Usage:
     python3 tests/smoke/player_search_run.py <cm0102_recomp> <game folder> <out folder> [--ref <cm0102_recomp>]
-        [--dir <fixtures folder>] [--save start.sav]
+        [--dir <fixtures folder>] [--save start.sav] [--big] [--jobs n]
 
 --ref is a build without the option. The default is the main build of this project:
 /Users/max/Projects/cm0102/cm0102-mac/build/cm0102_recomp.
@@ -24,6 +24,15 @@ Checks:
       those of other rows of on that show the same text ("S C" of Abbey, Zema, and "Conference" of
       Abbott, Billy). The rows are in name order, so the rows of off are not the rows of on.
 From start.sav, off lists 1678 players (153 pages). The page count of on is higher.
+
+--jobs n: at most n games at the same time (default 3, all at once).
+
+--big (forum report of 2026-10-21): the save allleagues.sav (tests/fixtures/fixtures.py make --all: every league,
+Arsenal 14.7.01). There on would list more than 32767 players, the limit of the screen's 16-bit count; before
+the fix the screen said "1 player found (N filtered out)" over an empty list. Checks:
+    - off and ref give the same picture, byte for byte
+    - on fills every row of page 1 (each name cell has text)
+    - on gives another picture than off
 """
 import os
 import struct
@@ -94,7 +103,11 @@ def play(program, game, folder, save, out, sets):
 
 def main(argv):
     args = argv[1:]
-    opts = {"--ref": MAIN_BUILD, "--dir": fixtures.DEFAULT_DIR, "--save": "start.sav"}
+    opts = {"--ref": MAIN_BUILD, "--dir": fixtures.DEFAULT_DIR, "--save": "start.sav", "--jobs": "3"}
+    big = "--big" in args
+    args = [a for a in args if a != "--big"]
+    if big:
+        opts["--save"] = "allleagues.sav"
     rest = []
     i = 0
     while i < len(args):
@@ -113,7 +126,7 @@ def main(argv):
         return 2
     runs = [("off", program, [("full_player_search", "off")]), ("on", program, [("full_player_search", "on")]),
             ("ref", os.path.abspath(opts["--ref"]), [])]
-    with ThreadPoolExecutor(len(runs)) as pool:
+    with ThreadPoolExecutor(max(1, min(len(runs), int(opts["--jobs"])))) as pool:
         codes = list(pool.map(lambda r: play(r[1], game, opts["--dir"], opts["--save"], os.path.join(out, r[0]),
                                              r[2]), runs))
     if any(codes):
@@ -133,6 +146,11 @@ def main(argv):
     check(open(path("off"), "rb").read() == open(path("ref"), "rb").read(),
           "off gives the picture of the build without the option")
     off, on = read_bmp(path("off")), read_bmp(path("on"))
+    if big:
+        check(all(any(cell(on, NAME_X, r, "white")) for r in range(11)), "on fills the 11 rows of page 1")
+        check(open(path("on"), "rb").read() != open(path("off"), "rb").read(), "on gives another picture than off")
+        print(f"pictures in {out}/<run>/search.png (the screen of the Player Search tab)")
+        return 0 if ok else 1
     row = 1                                          # Abbey, Ben is row 2 of page 1 of on
     name = cell(on, NAME_X, row, "white")
     check(all(cell(off, NAME_X, r, "white") != name for r in range(11)), "off has no row with the name cell of row 2 of on")

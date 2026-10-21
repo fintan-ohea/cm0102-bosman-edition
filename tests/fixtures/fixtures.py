@@ -2,7 +2,7 @@
 """Saved test games: make them once, then start feature checks from them instead of a new game.
 
 Usage:
-    python3 tests/fixtures/fixtures.py make <cm0102_recomp> <game folder> [--dir <fixtures folder>]
+    python3 tests/fixtures/fixtures.py make <cm0102_recomp> <game folder> [--dir <fixtures folder>] [--all]
     python3 tests/fixtures/fixtures.py play <cm0102_recomp> <game folder> <save name> <steps file> <out folder>
         [--dir <fixtures folder>] [--mode classic|widescreen] [--set key=value]... [--days n]
 
@@ -12,9 +12,12 @@ The saves stay outside git, because they hold the original's data. The default f
 make: plays a new game with the steps of the smoke run (tests/smoke/smoke_run.py), -seed 1 and the
 test clock, to the first news screen, and saves it there as start.sav: Test Smoke, Arsenal, Saturday
 14.7.01. The steps wait for the screens, so the make takes about a minute after the database load.
+With --all the new game loads every league (Select All on Select League(s), England 01/02 on Select Start
+Season) and is saved as allleagues.sav: Test Smoke, Arsenal, 14.7.01. The load takes about six minutes.
 
 Saves in the folder:
     start.sav     made by "make"
+    allleagues.sav  made by "make --all" (tests/smoke/player_search_run.py --big)
     prematch.sav  Arsenal before the friendly at Basel on Friday 20.7.01, with a bid to answer. It was
                   made by hand in a test session on 2026-10-15 (no script makes it yet). Put it in the
                   folder by hand. The match check (tests/smoke/smoke_run.py --match) plays from it.
@@ -75,23 +78,47 @@ def write_settings(user, mode, options):
             f.write(f"{key} = {value}\n")
 
 
-def make(program, game, folder):
+# make --all: the steps of Select League(s) and Select Team for a game of every league (800x600). The load
+# of every league takes minutes, so the waits after it are long.
+ALL_LEAGUES = [
+    "2500 click 592 155",                   # Select All
+    "4500 click 705 572",                   # Next
+    "wait screen:0x81e8d0",                 # Select Start Season
+    "3000 click 217 285",                   # England 01/02
+    "5000 click 705 572",                   # Next: the database load
+]
+ALL_TEAM = [
+    "1000 click 155 190",                   # Select Team: Arsenal, first row (the Nation menu covers the header)
+    "wait screen:0x454900",
+    "1000 click 722 14",                    # Take Control
+]
+
+
+def make(program, game, folder, all_leagues=False):
     os.makedirs(folder, exist_ok=True)
     steps = [s for s in smoke_run.STEPS if "dump" not in s]
     steps = steps[:steps.index("wait first-news") + 1] + ["600000 quit"]
+    name = "start.sav"
+    if all_leagues:
+        name = "allleagues.sav"
+        k = steps.index("2500 click 705 572")
+        steps[k:k + 1] = ALL_LEAGUES
+        k = steps.index("1000 click 155 163")
+        steps[k:k + 3] = ALL_TEAM
+        steps = [s + " 1500000" if s in ("wait typing", "wait first-news") else s for s in steps]
     with tempfile.TemporaryDirectory(prefix="cm0102-fixture-") as work:
         user = os.path.join(work, "user")
         os.makedirs(user)
         write_settings(user, "classic", [])
         r, took = run(program, game, "classic", user, smoke_run.scaled_steps("classic", work, steps),
-                      {"RECOMP_SAVE_AFTER_DAYS": "0"}, 900)
+                      {"RECOMP_SAVE_AFTER_DAYS": "0"}, 2400 if all_leagues else 900)
         save = os.path.join(user, smoke_run.SAVE_NAME)
         if r.returncode != 0 or not os.path.exists(save):
             print(r.stderr[-2000:])
             print(f"FAIL: no saved game (code {r.returncode})")
             return 1
-        shutil.copyfile(save, os.path.join(folder, "start.sav"))
-    print(f"saved {os.path.join(folder, 'start.sav')} in {took:.0f} s")
+        shutil.copyfile(save, os.path.join(folder, name))
+    print(f"saved {os.path.join(folder, name)} in {took:.0f} s")
     return 0
 
 
@@ -140,6 +167,8 @@ def main(argv):
     args = argv[2:]
     opts = {"--dir": DEFAULT_DIR, "--mode": "classic", "--days": None}
     sets = []
+    all_leagues = "--all" in args
+    args = [a for a in args if a != "--all"]
     rest = []
     i = 0
     while i < len(args):
@@ -160,7 +189,7 @@ def main(argv):
         if len(rest) != 2:
             print(__doc__)
             return 2
-        return make(os.path.abspath(rest[0]), os.path.abspath(rest[1]), opts["--dir"])
+        return make(os.path.abspath(rest[0]), os.path.abspath(rest[1]), opts["--dir"], all_leagues)
     if len(rest) != 5:
         print(__doc__)
         return 2
