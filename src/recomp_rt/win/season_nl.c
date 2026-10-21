@@ -31,6 +31,7 @@
 #include "season_change.h"
 #include "season_comps.h"
 #include "season_nl.h"
+#include "season_wcq26.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1069,7 +1070,13 @@ void o_00669ae0(void);
 RT_WRAP(0057f600, nl_collect_entrants)
 {
     if (!is_nl(cpu.ecx)) {
+        uint32_t self = cpu.ecx;
         o_0057f600();
+        if (!rt_unwinding) {
+            uint32_t eax = cpu.eax;
+            season_wcq26_log_pool(self, "euro qualifying (original)");      /* O188 test log */
+            cpu.eax = eax;
+        }
         return;
     }
     rt_ret_stdcall(1, 0);

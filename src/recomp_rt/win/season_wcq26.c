@@ -408,10 +408,35 @@ static int europe_nations(uint32_t self, uint32_t *out, int max, int log)
     return n;
 }
 
+void season_wcq26_log_pool(uint32_t self, const char *what)
+{
+    if (!logging() || !season_intl_on() || !readable(self)) return;
+    uint32_t pool = rd32(g_mem, self + EU_POOL);
+    int n = (int)rd32(g_mem, self + EU_POOL_SIZE), kosovo = 0;
+    char odd[400] = "";
+    size_t len = 0;
+    for (int k = 0; readable(pool) && k < n && k < 64; k++) {
+        uint32_t team = rd32(g_mem, pool + 4u * (uint32_t)k), nation = readable(team) ? rd32(g_mem, team + 0x53u) : 0;
+        const char *name = readable(nation) ? win_str(nation + 4u) : "(none)";
+        kosovo |= !strcmp(name, "Kosovo");
+        if ((!readable(nation) || !readable(rd32(g_mem, nation + 0x71u)) || !strcmp(name, "Yugoslavia")) &&
+            len < sizeof odd - 60)
+            len += (size_t)snprintf(odd + len, sizeof odd - len, " %s%s", name,
+                                    readable(nation) && readable(rd32(g_mem, nation + 0x71u)) ? "" : " (no continent)");
+    }
+    fprintf(stderr, "recomp: season intl: %s %d: Europe pool of %d nations, Kosovo %s;%s\n", what,
+            (int16_t)rd16(g_mem, self + F_YEAR), n, kosovo ? "in" : "out", len ? odd : " no odd nation");
+}
+
 RT_WRAP(00919e30, wcq26_europe_pool)
 {
     uint32_t self = cpu.ecx;
     o_00919e30();
+    if (!rt_unwinding && !europe_on(self) && is(self, VT_EUROPE)) {
+        uint32_t eax = cpu.eax;
+        season_wcq26_log_pool(self, "wc qualifying (original)");
+        cpu.eax = eax;
+    }
     if (rt_unwinding || !europe_on(self)) return;
     uint32_t teams[POOL_MAX];
     int n = europe_nations(self, teams, POOL_MAX, logging());
