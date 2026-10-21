@@ -323,6 +323,7 @@ uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2_end_clubs(uint32_t obj, uint32_t original);
 uint32_t rt_ita_tier_c2(uint32_t c2a);
+uint32_t rt_ita_tier_last(uint32_t obj);
 uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b);
 uint32_t rt_ita_cup_fill(uint32_t esp, uint32_t count, uint32_t position);
 uint32_t rt_ita_start_c2(uint32_t c2a);
