@@ -297,6 +297,9 @@ extern uint32_t rt_season_year;
 /* The league load's row arrays (win/league_load.c, tools/recomp/league_load.py at 0x68c898): 0 when the read
  * of a row's result array failed only because the array has 0 bytes (a league of one club), else 1. */
 uint32_t rt_league_row_read_failed(uint32_t league);
+/* The ban release's nation index (win/discipline_ban.c, tools/recomp/discipline_ban.py at 0x556dcf): the entry
+ * of the staff id under any nation, 0 for none, or 1 when the fix is off (the original's box). */
+uint32_t rt_discipline_ban_entry(uint32_t discipline, uint32_t staff);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);

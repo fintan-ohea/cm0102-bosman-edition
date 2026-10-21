@@ -162,3 +162,9 @@ from league_load import INSNS as LOAD_INSNS  # noqa: E402
 
 assert not set(LOAD_INSNS) & (set(INSNS) | set(PATCHES))
 INSNS.update(LOAD_INSNS)
+
+# A fix for the error box discipline..cpp 1149 of a ban release (discipline_ban.py): a lost nation index entry.
+from discipline_ban import INSNS as BAN_INSNS  # noqa: E402
+
+assert not set(BAN_INSNS) & (set(INSNS) | set(PATCHES))
+INSNS.update(BAN_INSNS)
