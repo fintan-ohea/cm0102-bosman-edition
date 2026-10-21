@@ -28,6 +28,7 @@ CALLBACKS = {
     0x65F670: ("6aff68b9bd950064", "ItaSuper::ItaSuper (this, year, record), ret 8: the new cups of season_new_cups.c"),
     # Slice 21c (season_cup_groups.c): the group stages of the domestic cups.
     0x6826D0: ("8b4424048d14c500", "League::get_table_row (this, index)"),
+    0x48C6D0: ("8b44241453565785", "Comp::build_fate_news_text, 10 arguments: EFL Trophy news, no fixture"),
     0x90CFC0: ("51568b74240c85f6", "utils_random (range), cdecl"),
     0x945501: ("558bec568b75080f", "calloc (count, size), cdecl"),
     0x68B100: ("6aff68ebca950064", "League_Stage::League_Stage (this, 22 arguments)"),
