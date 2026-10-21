@@ -220,12 +220,20 @@ void o_0057ec60(void);
  * the groups, the step makes it 9, and 0x57ef50 takes its no-ranking path (the news for the teams that are out)
  * and makes no stage[9], so the next update would call an empty stage at 0x6848f8. When stage[9] is still empty
  * after the step (the group builder above clears it), +0x30 goes back to 8 and +0x2c to 9: the next update ends
- * the qualifying. A stage that slice 28 builds there keeps the original's step. */
+ * the qualifying. A stage that slice 28 builds there keeps the original's step.
+ *
+ * The ctor allocates the 10 slots of the stage array with malloc and does not clear them (0x57d00b..0x57d01e),
+ * and League::load_from_temp_file fills only the slots 0 to +0x30 of that array (0x688e3a..0x689017). So after a
+ * load slot 9 can hold old heap bytes: the test below took them for a stage, +0x30 stayed 9, and the next update
+ * called through them (gate run of a 2025 start, 8 October 2027: "call to 0 ... from 0x6848fb"). Only the step
+ * makes stage[9], so the slot is cleared before it. */
 RT_WRAP(0057ec60, euroq_advance)
 {
     uint32_t self = cpu.ecx;
     int ten = format_of(self) == TEN_GROUPS;
     int last = (int32_t)rd32(g_mem, self + 0x30u) == (int8_t)rd8(g_mem, self + 0xffu);
+    uint32_t slots = rd32(g_mem, self + 0xcu);
+    if (ten && last && readable(slots) && (int32_t)rd32(g_mem, self + 0x2cu) == 10) wr32(g_mem, slots + 4u * 9u, 0);
     o_0057ec60();
     if (rt_unwinding || !ten || !last) return;
     uint32_t stages = rd32(g_mem, self + 0xcu), next = rd32(g_mem, self + 0x30u);
