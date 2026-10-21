@@ -27,11 +27,15 @@ PATCHES.update({
     0x64B67B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
     0x64F82B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
     0x653A9B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
+    # The two-group Serie C2 of 2011/12 to 2013/14 with the extra division flag (Q529): C2/B's table (0x657f5b, the
+    # object in edi from 0x657f59) holds up to 20 too.
+    0x657F5B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
 })
 
 INSNS = {
     0x653AA2: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2a_clubs(edi, 0x12u));"),
     # C2/B and C2/C end in the era; with the flag their objects exist and keep one club (create_fixtures needs one).
+    # In the two-group Serie C2 (2011/12 to 2013/14, Q529) C2/B takes the clubs of its division and C2/C ends.
     0x657F62: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2_end_clubs(edi, 0x12u));"),
     0x65C0F2: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2_end_clubs(edi, 0x12u));"),
     0x6418D5: ("mov ecx, dword ptr [eax + edx*4]", "ecx = rt_ita_tier_c2(R32(eax + edx * 4u));"),
