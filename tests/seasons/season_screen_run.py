@@ -52,9 +52,9 @@ import smoke_run  # noqa: E402
 
 MAKE = os.path.join(ROOT, "tools", "release", "make_season_zips.py")
 
-# Classic positions (800 x 600). Setup Game: the Choose Season item, the cell after Web Sites. The screen:
+# Classic positions (800 x 600). Setup Game: the season strip above the menu (database.c). The screen:
 # the tiles (season_screen.c layout) and the Choose button of the strip.
-SETUP_SEASON = "click 613 437"
+SETUP_SEASON = "click 445 107"
 # Layout C (Q346): a decade per row, a column per last digit of the start year: x = 132 + 69 * digit,
 # y = 89 + 93 * row.
 TILE = {2001: (201, 89), 2002: (270, 89), 2003: (339, 89), 2004: (408, 89), 2006: (546, 89), 2010: (132, 182), 2021: (201, 275),

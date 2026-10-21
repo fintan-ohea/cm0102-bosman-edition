@@ -31,6 +31,13 @@ The runs:
             makes the editions that the row of 2002/03 holds, the Russian Premier League Cup of 2003 (first round in
             March 2003) with 16 clubs and the Russian Super Cup of March 2003 with two clubs (log lines)
 
+Read runs (fix of 2026-10-21): RECOMP_CUP_GROUPS_READ=1 reads each cup's round table at each report as the Schedule
+tab and scout duty do (Comp::build_match_date_list 0x48d500); the groups and the knockout must stay.
+    e2016-read  e2016 with the reads: the EFL Trophy keeps its 16 groups and its knockout of 32 to a winner
+    x2016-read  October 2016, changing rules off, Select All without France, the season played to its end (about
+                an hour): the Scottish League Cup (8 groups, a knockout of 16), the EFL Trophy and the Turkish Cup
+                (8 groups after 2 rounds, a knockout of 16) keep their groups to a winner; no error box
+
 Save and load runs (review 1 of 2026-10-20): the first program plays the season jump and saves the game
 RECOMP_SAVE_AFTER_DAYS game days after the start, inside a competition of this part; a second program loads that save
 (tests/fixtures/fixtures.py LOAD_STEPS) and plays on with the season jump and the rules report to the end report of
@@ -98,6 +105,17 @@ def need_winner(lines, file, season, fails, name):
     got = lines_of(lines, file, season, "end")
     if not got or all(x["winner"] == "-" and x["winner_next"] == "-" for x in got):
         fails.append(f"{name}: {file} has no winner in the history at the end of {season}")
+
+
+def check_x2016_read(lines, log, fails, name):
+    need_groups(lines, "eng_auto_cup", 2016, (17, 16, 56, 32, 5), fails, name)
+    need_winner(lines, "eng_auto_cup", 2016, fails, name)
+    need_groups(lines, "sco_lge_cup", 2016, (9, 8, None, 16, 4), fails, name)
+    need_winner(lines, "sco_lge_cup", 2016, fails, name)
+    need_groups(lines, "tur_cup", 2016, (9, 8, None, 16, 4), fails, name)
+    need_winner(lines, "tur_cup", 2016, fails, name)
+    if "recomp: message box" in log:
+        fails.append(f"{name}: an error box in the log")
 
 
 def check_i2023(lines, log, fails, name):
@@ -185,6 +203,10 @@ RUNS = {
     "s2019": (2019, os.path.join(DB, "October 2019"), "off", 2019, ALL_BUT_FRANCE, True, 1800, check_s2019, {}),
     "g2001": (2001, None, "on", 2001, ["England"], False, 3600, check_g2001, {"env": {"RECOMP_CUP_GROUPS_TEST": "1"}}),
     "e2016": (2016, os.path.join(DB, "October 2016"), "off", 2016, ["England"], False, 3600, check_e2016, {}),
+    "e2016-read": (2016, os.path.join(DB, "October 2016"), "off", 2016, ["England"], False, 3600, check_e2016,
+                   {"env": {"RECOMP_CUP_GROUPS_READ": "1"}}),
+    "x2016-read": (2016, os.path.join(DB, "October 2016"), "off", 2016, ALL_BUT_FRANCE, False, 7200, check_x2016_read,
+                   {"env": {"RECOMP_CUP_GROUPS_READ": "1"}}),
     "n2008": (2008, os.path.join(DB, "September 2008"), "on", 2010, ["Norway"], False, 5400, check_n2008, {}),
     "c2007": (2007, os.path.join(DB, "November 2007"), "off", 2007, ["England"], False, 3600, check_c2007,
               {"extra": ["conference"]}),

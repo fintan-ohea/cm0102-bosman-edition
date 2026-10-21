@@ -294,6 +294,9 @@ extern uint32_t rt_screen_w, rt_screen_h;
  * sites of tools/recomp/seasons.py read it in place of the constants 2001, 2002 and 2003. */
 extern uint32_t rt_season_year;
 
+/* The league load's row arrays (win/league_load.c, tools/recomp/league_load.py at 0x68c898): 0 when the read
+ * of a row's result array failed only because the array has 0 bytes (a league of one club), else 1. */
+uint32_t rt_league_row_read_failed(uint32_t league);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);
@@ -314,6 +317,14 @@ uint32_t rt_cup_room(uint32_t original, uint32_t entrants, uint32_t key_a, uint3
 uint32_t rt_cup_add(uint32_t original, uint32_t base, uint32_t entrants, uint32_t key_a, uint32_t key_b);
 uint32_t rt_fra_lge_first(uint32_t original, uint32_t edx);   /* FraLgeCup first loop limit (0x5bd244) */
 uint32_t rt_ita_cup_first_position(uint32_t original);   /* ItaCup second loop start (0x63fb16) */
+/* Italy's Serie C of three groups (0.6.0 slice 20b, win/season_divisions_ita.c, tools/recomp/new_divisions.py). */
+uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);
+uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);
+uint32_t rt_ita_c2_end_clubs(uint32_t obj, uint32_t original);
+uint32_t rt_ita_tier_c2(uint32_t c2a);
+uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b);
+uint32_t rt_ita_cup_fill(uint32_t esp, uint32_t count, uint32_t position);
+uint32_t rt_ita_start_c2(uint32_t c2a);
 /* The offset of the knockout stage in the stage array of a Champions League object (0.6.0 slice 22,
  * win/season_uefa.c): 0x30 (stage 12) in the original's format, 0x20 (stage 8) in the format with one group
  * stage. The sites of tools/recomp/uefa.py read it. */
@@ -404,6 +415,7 @@ uint32_t rt_euroq_direct(uint32_t self, uint32_t original);
 uint32_t rt_euroq_no_ranking(uint32_t self);
 uint32_t rt_euroq_group_size(uint32_t self, uint32_t group, uint32_t original);
 uint32_t rt_euroq_ten_groups(uint32_t self);
+uint32_t rt_euroq_skip_2002(uint32_t self);
 void rt_euroq_log(uint32_t euro, uint32_t club, uint32_t stage, uint32_t playoff);
 /* World Cup qualifying 2006 to 2022 (win/season_intl_qual.c): the places of each section and the
  * inter-confederation play-offs. Each gives the original's value outside a season game and the cycles 2006 to

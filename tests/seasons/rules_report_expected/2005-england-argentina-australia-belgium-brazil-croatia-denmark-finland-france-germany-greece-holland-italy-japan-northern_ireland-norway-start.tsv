@@ -2,20 +2,8 @@
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
 2005	bench	fra_cup (Coupe de France), row fra-43: game 3, table 5 (5)
 2005	bench	fra_lge_cup (Coupe de la Ligue), row fra-44: game 3, table 5 (5)
-2005	bench	world_club_champ (FIFA Club World Championship), row club-world-78: game 9, table 12 (12)
+2005	bench	world_club_champ (FIFA Club World Championship), row club-world-78: game 7, table 12 (12)
 2005	bench	world_cup (FIFA World Cup), row int-world-50: game 7, table 12 (12)
-2005	club_list	Argentine Second Division: 20 of 20 listed clubs that the database holds (20 listed), 5 other clubs, 25 in all; not in it: -; others: Almirante Brown de Arrecifes, Atlético Tucumán, Central Córdoba de Rosario, Defensores de Belgrano, Gimnasia y Esgrima de Concepción del Uruguay
-2005	club_list	Brazilian National Third Division: 46 of 46 listed clubs that the database holds (63 listed), 10 other clubs, 56 in all; not in it: -; others: Agremiação Sportiva Arapiraquense, Associação Desportiva Comercial Bandeirante, Bangu Atlético Clube, Baré Esporte Clube, Camaçari Futebol Clube, Esporte Clube Comercial, Esporte Clube Gênus Rondoniense, Fluminense de Feira Futebol Clube, Friburguense Atlético Clube, Sport Club Corinthians Alagoano
-2005	club_list	Croatian First Division: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: Bojovnik 7, NK Amater, NK Bedem, NK Borac
-2005	club_list	Danish Second Division: 16 of 19 listed clubs that the database holds (28 listed), 0 other clubs, 16 in all; not in it: Boldklubben Avarta, Boldklubben af 1893, Roskilde Boldklub Af 1906; others: -
-2005	club_list	Dutch First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: AGOVV, FC Omniworld; others: -
-2005	club_list	Finnish Premier Division: 12 of 13 listed clubs that the database holds (13 listed), 0 other clubs, 12 in all; not in it: Kuopion Palloseura; others: -
-2005	club_list	Italian Serie A: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Ascoli, Treviso; others: -
-2005	club_list	Italian Serie B: 20 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 20 in all; not in it: Avellino, Rimini; others: -
-2005	club_list	Japanese J-League 1: 16 of 18 listed clubs that the database holds (18 listed), 0 other clubs, 16 in all; not in it: Avispa Fukuoka, Kyoto Purple Sanga; others: -
-2005	club_list	Japanese J-League 2: 12 of 13 listed clubs that the database holds (13 listed), 0 other clubs, 12 in all; not in it: Otsuka FC; others: -
-2005	club_list	Northern Irish League First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Ballymoney United, Moyola Park; others: -
-2005	club_list	Northern Irish League Premier Division: 10 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 10 in all; not in it: Armagh City, Ballymena United, Glenavon, Larne, Limavady United, Newry Town; others: -
 2005	clubs	african_nations (Africa Cup of Nations), row int-continental-51: game 0, table 16 (16)
 2005	clubs	arg_second (Primera B Nacional), row arg-usa-32: game 25, table 20 (20)
 2005	clubs	asia_club_champ (AFC Champions League), row club-world-89: game 16, table 25 (25)
@@ -27,7 +15,7 @@
 2005	clubs	bra_reg_central (Campeonato Mato-Grossense), row bra-518: game 15, table 12 (12)
 2005	clubs	bra_reg_gaucho (Campeonato Gaúcho), row bra-545: game 17, table 18 (18)
 2005	clubs	bra_reg_goias (Campeonato Goiano), row bra-572: game 14, table 12 (12)
-2005	clubs	bra_reg_north (Campeonato Paraense), row bra-626: game 10, table 15 (15)
+2005	clubs	bra_reg_north (Campeonato Paraense), row bra-626: game 12, table 15 (15)
 2005	clubs	bra_reg_parana (Campeonato Paranaense), row bra-680: game 12, table 16 (16)
 2005	clubs	bra_reg_santa (Campeonato Catarinense), row bra-491: game 10, table 12 (12)
 2005	clubs	bra_reg_sp (Campeonato Paulista Série A1), row bra-707: game 16, table 20 (20)
@@ -50,6 +38,10 @@
 2005	clubs	ita_ser_b (Serie B), row ita-71: game 20, table 22 (22)
 2005	clubs	jap_j1 (J.League Division 1), row aus-jap-kor-194: game 16, table 18 (18)
 2005	clubs	jap_j2 (J.League Division 2), row aus-jap-kor-221: game 12, table 13 (13)
+2005	clubs	new_acriano_state_championship (Campeonato Acriano), row bra-950: game 5, table 8 (8)
+2005	clubs	new_maranhense_state_championship (Campeonato Maranhense), row bra-869: game 7, table 10 (10)
+2005	clubs	new_paraibano_state_championship (Campeonato Paraibano), row bra-788: game 7, table 9 (9)
+2005	clubs	new_piauiense_state_championship (Campeonato Piauiense), row bra-923: game 5, table 11 (11)
 2005	clubs	nir_cup (Irish Cup), row wal-nir-irl-113: game 32, table 101 (101)
 2005	clubs	nir_first (Irish First Division), row wal-nir-irl-111: game 10, table 12 (12)
 2005	clubs	nir_lge_cup (Irish League Cup), row wal-nir-irl-114: game 5, table 16 (16)
@@ -60,7 +52,7 @@
 2005	clubs	wc_concacaf_cup (FIFA World Cup qualification (CONCACAF)), row int-world-53: game 24, table 6 (6)
 2005	clubs	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-51: game 0, table 51 (51 entrants)
 2005	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-56: game 5, table 2 (2)
-2005	clubs	world_club_champ (FIFA Club World Championship), row club-world-78: game 4, table 6 (6)
+2005	clubs	world_club_champ (FIFA Club World Championship), row club-world-78: game 0, table 6 (6)
 2005	clubs	world_cup (FIFA World Cup), row int-world-50: game 0, table 32 (32)
 2005	down	arg_prm (Primera División), row arg-usa-5: game 0 (+0 play-off places), table 2 (2 (19th and 20th of the three-season average table, promedios))
 2005	down	arg_second (Primera B Nacional), row arg-usa-32: game 0 (+0 play-off places), table 3 (3 (infobox))
@@ -80,15 +72,10 @@
 2005	no_row	record_utils ('B' International): no table row
 2005	no_row	record_utils (Reserve): no table row
 2005	no_row	record_utils (Under 21 International): no table row
-2005	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-92: the game holds 2005, the table says not held
-2005	not_held	asia_super_cup (Asian Super Cup), row club-world-93: the game holds 2005, the table says not held
 2005	not_held	bra_champ_cup (Copa dos Campeões), row bra-194: the game holds 2005, the table says not held
-2005	not_held	conmebol_merc (Copa Mercosur), row club-world-81: the game holds 2005, the table says not held
 2005	not_held	euro_champ_qual (UEFA European Championship qualifying), row int-continental-46: the game holds 2006, the table says not held
 2005	not_held	gre_super (Greek Super Cup), row gre-pol-cro-86: the game holds 2005, the table says not held
-2005	not_held	inter_amer_cup (Copa Interamericana), row club-world-88: the game holds 2005, the table says not held
 2005	not_held	nir_charity (Charity Shield), row wal-nir-irl-115: the game holds 2005, the table says not held
-2005	not_held	world_club_cup (Intercontinental Cup), row club-world-77: the game holds 2005, the table says not held
 2005	not_in_game	arg-usa-194 argentina_rules 'Argentina' (Argentina)
 2005	not_in_game	aus-jap-kor-113 japan_rules 'n/a' (Japan)
 2005	not_in_game	aus-jap-kor-5 australia_rules 'n/a' (Australia)
@@ -96,17 +83,7 @@
 2005	not_in_game	bra-1031 new 'Campeonato Sul-Mato-Grossense' (Brazil)
 2005	not_in_game	bra-1058 new 'Campeonato Tocantinense' (Brazil)
 2005	not_in_game	bra-5 brazil_rules 'Brazil' (Brazil)
-2005	not_in_game	bra-761 new 'Campeonato Potiguar' (Brazil)
-2005	not_in_game	bra-788 new 'Campeonato Paraibano' (Brazil)
-2005	not_in_game	bra-815 new 'Campeonato Alagoano' (Brazil)
-2005	not_in_game	bra-842 new 'Campeonato Sergipano' (Brazil)
-2005	not_in_game	bra-869 new 'Campeonato Maranhense' (Brazil)
-2005	not_in_game	bra-896 new 'Campeonato Amazonense' (Brazil)
-2005	not_in_game	bra-923 new 'Campeonato Piauiense' (Brazil)
-2005	not_in_game	bra-950 new 'Campeonato Acriano' (Brazil)
 2005	not_in_game	bra-977 new 'Campeonato Brasiliense' (Brazil)
-2005	not_in_game	club-world-83 new 'Copa Sudamericana' (CONMEBOL)
-2005	not_in_game	club-world-84 new 'Recopa Sudamericana' (CONMEBOL)
 2005	not_in_game	eng-325 eng_fa_trophy 'FA Trophy' (England)
 2005	not_in_game	eng-72 eng_conf 'Conference National' (England)
 2005	not_in_game	fra-41 fra_cfa 'CFA' (France)
@@ -142,7 +119,6 @@
 2005	up	bra_nat_first (Campeonato Brasileiro Série A), row bra-32: game 4 (+0 play-off places), table na (n/a)
 2005	up	bra_nat_third (Campeonato Brasileiro Série C), row bra-86: game 2 (+0 play-off places), table 4 (4)
 2005	up	conmebol_liber (Copa Libertadores), row club-world-80: game 2 (+0 play-off places), table na (n/a)
-2005	up	conmebol_merc (Copa Mercosur), row club-world-81: game 1 (+0 play-off places), table na (n/a)
 2005	up	den_second (Danish 2nd Divisions), row den-swe-28: game 3 (+0 play-off places), table 2 (2 (the best eligible club of each group))
 2005	up	gre_cup (Greek Football Cup), row gre-pol-cro-5: game 2 (+0 play-off places), table na (n/a)
 2005	up	gre_second (Beta Ethniki), row gre-pol-cro-59: game 2 (+0 play-off places), table 3 (3 (1st-3rd))

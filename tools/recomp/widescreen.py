@@ -156,3 +156,9 @@ from new_divisions import INSNS as DIVISION_INSNS, PATCHES as DIVISION_PATCHES  
 assert not set(DIVISION_INSNS) & (set(INSNS) | set(PATCHES)) and not set(DIVISION_PATCHES) & (set(PATCHES) | set(INSNS))
 INSNS.update(DIVISION_INSNS)
 PATCHES.update(DIVISION_PATCHES)
+
+# A fix for the error box league_stage.cpp 533 of a league load (league_load.py): a row array of 0 bytes.
+from league_load import INSNS as LOAD_INSNS  # noqa: E402
+
+assert not set(LOAD_INSNS) & (set(INSNS) | set(PATCHES))
+INSNS.update(LOAD_INSNS)

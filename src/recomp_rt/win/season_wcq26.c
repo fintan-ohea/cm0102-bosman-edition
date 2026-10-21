@@ -312,13 +312,47 @@ void rt_wcq26_europe_format(uint32_t self)
  * reputation (0x4b07d0, 0x91a0b0). The pool is not in the save: the ctor builds it at a load too. In the gate
  * this wrap makes the pool again after the original: every European nation whose national team names it, less
  * Russia (suspended, Q288 and Q365: the 2026 qualifying had 54 entrants, int-world-279, and after the table the
- * rule stays, Q248), less an old record of the Serbia chain that a later one replaces, and less every host of the World Cup of the table (season_intl_host_ids: the three of 2026
- * are not European; Spain and Portugal of 2030), sorted by the original's compare. 54 nations give 6 groups of 4
+ * rule stays, Q248), less an old record that a record with a later name replaces (superseded), and less every
+ * host of the World Cup of the table (season_intl_host_ids: the three of 2026 are not European; Spain and Portugal
+ * of 2030), sorted by the original's compare. 54 nations give 6 groups of 4
  * and 6 of 5 (europe_group_size), as the real 2026 draw. The fields that the original sets after its sort get
  * the gate's values: +0xf6 0, +0xff 10, +0x100 11, +0x101 12. */
 #define POOL_MAX 60                     /* 12 groups of 5 (europe_group_size) */
 #define CLUB_COMPARE 0x004b07d0u        /* compare_clubs_by_reputation_desc_nulls_last (0x91a0b0) */
 #define GAME_QSORT 0x00945333u
+
+/* Old names of a nation and their later names (slice 27's renames, season_intl.c nation_renames, int-world
+ * "nation rules" rows). A season database keeps the old record beside a record with a later name: the October
+ * 2023 nation.dat holds Yugoslavia, Serbia and Montenegro; the December 2025 one holds "FYR of Macedonia" (nation
+ * 66, no clubs and no players) and "North Macedonia" (229). Slice 27 renames an old record only where no later
+ * record exists, so an old record that a later one replaces stays out of the pool (the latest-name rule of slice
+ * 15b's e7d8869 for the Nations League: an empty national team stops its first match at virtual_staff.cpp 195,
+ * 0x90d4bc). */
+static const char *const renamed[][2] = {
+    {"Yugoslavia", "Serbia and Montenegro"}, {"Serbia and Montenegro", "Serbia"}, {"Czech Republic", "Czechia"},
+    {"Swaziland", "Eswatini"}, {"FYR of Macedonia", "North Macedonia"}, {"Turkey", "T\xfcrkiye"},
+};
+
+static int nation_named(uint32_t nations, int count, const char *name)
+{
+    for (int id = 0; id < count; id++)
+        if (!strcmp(win_str(nations + (uint32_t)id * NATION_SIZE + 4u), name)) return 1;
+    return 0;
+}
+
+/* 1 when the data holds a record with a later name of this name's chain. */
+static int superseded(uint32_t nations, int count, const char *name)
+{
+    for (int step = 0; step < 8 && name; step++) {
+        const char *next = NULL;
+        for (size_t k = 0; k < sizeof renamed / sizeof renamed[0]; k++)
+            if (!strcmp(renamed[k][0], name)) next = renamed[k][1];
+        if (!next) return 0;
+        if (nation_named(nations, count, next)) return 1;
+        name = next;
+    }
+    return 0;
+}
 
 void o_00919e30(void);
 
@@ -331,15 +365,7 @@ RT_WRAP(00919e30, wcq26_europe_pool)
     int count = (int)rd32(g_mem, NATION_COUNT), hosts[6], n_hosts, n = 0, russia = 0;
     if (!readable(nations) || count <= 0 || count > 1000) return;
     n_hosts = season_intl_host_ids(rd32(g_mem, KEY_WORLD_CUP), year_of(self) + 2, hosts);
-    /* Every season database keeps the record "Yugoslavia" beside the later records (Serbia, Montenegro: the
-     * October 2023 nation.dat holds Yugoslavia, Serbia and Montenegro), so an old name of the chain stays out
-     * when the data holds a later one (slice 27 renames the old record only where no later record exists). */
-    int later_serbia = 0, later_scg = 0;
-    for (int id = 0; id < count; id++) {
-        const char *nm = win_str(nations + (uint32_t)id * NATION_SIZE + 4u);
-        later_serbia |= !strcmp(nm, "Serbia");
-        later_scg |= !strcmp(nm, "Serbia and Montenegro");
-    }
+
     uint32_t pool = game_malloc(4u * POOL_MAX);
     if (rt_unwinding || !pool) return;
     for (int id = 0; id < count && n < POOL_MAX; id++) {
@@ -349,9 +375,12 @@ RT_WRAP(00919e30, wcq26_europe_pool)
             russia = 1;
             continue;
         }
-        if ((!strcmp(win_str(nation + 4u), "Yugoslavia") && (later_serbia || later_scg)) ||
-            (!strcmp(win_str(nation + 4u), "Serbia and Montenegro") && later_serbia))
+        if (superseded(nations, count, win_str(nation + 4u))) {
+            if (logging())
+                fprintf(stderr, "recomp: season intl: wc qualifying %d: Europe leaves out %s (a later record of it "
+                                "is in the data)\n", year_of(self) + 2, win_str(nation + 4u));
             continue;
+        }
         int host = 0;
         for (int k = 0; k < n_hosts; k++) host |= hosts[k] == id;
         if (host) continue;

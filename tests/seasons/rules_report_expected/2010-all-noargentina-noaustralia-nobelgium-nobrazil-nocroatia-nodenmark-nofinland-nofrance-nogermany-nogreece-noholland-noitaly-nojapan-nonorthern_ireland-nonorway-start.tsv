@@ -3,16 +3,8 @@
 2010	bench	eng_cc_cup (Football League Cup), row eng-353: game 5, table 7 (7)
 2010	bench	eng_fa_cup (FA Cup), row eng-352: game 5, table 7 (7)
 2010	bench	world_club_champ (FIFA Club World Cup), row club-world-173: game 7, table 12 (12)
-2010	club_list	American Major League: 12 of 16 listed clubs that the database holds (18 listed), 0 other clubs, 12 in all; not in it: Real Salt Lake, Seattle Sounders, Toronto FC, Vancouver Whitecaps; others: -
-2010	club_list	Irish First Division: 10 of 11 listed clubs that the database holds (11 listed), 0 other clubs, 10 in all; not in it: Cork City FORAS Co-op; others: -
-2010	club_list	Irish Premier Division: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Cork City FORAS Co-op, Sporting Fingal
-2010	club_list	Russian First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Fakel Voronezh, Zhemchuzhina Sochi; others: -
-2010	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: IFK Norrköping, Syrianska Föreningen; others: -
-2010	club_list	Turkish 2. Division Category A: 17 of 17 listed clubs that the database holds (17 listed), 3 other clubs, 20 in all; not in it: -; others: Gençlerbirligi Hacettepespor, Istanbulspor A.S., Malatyaspor
-2010	club_list	Welsh Premier Division: 12 of 12 listed clubs that the database holds (12 listed), 6 other clubs, 18 in all; not in it: -; others: CPD Porthmadog, Caersws, Elements Cefn Druids, GAP Connah's Quay, Rhyl, Technogroup Welshpool
 2010	clubs	asia_club_champ (AFC Champions League), row club-world-184: game 16, table 32 (32)
 2010	clubs	asia_nations (AFC Asian Cup), row int-continental-108: game 0, table 16 (16)
-2010	clubs	con_champ (CONCACAF Champions League), row club-world-180: game 8, table 24 (24)
 2010	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-101: game 5, table 51 (51)
 2010	clubs	ire_chal_cup (FAI Cup), row wal-nir-irl-244: game 42, table 45 (45)
 2010	clubs	ire_first (League of Ireland First Division), row wal-nir-irl-242: game 10, table 11 (11)
@@ -50,17 +42,12 @@
 2010	no_row	record_utils (Reserve): no table row
 2010	no_row	record_utils (Under 21 International): no table row
 2010	no_row	spa_lower (Spanish Lower Division): no table row
-2010	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-187: the game holds 2010, the table says not held
-2010	not_held	asia_super_cup (Asian Super Cup), row club-world-188: the game holds 2010, the table says not held
-2010	not_held	con_merc_cup (Copa Merconorte), row club-world-177: the game holds 2010, the table says not held
 2010	not_held	goldcup (Copa América), row int-continental-110: the game holds 2011, the table says not held
-2010	not_held	inter_amer_cup (Copa Interamericana), row club-world-183: the game holds 2010, the table says not held
 2010	not_held	ire_pres_cup (President's Cup), row wal-nir-irl-248: the game holds 2010, the table says not held
 2010	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-249: the game holds 2010, the table says not held
 2010	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-388: the game holds 2010, the table says not held
 2010	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-226: the game holds 2010, the table says not held
 2010	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-234: the game holds 2010, the table says not held
-2010	not_held	world_club_cup (Intercontinental Cup), row club-world-172: the game holds 2010, the table says not held
 2010	not_in_game	arg-usa-361 usa_rules 'United States' (United States)
 2010	not_in_game	aus-jap-kor-307 korea_rules 'n/a' (South Korea)
 2010	not_in_game	club-world-175 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -84,7 +71,7 @@
 2010	playoffs	sco_third (Scottish Third Division), row sco-77: game 0 up and 0 down play-off places, table 3 and 0 ('2nd to 4th play off with Second Division 9th for a Second Division place (two-le')
 2010	playoffs	swe_first (Superettan), row den-swe-219: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2010	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-226: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2010	up	con_merc_cup (Copa Merconorte), row club-world-177: game 1 (+0 play-off places), table na (n/a)
+2010	subs_used	new_suruga_bank (Suruga Bank Championship), row club-world-522: game 3, table 7 (7)
 2010	up	pol_first (Ekstraklasa), row gre-pol-cro-199: game 4 (+0 play-off places), table na (n/a)
 2010	up	rus_first (Football National League), row rus-tur-37: game 2 (+0 play-off places), table na (n/a)
 2010	up	sco_second (Scottish Second Division), row sco-76: game 2 (+0 play-off places), table 1 (1)

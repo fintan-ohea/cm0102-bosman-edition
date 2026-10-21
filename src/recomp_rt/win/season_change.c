@@ -53,10 +53,12 @@ extern const SeasonRuleKind season_kind_comps;         /* slice 26: season_comps
 void season_comps_reset(void);                         /* slice 26: season_comps.h */
 extern const SeasonRuleKind season_kind_playoffs;      /* slice 19: season_playoffs.c */
 extern const SeasonRuleKind season_kind_intl;
+extern const SeasonRuleKind season_kind_ita_serie_c;  /* slice 20b: season_divisions_ita.c */
 static const SeasonRuleKind season_kind_test;
 static const SeasonRuleKind *const season_rule_kinds[] = {
     &season_kind_comps,                 /* slice 26: new competitions (season_comps.h), first */
     &season_kind_names,                 /* slice 16: competition names (slice 15's names table) */
+    &season_kind_ita_serie_c,           /* slice 20b: the names of the Serie C groups, after the names */
     &season_kind_subs,                  /* slice 17: substitutes used and the bench */
     &season_kind_nation,                /* slice 17: transfer windows, foreign player limits, work permits */
     &season_kind_cups,                  /* slice 21: the round formats of the domestic cups */

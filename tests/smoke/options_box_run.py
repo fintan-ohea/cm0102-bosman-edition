@@ -8,7 +8,7 @@ Usage:
 Runs at the same time:
     side-<mode>   for each mode: loads start.sav (tests/fixtures) and opens the profile of Vieira from the
                   Arsenal squad. On the profile it opens the box from the side bar drop-down "Game Options",
-                  switches attribute_colours off on the Screen tab and save_backups off on the Game tab, and
+                  switches attribute_colours off on the Graphics tab and save_backups off on the Game tab, and
                   closes the box. The profile below is built again.
     tactics       classic: opens the box from the side bar on the tactics screen (0x899ea0), whose input does
                   not pass a click to the side bar: the main loop handles the item (options_screen.c).
@@ -92,7 +92,7 @@ READONLY_STEPS = [
 ]
 START_STEPS = fixtures.LOAD_STEPS[:fixtures.LOAD_STEPS.index("wait setup") + 1] + [
     "1000 dump {d}/setup.bmp",
-    "1500 click 277 503",                       # Bosman Edition Options (0.6.0: left cell of the last row)
+    "1500 click 277 425",                       # Bosman Edition Options (menu B: left cell of the fourth row)
     "3500 dump {d}/box.bmp",
     "4000 click 452 192",                       # Display mode: Classic
     "4500 click 452 227",                       # Sharp picture: Off

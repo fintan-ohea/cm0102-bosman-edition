@@ -36,15 +36,10 @@
 2004	no_row	record_utils (Reserve): no table row
 2004	no_row	record_utils (Under 21 International): no table row
 2004	no_row	spa_lower (Spanish Lower Division): no table row
-2004	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-73: the game holds 2004, the table says not held
-2004	not_held	asia_super_cup (Asian Super Cup), row club-world-74: the game holds 2004, the table says not held
-2004	not_held	con_merc_cup (Copa Merconorte), row club-world-63: the game holds 2004, the table says not held
-2004	not_held	inter_amer_cup (Copa Interamericana), row club-world-69: the game holds 2004, the table says not held
 2004	not_held	ire_leinster_cup (Leinster Senior Cup), row wal-nir-irl-96: the game holds 2004, the table says not held
 2004	not_held	ire_pres_cup (President's Cup), row wal-nir-irl-98: the game holds 2004, the table says not held
 2004	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-99: the game holds 2004, the table says not held
 2004	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-220: the game holds 2004, the table says not held
-2004	not_held	world_club_champ (FIFA Club World Championship), row club-world-59: the game holds 2005, the table says not held
 2004	not_in_game	arg-usa-355 usa_rules 'United States' (United States)
 2004	not_in_game	aus-jap-kor-301 korea_rules 'n/a' (South Korea)
 2004	not_in_game	club-world-61 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -62,7 +57,6 @@
 2004	playoffs	pol_first (I liga), row gre-pol-cro-193: game 0 up and 0 down play-off places, table 0 and 1 ('13th: relegation play-off')
 2004	playoffs	pol_second (II liga), row gre-pol-cro-247: game 2 up and 0 down play-off places, table 1 and 4 ('4th: promotion play-off; 13th-16th: relegation play-offs')
 2004	playoffs	tur_second_b (Second League Category B), row rus-tur-220: game 2 up and 0 down play-off places, table 0 and 0 ('none')
-2004	up	con_merc_cup (Copa Merconorte), row club-world-63: game 1 (+0 play-off places), table na (n/a)
 2004	up	pol_first (I liga), row gre-pol-cro-193: game 4 (+0 play-off places), table na (n/a)
 2004	up	tur_second_b (Second League Category B), row rus-tur-220: game 0 (+2 play-off places), table 3 (3)
 2004	up	usa_mls (Major League Soccer), row arg-usa-220: game 1 (+0 play-off places), table na (n/a (closed league))

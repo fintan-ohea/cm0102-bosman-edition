@@ -1,8 +1,9 @@
 /* The Bosman Edition Options box (spec 2026-10-16-features-0.5.0, slice 6; #56).
  *
  * A box the size of the original's Game Settings box (build 0x823950), with every option of the settings
- * file (options.h) on two tabs, Screen and Game, nine rows each. Labels and notes come from the mockup
- * docs/research/mockups/2026-10-16-options-screen.html, variant B.
+ * file (options.h) on two tabs, Graphics and Game, nine rows each (Graphics was Screen until 0.6.0, Max's play
+ * test). Labels and notes come from the mockup docs/research/mockups/2026-10-16-options-screen.html, variant B.
+ * The version line shows the project version (CMakeLists.txt, CM0102_VERSION).
  *
  * The box is a screen of the runtime on the game's own screen stack, as Team views (views.c). The push of
  * the original 0x7fe600 gets flag 1, as Game Settings does (0x8238bb): the game draws it as a box over the
@@ -33,15 +34,17 @@
  * - full_player_search: on the next game day (the search keeps its list for the day, 0x7af160).
  * - sharp_picture: at once (win_sharp_picture_changed).
  * - the other switches: at the next key, draw or save.
- * save_folder is read only: the box has no text entry. When settings.txt cannot be written, the option
- * keeps its old value and its row shows a note.
+ * save_folder: the Change button of its row opens the computer's own folder picker (host_pick_folder, Q419)
+ * and writes the choice to settings.txt; the row then shows the new folder, and the game uses it at the next
+ * start. The test variable RECOMP_PICK_FOLDER gives the answer of the picker without a window. When
+ * settings.txt cannot be written, the option keeps its old value and its row shows a note.
  *
  * Same game (Q152): the box makes its scratch block when it opens the first time, after a click of the
  * player. The side bar item makes its text block at the first side bar build of each game, so each run has
  * it. A switch in the box does not change the game: smoke_run.py --same-save --options compares two
  * switches with two tab clicks.
  *
- * Node slots: 0 the tab (1 Screen, 2 Game), 1 the place that opened the box (1 start screen, 2 game). Only
+ * Node slots: 0 the tab (1 Graphics, 2 Game), 1 the place that opened the box (1 start screen, 2 game). Only
  * numbers, so the box needs no leave function. */
 #include "win.h"
 #include "options.h"
@@ -49,6 +52,7 @@
 #include "../host.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef CM0102_VERSION
@@ -97,7 +101,7 @@ extern const uint32_t rt_site_options_item, rt_site_main_poll;
 typedef enum { ROW_SWITCH, ROW_DISPLAY, ROW_PATH } RowKind;
 
 typedef struct {
-    int tab;                        /* 1 Screen, 2 Game */
+    int tab;                        /* 1 Graphics, 2 Game */
     OptionId id;
     RowKind kind;
     const char *label;
@@ -122,7 +126,7 @@ static const Row rows[] = {
     {2, OPT_FASTER_DAYS, ROW_SWITCH, "Faster holidays", ""},
     {2, OPT_SAVE_BACKUPS, ROW_SWITCH, "Save backups", ""},
     {2, OPT_CHANGING_RULES, ROW_SWITCH, "Changing rules", "Default for a new game\nSetup Game sets each game"},
-    {2, OPT_SAVE_FOLDER, ROW_PATH, "Save folder", "Applies at the next start\nChange it in settings.txt"},
+    {2, OPT_SAVE_FOLDER, ROW_PATH, "Save folder", "Applies at the next start\nOld saves do not move"},
 };
 #define ROW_COUNT ((int)(sizeof rows / sizeof rows[0]))
 
@@ -133,6 +137,7 @@ static const char *const display_word[] = {"widescreen", "classic"};
 /* Game memory for the texts and the column weights. The create functions copy each text. */
 static uint32_t scratch;
 static int failed_row = -1;         /* the row whose last value could not be written to settings.txt */
+static char picked[1100];           /* the save folder chosen in this run, for the next start */
 
 static uint32_t call_this(uint32_t fn, uint32_t self, int n, const uint32_t *args)
 {
@@ -235,11 +240,12 @@ static void fit_front(const char *s, int width, char *out, size_t room)
     else snprintf(out, room, "...%s", s + n - (fit - 3));
 }
 
-/* The folder of the saved games, with the home folder as "~", in code page 1252. */
+/* The folder of the saved games, with the home folder as "~", in code page 1252: the folder of the next start
+ * when the player chose another one in this run, else the folder in use. */
 static void folder_text(char *out, size_t room)
 {
     char path[1100], home[1024];
-    const char *dir = win_save_folder();
+    const char *dir = picked[0] ? picked : win_save_folder();
     size_t hl = host_home_dir(home, sizeof home) ? strlen(home) : 0;
     if (hl && !strncmp(dir, home, hl) && (dir[hl] == '/' || dir[hl] == '\\' || !dir[hl]))
         snprintf(path, sizeof path, "~%s", dir + hl);
@@ -260,7 +266,7 @@ static int current_index(const Row *r)
  * Settings: 3, 1, 1, 1, 1 at 0x8239ad). A switch row has two values, so its note starts in the third value
  * column. */
 static const uint8_t weights_two[] = {38, 17, 17, 48};
-static const uint8_t weights_path[] = {38, 49, 33};
+static const uint8_t weights_path[] = {38, 44, 15, 28};
 #define ROW_X1 160
 #define ROW_X2 729
 
@@ -302,13 +308,14 @@ static void note(const char *s, const uint8_t *weights, int columns, int y1, int
 static void build_row(const Row *r, int index, int y1, int y2, uint32_t green, uint32_t light)
 {
     if (r->kind == ROW_PATH) {
-        int a = area(ROW_X1, y1, ROW_X2, y2, 3, weights_path, 1, 0);
+        int a = area(ROW_X1, y1, ROW_X2, y2, 4, weights_path, 1, 0);
         plain(a, 0, r->label, 3, light);
         char folder[1100], path[1104];
         folder_text(folder, sizeof folder);
-        fit_front(folder, column_px(weights_path, 3, 1), path, sizeof path);
+        fit_front(folder, column_px(weights_path, 4, 1), path, sizeof path);
         plain(a, 1, path, 2, colour16(TEXT_YELLOW));
-        note(index == failed_row ? "Not saved: settings.txt\ncannot be written" : r->note, weights_path, 3, y1, y2,
+        choice(a, 2, "Change", VALUE_ID, (uint32_t)index * 16u, green);
+        note(index == failed_row ? "Not saved: settings.txt\ncannot be written" : r->note, weights_path, 4, y1, y2,
              light);
         return;
     }
@@ -347,7 +354,7 @@ static void options_build(void)
 
     /* The tabs: the open tab as a framed label, the other as a button. */
     int t = area(165, 142, 724, 168, 2, NULL, 1, 0);
-    static const char *const tab_names[2] = {"Screen", "Game"};
+    static const char *const tab_names[2] = {"Graphics", "Game"};
     for (int i = 1; i <= 2; i++) {
         if (i == tab) current(t, i - 1, tab_names[i - 1]);
         else choice(t, i - 1, tab_names[i - 1], TAB_ID, (uint32_t)i, green);
@@ -370,8 +377,41 @@ static void options_build(void)
 
 /* Sets the value of a row from a click, and applies what can apply at once. When settings.txt cannot be
  * written, the old value goes back into memory and the row shows a note. */
+/* The Change button of the Save folder row: the folder picker, then save_folder in settings.txt. */
+static void pick_save_folder(int index)
+{
+    char dir[1100];
+    const char *test = getenv("RECOMP_PICK_FOLDER");
+    int got = test ? (snprintf(dir, sizeof dir, "%s", test), *test ? 1 : 0)
+                   : host_pick_folder("Choose the folder for saved games", dir, sizeof dir);
+    if (got <= 0) {
+        fprintf(stderr, "recomp: save folder picker: %s\n", got < 0 ? "none on this computer" : "cancelled");
+        return;
+    }
+    char old[1100];
+    snprintf(old, sizeof old, "%s", options_string(OPT_SAVE_FOLDER));
+    int ok = options_set(OPT_SAVE_FOLDER, dir);
+    if (!ok) {
+        fprintf(stderr, "recomp: option save_folder = %s refused\n", dir);
+        return;
+    }
+    if (ok < 0) {
+        options_set(OPT_SAVE_FOLDER, old);
+        failed_row = index;
+        fprintf(stderr, "recomp: option save_folder = %s not saved, kept %s\n", dir, old);
+        return;
+    }
+    failed_row = -1;
+    snprintf(picked, sizeof picked, "%s", dir);
+    fprintf(stderr, "recomp: option save_folder = %s (%d), from the next start\n", dir, ok);
+}
+
 static void apply(const Row *r, int index, int value)
 {
+    if (r->kind == ROW_PATH) {
+        pick_save_folder(index);
+        return;
+    }
     const char *word = NULL;
     if (r->kind == ROW_SWITCH && value < 2) word = switch_word[value];
     if (r->kind == ROW_DISPLAY && value < 2) word = display_word[value];

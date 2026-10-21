@@ -1,12 +1,7 @@
 # Differences between the rules report and the rules table that the check accepts. Made by
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
 2007	bench	ire_chal_cup (FAI Cup), row wal-nir-irl-169: game 5, table 7 (7)
-2007	bench	world_club_champ (FIFA Club World Cup), row club-world-116: game 9, table 12 (12)
-2007	club_list	American Major League: 10 of 10 listed clubs that the database holds (14 listed), 2 other clubs, 12 in all; not in it: -; others: Miami Fusion FC, Tampa Bay Mutiny
-2007	club_list	Korean League: 10 of 14 listed clubs that the database holds (14 listed), 0 other clubs, 10 in all; not in it: Daegu FC, Gwangju Sangmu Bulsajo, Incheon United, Jeju United; others: -
-2007	club_list	Russian First Division: 18 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 18 in all; not in it: Dinamo Barnaul, Mashuk-KMV Pyatigorsk, Sportakademclub Moscow, Volga Uljanovsk; others: -
-2007	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: GIF Sundsvall, IFK Norrköping; others: -
-2007	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Akçaabat Sebatspor, Dardanelspor A.S.
+2007	bench	world_club_champ (FIFA Club World Cup), row club-world-116: game 7, table 12 (12)
 2007	clubs	african_nations (Africa Cup of Nations), row int-continental-73: game 0, table 16 (16)
 2007	clubs	asia_club_champ (AFC Champions League), row club-world-127: game 16, table 29 (29)
 2007	clubs	asia_nations (AFC Asian Cup), row int-continental-75: game 4, table 16 (16)
@@ -33,7 +28,7 @@
 2007	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-80: game 5, table 11 (11 entrants)
 2007	clubs	wel_lge_cup (Welsh League Cup), row wal-nir-irl-158: game 3, table 18 (18)
 2007	clubs	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-159: game 4, table 16 (16)
-2007	clubs	world_club_champ (FIFA Club World Cup), row club-world-116: game 4, table 7 (7)
+2007	clubs	world_club_champ (FIFA Club World Cup), row club-world-116: game 0, table 7 (7)
 2007	down	eng_third (Football League Two), row eng-91: game 1 (+0 play-off places), table 2 (2)
 2007	down	pol_first (I liga), row gre-pol-cro-196: game 0 (+0 play-off places), table 2 (2 (15th-16th))
 2007	down	por_second (Liga de Honra), row por-56: game 3 (+0 play-off places), table 2 (2)
@@ -48,17 +43,12 @@
 2007	no_row	record_utils (Reserve): no table row
 2007	no_row	record_utils (Under 21 International): no table row
 2007	no_row	spa_lower (Spanish Lower Division): no table row
-2007	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-130: the game holds 2007, the table says not held
-2007	not_held	asia_super_cup (Asian Super Cup), row club-world-131: the game holds 2007, the table says not held
-2007	not_held	con_merc_cup (Copa Merconorte), row club-world-120: the game holds 2007, the table says not held
-2007	not_held	inter_amer_cup (Copa Interamericana), row club-world-126: the game holds 2007, the table says not held
 2007	not_held	ire_leinster_cup (Leinster Senior Cup), row wal-nir-irl-171: the game holds 2007, the table says not held
 2007	not_held	ire_pres_cup (President's Cup), row wal-nir-irl-173: the game holds 2007, the table says not held
 2007	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-174: the game holds 2007, the table says not held
 2007	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-385: the game holds 2007, the table says not held
 2007	not_held	olympics (Football at the Summer Olympics), row int-world-83: the game holds 2008, the table says not held
 2007	not_held	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-75: the game holds 2008, the table says not held
-2007	not_held	world_club_cup (Intercontinental Cup), row club-world-115: the game holds 2007, the table says not held
 2007	not_in_game	arg-usa-358 usa_rules 'United States' (United States)
 2007	not_in_game	aus-jap-kor-304 korea_rules 'n/a' (South Korea)
 2007	not_in_game	club-world-118 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -84,7 +74,6 @@
 2007	playoffs	sco_third (Scottish Third Division), row sco-53: game 0 up and 0 down play-off places, table 3 and 0 ('2nd to 4th play off with Second Division 9th for a Second Division place (two-le')
 2007	playoffs	swe_first (Superettan), row den-swe-201: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2007	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-223: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2007	up	con_merc_cup (Copa Merconorte), row club-world-120: game 1 (+0 play-off places), table na (n/a)
 2007	up	pol_first (I liga), row gre-pol-cro-196: game 4 (+0 play-off places), table na (n/a)
 2007	up	sco_second (Scottish Second Division), row sco-52: game 2 (+0 play-off places), table 1 (1)
 2007	up	sco_third (Scottish Third Division), row sco-53: game 2 (+0 play-off places), table 1 (1)

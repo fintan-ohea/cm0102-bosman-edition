@@ -311,6 +311,9 @@ KNOWN_GAPS = {
     "second phase: top 3 of each subgroup in promotion groups": ZONES,
     "lowest-placed Açores club of the three zones": "a rule of one region of the nation",
     "Final of the two zone winners": ZONES,
+    # Slice 20b (Q520): the Serie C groups of 2014/15 on take the files of C1/A, C1/B and C2/A. Their play-offs are
+    # one national phase of the clubs of all three groups and the cup winner: not a play-off of one league.
+    "28 clubs: ": "a national phase of the clubs of the three Serie C groups: not a play-off of one league",
 }
 
 # The forms of a whole text that mean no play-off.

@@ -3,18 +3,6 @@
 2006	bench	fra_cup (Coupe de France), row fra-52: game 3, table 5 (5)
 2006	bench	fra_lge_cup (Coupe de la Ligue), row fra-53: game 3, table 7 (7)
 2006	bench	world_club_champ (FIFA Club World Cup), row club-world-97: game 7, table 12 (12)
-2006	club_list	Argentine Second Division: 20 of 20 listed clubs that the database holds (20 listed), 5 other clubs, 25 in all; not in it: -; others: All Boys, Almirante Brown, Estudiantes de Buenos Aires, Independiente Rivadavia de Mendoza, Los Andes
-2006	club_list	Croatian First Division: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: Istra 1961, NK Belisce, NK Inter Zapresic, NK Koprivnica
-2006	club_list	Dutch First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: AGOVV Apeldoorn, FC Eindhoven; others: -
-2006	club_list	Finnish Premier Division: 12 of 14 listed clubs that the database holds (14 listed), 0 other clubs, 12 in all; not in it: AC Oulu, FC Viikingit; others: -
-2006	club_list	Greek National A Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Aris Salonika, Ergotelis; others: -
-2006	club_list	Greek National B Division: 14 of 18 listed clubs that the database holds (18 listed), 0 other clubs, 14 in all; not in it: Agrotikos Asteras, Ethnikos/A.O. Manis, Messiniakos, Panthrakikos; others: -
-2006	club_list	Italian Serie A: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Calcio Catania, Torino; others: -
-2006	club_list	Italian Serie B: 20 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 20 in all; not in it: S.S.C. Napoli, Spezia 1906; others: -
-2006	club_list	Japanese J-League 1: 16 of 18 listed clubs that the database holds (18 listed), 0 other clubs, 16 in all; not in it: Ventforet Kofu, Yokohama FC; others: -
-2006	club_list	Japanese J-League 2: 12 of 13 listed clubs that the database holds (13 listed), 0 other clubs, 12 in all; not in it: Tokushima Vortis; others: -
-2006	club_list	Northern Irish League First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Moyola Park, Tobermore United; others: -
-2006	club_list	Northern Irish League Premier Division: 10 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 10 in all; not in it: Armagh City, Crusaders, Donegal Celtic, Glenavon, Larne, Loughgall; others: -
 2006	clubs	arg_second (Primera B Nacional), row arg-usa-33: game 25, table 20 (20)
 2006	clubs	asia_club_champ (AFC Champions League), row club-world-108: game 16, table 27 (27)
 2006	clubs	bel_third (Belgian Third Division), row hol-bel-75: game 16, table 32 (32 (A 16, B 16))
@@ -25,8 +13,7 @@
 2006	clubs	bra_reg_central (Campeonato Mato-Grossense), row bra-519: game 15, table 12 (12)
 2006	clubs	bra_reg_gaucho (Campeonato Gaúcho), row bra-546: game 17, table 18 (18)
 2006	clubs	bra_reg_goias (Campeonato Goiano), row bra-573: game 14, table 12 (12)
-2006	clubs	bra_reg_north (Campeonato Paraense), row bra-627: game 10, table 14 (14)
-2006	clubs	bra_reg_northeast (Campeonato Cearense), row bra-654: game 16, table 10 (10)
+2006	clubs	bra_reg_north (Campeonato Paraense), row bra-627: game 13, table 14 (14)
 2006	clubs	bra_reg_parana (Campeonato Paranaense), row bra-681: game 12, table 16 (16)
 2006	clubs	bra_reg_santa (Campeonato Catarinense), row bra-492: game 10, table 12 (12)
 2006	clubs	bra_reg_sp (Campeonato Paulista Série A1), row bra-708: game 16, table 20 (20)
@@ -49,6 +36,11 @@
 2006	clubs	ita_ser_b (Serie B), row ita-88: game 20, table 22 (22)
 2006	clubs	jap_j1 (J.League Division 1), row aus-jap-kor-195: game 16, table 18 (18)
 2006	clubs	jap_j2 (J.League Division 2), row aus-jap-kor-222: game 12, table 13 (13)
+2006	clubs	new_acriano_state_championship (Campeonato Acriano), row bra-951: game 5, table 7 (7)
+2006	clubs	new_maranhense_state_championship (Campeonato Maranhense), row bra-870: game 7, table 10 (10)
+2006	clubs	new_paraibano_state_championship (Campeonato Paraibano), row bra-789: game 8, table 10 (10)
+2006	clubs	new_piauiense_state_championship (Campeonato Piauiense), row bra-924: game 6, table 8 (8)
+2006	clubs	new_sergipano_state_championship (Campeonato Sergipano), row bra-843: game 6, table 10 (10)
 2006	clubs	nir_cup (Irish Cup), row wal-nir-irl-138: game 32, table 114 (114)
 2006	clubs	nir_first (Irish First Division), row wal-nir-irl-136: game 10, table 12 (12)
 2006	clubs	nir_lge_cup (Irish League Cup), row wal-nir-irl-139: game 5, table 16 (16)
@@ -74,16 +66,11 @@
 2006	no_row	record_utils ('B' International): no table row
 2006	no_row	record_utils (Reserve): no table row
 2006	no_row	record_utils (Under 21 International): no table row
-2006	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-111: the game holds 2006, the table says not held
 2006	not_held	asia_nations (AFC Asian Cup), row int-continental-64: the game holds 2007, the table says not held
-2006	not_held	asia_super_cup (Asian Super Cup), row club-world-112: the game holds 2006, the table says not held
 2006	not_held	bra_champ_cup (Copa dos Campeões), row bra-195: the game holds 2006, the table says not held
-2006	not_held	conmebol_merc (Copa Mercosur), row club-world-100: the game holds 2006, the table says not held
 2006	not_held	cro_a2b (Druga HNL South), row gre-pol-cro-384: the game holds 2006, the table says not held
 2006	not_held	gre_super (Greek Super Cup), row gre-pol-cro-87: the game holds 2006, the table says not held
-2006	not_held	inter_amer_cup (Copa Interamericana), row club-world-107: the game holds 2006, the table says not held
 2006	not_held	nir_charity (Charity Shield), row wal-nir-irl-140: the game holds 2006, the table says not held
-2006	not_held	world_club_cup (Intercontinental Cup), row club-world-96: the game holds 2006, the table says not held
 2006	not_in_game	arg-usa-195 argentina_rules 'Argentina' (Argentina)
 2006	not_in_game	aus-jap-kor-114 japan_rules 'n/a' (Japan)
 2006	not_in_game	aus-jap-kor-6 australia_rules 'n/a' (Australia)
@@ -91,17 +78,7 @@
 2006	not_in_game	bra-1032 new 'Campeonato Sul-Mato-Grossense' (Brazil)
 2006	not_in_game	bra-1059 new 'Campeonato Tocantinense' (Brazil)
 2006	not_in_game	bra-6 brazil_rules 'Brazil' (Brazil)
-2006	not_in_game	bra-762 new 'Campeonato Potiguar' (Brazil)
-2006	not_in_game	bra-789 new 'Campeonato Paraibano' (Brazil)
-2006	not_in_game	bra-816 new 'Campeonato Alagoano' (Brazil)
-2006	not_in_game	bra-843 new 'Campeonato Sergipano' (Brazil)
-2006	not_in_game	bra-870 new 'Campeonato Maranhense' (Brazil)
-2006	not_in_game	bra-897 new 'Campeonato Amazonense' (Brazil)
-2006	not_in_game	bra-924 new 'Campeonato Piauiense' (Brazil)
-2006	not_in_game	bra-951 new 'Campeonato Acriano' (Brazil)
 2006	not_in_game	bra-978 new 'Campeonato Brasiliense' (Brazil)
-2006	not_in_game	club-world-102 new 'Copa Sudamericana' (CONMEBOL)
-2006	not_in_game	club-world-103 new 'Recopa Sudamericana' (CONMEBOL)
 2006	not_in_game	eng-331 eng_fa_trophy 'FA Trophy' (England)
 2006	not_in_game	eng-82 eng_conf 'Conference National' (England)
 2006	not_in_game	fra-50 fra_cfa 'CFA' (France)
@@ -135,7 +112,6 @@
 2006	up	bra_nat_first (Campeonato Brasileiro Série A), row bra-33: game 4 (+0 play-off places), table na (n/a)
 2006	up	bra_nat_third (Campeonato Brasileiro Série C), row bra-87: game 2 (+0 play-off places), table 4 (4)
 2006	up	conmebol_liber (Copa Libertadores), row club-world-99: game 2 (+0 play-off places), table na (n/a)
-2006	up	conmebol_merc (Copa Mercosur), row club-world-100: game 1 (+0 play-off places), table na (n/a)
 2006	up	cro_a2a (Druga HNL), row gre-pol-cro-357: game 0 (+0 play-off places), table 1 (1 (1st))
 2006	up	den_second (Danish 2nd Divisions), row den-swe-34: game 3 (+0 play-off places), table 2 (2)
 2006	up	fin_first (Ykkönen), row nor-fin-58: game 2 (+0 play-off places), table 1 (1st (1))

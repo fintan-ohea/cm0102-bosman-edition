@@ -1,9 +1,7 @@
 # Differences between the rules report and the rules table that the check accepts. Made by
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
-2005	bench	world_club_champ (FIFA Club World Championship), row club-world-78: game 9, table 12 (12)
+2005	bench	world_club_champ (FIFA Club World Championship), row club-world-78: game 7, table 12 (12)
 2005	bench	world_cup (FIFA World Cup), row int-world-50: game 7, table 12 (12)
-2005	club_list	American Major League: 9 of 9 listed clubs that the database holds (12 listed), 3 other clubs, 12 in all; not in it: -; others: Miami Fusion FC, San Jose Earthquakes, Tampa Bay Mutiny
-2005	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Adanaspor A.S., Aydinspor
 2005	clubs	african_nations (Africa Cup of Nations), row int-continental-51: game 0, table 16 (16)
 2005	clubs	asia_club_champ (AFC Champions League), row club-world-89: game 16, table 25 (25)
 2005	clubs	european_cup (UEFA Champions League), row uefa-34: game 55, table 74 (74 (32 in the group stage))
@@ -26,7 +24,7 @@
 2005	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-56: game 5, table 2 (2)
 2005	clubs	wel_lge_cup (Welsh League Cup), row wal-nir-irl-108: game 3, table 18 (18)
 2005	clubs	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-109: game 4, table 16 (16)
-2005	clubs	world_club_champ (FIFA Club World Championship), row club-world-78: game 4, table 6 (6)
+2005	clubs	world_club_champ (FIFA Club World Championship), row club-world-78: game 0, table 6 (6)
 2005	clubs	world_cup (FIFA World Cup), row int-world-50: game 0, table 32 (32)
 2005	down	eng_third (Football League Two), row eng-71: game 1 (+0 play-off places), table 2 (2)
 2005	down	pol_first (I liga), row gre-pol-cro-194: game 0 (+0 play-off places), table 2 (2 (15th-16th))
@@ -43,17 +41,12 @@
 2005	no_row	record_utils (Reserve): no table row
 2005	no_row	record_utils (Under 21 International): no table row
 2005	no_row	spa_lower (Spanish Lower Division): no table row
-2005	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-92: the game holds 2005, the table says not held
-2005	not_held	asia_super_cup (Asian Super Cup), row club-world-93: the game holds 2005, the table says not held
-2005	not_held	con_merc_cup (Copa Merconorte), row club-world-82: the game holds 2005, the table says not held
 2005	not_held	euro_champ_qual (UEFA European Championship qualifying), row int-continental-46: the game holds 2006, the table says not held
-2005	not_held	inter_amer_cup (Copa Interamericana), row club-world-88: the game holds 2005, the table says not held
 2005	not_held	ire_leinster_cup (Leinster Senior Cup), row wal-nir-irl-121: the game holds 2005, the table says not held
 2005	not_held	ire_pres_cup (President's Cup), row wal-nir-irl-123: the game holds 2005, the table says not held
 2005	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-124: the game holds 2005, the table says not held
 2005	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-221: the game holds 2005, the table says not held
 2005	not_held	pol_super (Polish Super Cup), row gre-pol-cro-275: the game holds 2005, the table says not held
-2005	not_held	world_club_cup (Intercontinental Cup), row club-world-77: the game holds 2005, the table says not held
 2005	not_in_game	arg-usa-356 usa_rules 'United States' (United States)
 2005	not_in_game	aus-jap-kor-302 korea_rules 'n/a' (South Korea)
 2005	not_in_game	club-world-80 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -75,7 +68,6 @@
 2005	playoffs	sco_third (Scottish Third Division), row sco-37: game 0 up and 0 down play-off places, table 3 and 0 ('2nd to 4th play off with Second Division 9th for a Second Division place (two-le')
 2005	playoffs	swe_first (Superettan), row den-swe-189: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 12th; 13th and 14th play the Division 1 runners-up.')
 2005	playoffs	tur_second_b (Lig B), row rus-tur-221: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2005	up	con_merc_cup (Copa Merconorte), row club-world-82: game 1 (+0 play-off places), table na (n/a)
 2005	up	pol_first (I liga), row gre-pol-cro-194: game 4 (+0 play-off places), table na (n/a)
 2005	up	sco_second (Scottish Second Division), row sco-36: game 2 (+0 play-off places), table 1 (1)
 2005	up	sco_third (Scottish Third Division), row sco-37: game 2 (+0 play-off places), table 1 (1)

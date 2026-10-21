@@ -3,13 +3,7 @@
 2008	bench	eng_cc_cup (Football League Cup), row eng-341: game 5, table 7 (7)
 2008	bench	eng_fa_cup (FA Cup), row eng-340: game 5, table 7 (7)
 2008	bench	world_club_champ (FIFA Club World Cup), row club-world-135: game 7, table 12 (12)
-2008	club_list	American Major League: 12 of 13 listed clubs that the database holds (15 listed), 0 other clubs, 12 in all; not in it: Toronto FC; others: -
-2008	club_list	Irish First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Finn Harps, Mervue United; others: -
-2008	club_list	Irish Premier Division: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Cobh Ramblers, Finn Harps
-2008	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: IF Brommapojkarna, Örgryte IS; others: -
-2008	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Dardanelspor A.S., Elazigspor
 2008	clubs	asia_club_champ (AFC Champions League), row club-world-146: game 16, table 32 (32)
-2008	clubs	con_champ (CONCACAF Champions League), row club-world-142: game 8, table 24 (24)
 2008	clubs	european_cup (UEFA Champions League), row uefa-58: game 55, table 76 (76 (32 in the group stage))
 2008	clubs	fifa_confed (FIFA Confederations Cup), row int-world-94: game 0, table 8 (8)
 2008	clubs	intertoto_cup (UEFA Intertoto Cup), row uefa-63: game 60, table 50 (50)
@@ -50,16 +44,11 @@
 2008	no_row	record_utils (Reserve): no table row
 2008	no_row	record_utils (Under 21 International): no table row
 2008	no_row	spa_lower (Spanish Lower Division): no table row
-2008	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-149: the game holds 2008, the table says not held
-2008	not_held	asia_super_cup (Asian Super Cup), row club-world-150: the game holds 2008, the table says not held
-2008	not_held	con_merc_cup (Copa Merconorte), row club-world-139: the game holds 2008, the table says not held
-2008	not_held	inter_amer_cup (Copa Interamericana), row club-world-145: the game holds 2008, the table says not held
 2008	not_held	ire_leinster_cup (Leinster Senior Cup), row wal-nir-irl-196: the game holds 2008, the table says not held
 2008	not_held	ire_pres_cup (President's Cup), row wal-nir-irl-198: the game holds 2008, the table says not held
 2008	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-199: the game holds 2008, the table says not held
 2008	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-386: the game holds 2008, the table says not held
 2008	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-184: the game holds 2008, the table says not held
-2008	not_held	world_club_cup (Intercontinental Cup), row club-world-134: the game holds 2008, the table says not held
 2008	not_in_game	arg-usa-359 usa_rules 'United States' (United States)
 2008	not_in_game	aus-jap-kor-305 korea_rules 'n/a' (South Korea)
 2008	not_in_game	club-world-137 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -85,7 +74,6 @@
 2008	playoffs	sco_third (Scottish Third Division), row sco-61: game 0 up and 0 down play-off places, table 3 and 0 ('2nd to 4th play off with Second Division 9th for a Second Division place (two-le')
 2008	playoffs	swe_first (Superettan), row den-swe-207: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2008	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-224: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2008	up	con_merc_cup (Copa Merconorte), row club-world-139: game 1 (+0 play-off places), table na (n/a)
 2008	up	pol_first (Ekstraklasa), row gre-pol-cro-197: game 4 (+0 play-off places), table na (n/a)
 2008	up	sco_second (Scottish Second Division), row sco-60: game 2 (+0 play-off places), table 1 (1)
 2008	up	sco_third (Scottish Third Division), row sco-61: game 2 (+0 play-off places), table 1 (1)

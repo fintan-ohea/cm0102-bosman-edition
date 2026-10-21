@@ -10,8 +10,9 @@
  * At each start it also writes the clubs of each division (club lines, slice 15). RECOMP_RULES_REPORT_STOP=start
  * ends the program with code 0 after the first start report (the club moves and names of a start season).
  * RECOMP_DATA_SWEEP=1 (0.6.0 slice 30a, check 4 in data form; with RECOMP_RULES_REPORT): at each start and end
- * report the runtime also checks every competition object and each stage of it (stage array +0xc, +0x2c slots) and
- * writes a "sweep" line for each fault, and one "sweepok" line a report with what it read:
+ * report the runtime also checks every competition object and each built stage of it (stage array +0xc, slots 0
+ * to the current stage +0x30, at most the count +0x2c) and writes a "sweep" line for each fault, and one
+ * "sweepok" line a report with what it read:
  *   - date: a round whose year is outside the edition (the year +0x40 of the object that holds the round table,
  *     less one to plus two), or whose day is not a day of the year. Cup rounds: table +0xa3, +0x3c rounds of 0x68
  *     bytes, the draw day word +0 and its year offset byte +2 (cup_set_round_draw_date 0x521e60 at 0x521ea6,
@@ -166,8 +167,13 @@ static void sweep_comp(FILE *f, int season, const char *phase, const char *file,
     sweep_objects++;
     if (c && (c->kind == SEASON_KIND_CUP || c->kind == SEASON_KIND_LEAGUE))
         sweep_rounds_of(f, season, phase, file, obj, obj, c->kind == SEASON_KIND_CUP);
+    /* Only the built stages, slots 0 to +0x30, as the game reads them (the save, 0x689918). start_new_season
+     * deletes those stages and leaves their pointers in the slots (EuropeanCup 0x584e0d..0x584e23, EngFirst
+     * 0x572e76..0x572e8a) before it sets +0x30 to -1 (0x584e28, 0x572e96): a slot up to the count +0x2c can hold
+     * a freed stage, whose round table gave false date faults at the 2004/05 start of a 2003 game. */
     uint32_t stages = rd32(g_mem, obj + 0xc);
-    int32_t slots = (int32_t)rd32(g_mem, obj + 0x2c);
+    int32_t slots = (int32_t)rd32(g_mem, obj + 0x2c), built = (int32_t)rd32(g_mem, obj + 0x30) + 1;
+    if (built < slots) slots = built;
     for (int32_t i = 0; readable(stages) && i < slots && i < 64; i++) {
         uint32_t st = rd32(g_mem, stages + 4u * (uint32_t)i);
         if (!readable(st) || st == obj) continue;

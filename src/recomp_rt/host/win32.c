@@ -405,3 +405,23 @@ void host_display_notes(char *out, size_t room)
     }
     if (shcore) FreeLibrary(shcore);
 }
+
+/* The folder picker: the shell's Browse For Folder box (shell32, as SHGetFolderPathW above). The classic box
+ * needs no COM set-up. */
+int host_pick_folder(const char *title, char *out, size_t room)
+{
+    wchar_t wtitle[256], path[MAX_PATH];
+    if (!to_wide(title, wtitle, 256)) wtitle[0] = 0;
+    BROWSEINFOW bi;
+    memset(&bi, 0, sizeof bi);
+    bi.lpszTitle = wtitle;
+    bi.ulFlags = BIF_RETURNONLYFSDIRS;
+    LPITEMIDLIST id = SHBrowseForFolderW(&bi);
+    if (!id) return 0;
+    int ok = SHGetPathFromIDListW(id, path) && from_wide(path, out, room);
+    ILFree(id);
+    if (!ok) return 0;
+    size_t n = strlen(out);
+    while (n > 3 && out[n - 1] == '/') out[--n] = 0;
+    return 1;
+}

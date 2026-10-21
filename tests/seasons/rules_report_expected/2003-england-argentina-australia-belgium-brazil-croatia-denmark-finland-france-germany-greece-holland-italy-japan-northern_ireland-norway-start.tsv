@@ -2,16 +2,6 @@
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
 2003	bench	fra_lge_cup (Coupe de la Ligue), row fra-26: game 3, table 5 (5)
 2003	bench	ger_cup (DFB-Pokal), row ger-36: game 6, table 7 (7)
-2003	club_list	Argentine Second Division: 20 of 20 listed clubs that the database holds (20 listed), 5 other clubs, 25 in all; not in it: -; others: Almirante Brown de Arrecifes, Atlético Tucumán, Central Córdoba de Rosario, Independiente Rivadavia de Mendoza, Platense
-2003	club_list	Brazilian National Third Division: 47 of 47 listed clubs that the database holds (60 listed), 9 other clubs, 56 in all; not in it: -; others: Agremiação Sportiva Arapiraquense, Associação Desportiva Comercial Bandeirante, Atlético Clube Goianiense, Bangu Atlético Clube, Baré Esporte Clube, Botafogo Futebol Clube (PB), Camaçari Futebol Clube, Centro Sportivo Alagoano, Esporte Clube Comercial
-2003	club_list	Croatian First Division: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: Bojovnik 7, NK Amater, NK Bedem, NK Borac
-2003	club_list	Croatian Second Division North: 10 of 10 listed clubs that the database holds (12 listed), 6 other clubs, 16 in all; not in it: -; others: NK Bjelovar, NK Granicar, NK Metalac, NK Mladost Molve, NK Omladinac, NK Ðakovo
-2003	club_list	Croatian Second Division South: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: NK GOSK, NK Imotska Krajina, NK Istra, NK Karlovac
-2003	club_list	Dutch First Division: 18 of 19 listed clubs that the database holds (19 listed), 0 other clubs, 18 in all; not in it: AGOVV; others: -
-2003	club_list	Finnish Premier Division: 12 of 14 listed clubs that the database holds (14 listed), 0 other clubs, 12 in all; not in it: FC Jazz, Rovaniemen Palloseura; others: -
-2003	club_list	Italian Serie B: 20 of 24 listed clubs that the database holds (24 listed), 0 other clubs, 20 in all; not in it: Catania, Fiorentina, Genoa, Salernitana; others: -
-2003	club_list	Northern Irish League First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Brantwood, Lurgan Celtic; others: -
-2003	club_list	Northern Irish League Premier Division: 10 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 10 in all; not in it: Ballymena United, Crusaders, Dungannon Swifts, Larne, Limavady United, Newry Town; others: -
 2003	clubs	african_nations (African Cup of Nations), row int-continental-29: game 0, table 16 (16)
 2003	clubs	arg_second (Primera B Nacional), row arg-usa-30: game 25, table 20 (20)
 2003	clubs	asia_club_champ (AFC Champions League), row club-world-51: game 16, table 28 (28)
@@ -24,8 +14,7 @@
 2003	clubs	bra_reg_gaucho (Campeonato Gaúcho), row bra-543: game 17, table 18 (18)
 2003	clubs	bra_reg_goias (Campeonato Goiano), row bra-570: game 14, table 12 (12)
 2003	clubs	bra_reg_minas_gerais (Campeonato Mineiro Módulo I), row bra-597: game 12, table 14 (14)
-2003	clubs	bra_reg_north (Campeonato Paraense), row bra-624: game 10, table 14 (14)
-2003	clubs	bra_reg_northeast (Campeonato Cearense), row bra-651: game 16, table 10 (10)
+2003	clubs	bra_reg_north (Campeonato Paraense), row bra-624: game 12, table 14 (14)
 2003	clubs	bra_reg_parana (Campeonato Paranaense), row bra-678: game 12, table 16 (16)
 2003	clubs	bra_reg_santa (Campeonato Catarinense), row bra-489: game 10, table 12 (12)
 2003	clubs	bra_reg_sp (Campeonato Paulista Série A1), row bra-705: game 16, table 21 (21)
@@ -45,6 +34,12 @@
 2003	clubs	intertoto_cup (UEFA Intertoto Cup), row uefa-23: game 60, table 61 (61)
 2003	clubs	ita_cup (Coppa Italia), row ita-47: game 4, table 48 (48)
 2003	clubs	ita_ser_b (Serie B), row ita-37: game 20, table 24 (24)
+2003	clubs	new_acriano_state_championship (Campeonato Acriano), row bra-948: game 5, table 7 (7)
+2003	clubs	new_amazonense_state_championship (Campeonato Amazonense), row bra-894: game 8, table 10 (10)
+2003	clubs	new_maranhense_state_championship (Campeonato Maranhense), row bra-867: game 7, table 10 (10)
+2003	clubs	new_paraibano_state_championship (Campeonato Paraibano), row bra-786: game 7, table 9 (9)
+2003	clubs	new_piauiense_state_championship (Campeonato Piauiense), row bra-921: game 5, table 8 (8)
+2003	clubs	new_sergipano_state_championship (Campeonato Sergipano), row bra-840: game 5, table 10 (10)
 2003	clubs	nir_cup (Irish Cup), row wal-nir-irl-63: game 32, table 91 (91)
 2003	clubs	nir_first (Irish First Division), row wal-nir-irl-61: game 10, table 12 (12)
 2003	clubs	nir_lge_cup (Irish League Cup), row wal-nir-irl-64: game 5, table 16 (16)
@@ -72,19 +67,13 @@
 2003	no_row	record_utils ('B' International): no table row
 2003	no_row	record_utils (Reserve): no table row
 2003	no_row	record_utils (Under 21 International): no table row
-2003	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-54: the game holds 2003, the table says not held
 2003	not_held	asia_nations (AFC Asian Cup), row int-continental-31: the game holds 2004, the table says not held
-2003	not_held	asia_super_cup (Asian Super Cup), row club-world-55: the game holds 2003, the table says not held
 2003	not_held	bra_champ_cup (Copa dos Campeões), row bra-192: the game holds 2003, the table says not held
-2003	not_held	conmebol_merc (Copa Mercosur), row club-world-43: the game holds 2003, the table says not held
 2003	not_held	goldcup (Copa América), row int-continental-33: the game holds 2004, the table says not held
 2003	not_held	gre_super (Greek Super Cup), row gre-pol-cro-84: the game holds 2003, the table says not held
-2003	not_held	inter_amer_cup (Copa Interamericana), row club-world-50: the game holds 2003, the table says not held
 2003	not_held	nir_charity (Charity Shield), row wal-nir-irl-65: the game holds 2003, the table says not held
-2003	not_held	oceania_club_champ (Oceania Club Championship), row club-world-56: the game holds 2003, the table says not held
 2003	not_held	olympics (Football at the Summer Olympics), row int-world-35: the game holds 2004, the table says not held
 2003	not_held	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-27: the game holds 2004, the table says not held
-2003	not_held	world_club_champ (FIFA Club World Championship), row club-world-40: the game holds 2003, the table says not held
 2003	not_in_game	arg-usa-192 argentina_rules 'Argentina' (Argentina)
 2003	not_in_game	aus-jap-kor-111 japan_rules 'n/a' (Japan)
 2003	not_in_game	aus-jap-kor-3 australia_rules 'n/a' (Australia)
@@ -92,17 +81,7 @@
 2003	not_in_game	bra-1029 new 'Campeonato Sul-Mato-Grossense' (Brazil)
 2003	not_in_game	bra-1056 new 'Campeonato Tocantinense' (Brazil)
 2003	not_in_game	bra-3 brazil_rules 'Brazil' (Brazil)
-2003	not_in_game	bra-759 new 'Campeonato Potiguar' (Brazil)
-2003	not_in_game	bra-786 new 'Campeonato Paraibano' (Brazil)
-2003	not_in_game	bra-813 new 'Campeonato Alagoano' (Brazil)
-2003	not_in_game	bra-840 new 'Campeonato Sergipano' (Brazil)
-2003	not_in_game	bra-867 new 'Campeonato Maranhense' (Brazil)
-2003	not_in_game	bra-894 new 'Campeonato Amazonense' (Brazil)
-2003	not_in_game	bra-921 new 'Campeonato Piauiense' (Brazil)
-2003	not_in_game	bra-948 new 'Campeonato Acriano' (Brazil)
 2003	not_in_game	bra-975 new 'Campeonato Brasiliense' (Brazil)
-2003	not_in_game	club-world-45 new 'Copa Sudamericana' (CONMEBOL)
-2003	not_in_game	club-world-46 new 'Recopa Sudamericana' (CONMEBOL)
 2003	not_in_game	eng-313 eng_fa_trophy 'FA Trophy' (England)
 2003	not_in_game	eng-52 eng_conf 'Football Conference' (England)
 2003	not_in_game	fra-23 fra_cfa 'CFA' (France)
@@ -136,7 +115,5 @@
 2003	up	bel_third (Belgian Third Division), row hol-bel-36: game 1 (+0 play-off places), table 2 (2 (group champions))
 2003	up	bra_nat_first (Campeonato Brasileiro Série A), row bra-30: game 4 (+0 play-off places), table na (n/a)
 2003	up	conmebol_liber (Copa Libertadores), row club-world-42: game 2 (+0 play-off places), table na (n/a)
-2003	up	conmebol_merc (Copa Mercosur), row club-world-43: game 1 (+0 play-off places), table na (n/a)
 2003	up	fin_first (Ykkönen), row nor-fin-28: game 2 (+0 play-off places), table 1 (1st (1))
 2003	up	gre_cup (Greek Football Cup), row gre-pol-cro-3: game 2 (+0 play-off places), table na (n/a)
-2003	up	oceania_club_champ (Oceania Club Championship), row club-world-56: game 2 (+0 play-off places), table na (n/a)

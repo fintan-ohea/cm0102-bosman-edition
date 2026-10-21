@@ -4,17 +4,8 @@
 2016	bench	eng_fa_cup (FA Cup), row eng-388: game 5, table 7 (7)
 2016	bench	fifa_confed (FIFA Confederations Cup), row int-world-190: game 7, table 12 (12)
 2016	bench	world_club_champ (FIFA Club World Cup), row club-world-287: game 7, table 12 (12)
-2016	club_list	American Major League: 12 of 20 listed clubs that the database holds (22 listed), 0 other clubs, 12 in all; not in it: Atlanta United, Montreal Impact, Orlando City, Philadelphia Union, Real Salt Lake, Seattle Sounders, Toronto FC, Vancouver Whitecaps; others: -
-2016	club_list	Irish First Division: 8 of 8 listed clubs that the database holds (8 listed), 2 other clubs, 10 in all; not in it: -; others: FC Carlow, Tralee Dynamos
-2016	club_list	Korean League: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Daegu FC, Incheon United; others: -
-2016	club_list	Portuguese Second League: 18 of 21 listed clubs that the database holds (22 listed), 0 other clubs, 18 in all; not in it: Sport Lisboa e Benfica B, Sporting Clube de Braga B, Sporting Clube de Portugal B; others: -
-2016	club_list	Russian First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Spartak-2 Moscow, Zenit-2 St. Petersburg; others: -
-2016	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: AFC United, Halmstads BK; others: -
-2016	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: 1461 Trabzon, Kayseri Erciyesspor
-2016	club_list	Welsh Premier Division: 12 of 12 listed clubs that the database holds (12 listed), 6 other clubs, 18 in all; not in it: -; others: Barry Town, Caernarfon Town, Cardiff Met, Denbigh Town, Haverfordwest County, Port Talbot Town
 2016	clubs	african_nations (Africa Cup of Nations), row int-continental-172: game 0, table 16 (16)
 2016	clubs	asia_club_champ (AFC Champions League), row club-world-298: game 16, table 32 (32)
-2016	clubs	con_champ (CONCACAF Champions League), row club-world-294: game 8, table 24 (24)
 2016	clubs	fifa_confed (FIFA Confederations Cup), row int-world-190: game 0, table 8 (8)
 2016	clubs	ire_chal_cup (FAI Cup), row wal-nir-irl-394: game 42, table 40 (40 (inference from RSSSF round list))
 2016	clubs	ire_first (League of Ireland First Division), row wal-nir-irl-392: game 10, table 8 (8)
@@ -58,16 +49,11 @@
 2016	no_row	record_utils (Reserve): no table row
 2016	no_row	record_utils (Under 21 International): no table row
 2016	no_row	spa_lower (Spanish Lower Division): no table row
-2016	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-301: the game holds 2016, the table says not held
-2016	not_held	asia_super_cup (Asian Super Cup), row club-world-302: the game holds 2016, the table says not held
-2016	not_held	con_merc_cup (Copa Merconorte), row club-world-291: the game holds 2016, the table says not held
-2016	not_held	inter_amer_cup (Copa Interamericana), row club-world-297: the game holds 2016, the table says not held
 2016	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-399: the game holds 2016, the table says not held
 2016	not_held	kor_league_cup (Korean League Cup), row aus-jap-kor-448: the game holds 2016, the table says not held
 2016	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-394: the game holds 2016, the table says not held
 2016	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-232: the game holds 2016, the table says not held
 2016	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-384: the game holds 2016, the table says not held
-2016	not_held	world_club_cup (Intercontinental Cup), row club-world-286: the game holds 2016, the table says not held
 2016	not_in_game	arg-usa-367 usa_rules 'United States' (United States)
 2016	not_in_game	aus-jap-kor-313 korea_rules 'n/a' (South Korea)
 2016	not_in_game	club-world-289 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -96,7 +82,7 @@
 2016	playoffs	sco_third (Scottish League Two), row sco-125: game 0 up and 0 down play-off places, table 3 and 1 ('2nd to 4th play off with League One 9th for a League One place (two-legged semi-')
 2016	playoffs	swe_first (Superettan), row den-swe-255: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2016	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-232: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2016	up	con_merc_cup (Copa Merconorte), row club-world-291: game 1 (+0 play-off places), table na (n/a)
+2016	subs_used	new_suruga_bank (Suruga Bank Championship), row club-world-528: game 3, table 7 (7)
 2016	up	pol_first (Ekstraklasa), row gre-pol-cro-205: game 4 (+0 play-off places), table na (n/a)
 2016	up	sco_second (Scottish League One), row sco-124: game 2 (+0 play-off places), table 1 (1)
 2016	up	sco_third (Scottish League Two), row sco-125: game 2 (+0 play-off places), table 1 (1)

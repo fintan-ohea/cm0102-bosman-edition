@@ -11,6 +11,9 @@ season's rules). The runs:
     2010    September 2010 ODB, the season 2010/11 (the format of 2009/10 to 2017/18)
     2018    October 2018, the season 2018/19 (a preliminary round, paths from Q2, four group places for the top
             four associations: England's four clubs in the group stage)
+    load2018  October 2018: the game saves 20 days after the start (late July 2018, before the Champions League's
+            second qualifying round ends), a new program loads the save and plays to the end of the season (slice
+            23 review 2: the draws after a load read the direct clubs of the list +0x14)
     load    September 2010 ODB: the game saves 30 days after the start (August 2010, inside the qualifying
             rounds), a new program loads the save and plays to 1 June 2011; both cups play their group stages and
             knockouts to a winner (the hand-over of Champions League losers after a load)
@@ -84,16 +87,27 @@ def run_season(name, season, database, cl_clubs, labels_want, england_groups=Non
     return run
 
 
-def run_load(program, game, work):
+def load_run(season, database, days, name):
+    """A save inside the qualifying rounds, loaded by a new program that plays to the end of the season. The
+    group draws take the 16 direct clubs from the list +0x14 (draw_phase1_groups 0x585365), and the constructors
+    skip build_entrants after a load (0x902366, 0x583870): the draws after the load show the list came back."""
+    return lambda program, game, work: run_load(program, game, work, season, database, days, name)
+
+
+def run_load(program, game, work, season=2010, database="September 2010 ODB", days=30, name="load"):
     """A save inside the qualifying rounds, loaded by a new program that plays to the end of the season."""
     import fixtures
     import smoke_run
-    db = os.path.join(DB, "September 2010 ODB")
-    code, _ = rrc.run(program, game, 2010, 2010, db, ["England"], [], work, 7200, None,
-                      {"RECOMP_SAVE_AFTER_DAYS": "30"})
+    db = os.path.join(DB, database)
+    code, _ = rrc.run(program, game, season, season, db, ["England"], [], work, 7200, None,
+                      {"RECOMP_SAVE_AFTER_DAYS": str(days)})
     first = os.path.join(work, "user", smoke_run.SAVE_NAME)
     if code != 0 or not os.path.exists(first):
-        return [f"load: the first run made no save (code {code}, {work})"]
+        return [f"{name}: the first run made no save (code {code}, {work})"]
+    # Inside the qualifying rounds: the first run saved before the Champions League's second qualifying round
+    # ended (its losers go to the Europa League with a log line, season_uefa_qual.c put_losers).
+    if "losers of Champions League round 260" in ufr.boxes(work)[1]:
+        return [f"{name}: the save after {days} days is past the second qualifying round ({work})"]
     again = os.path.join(work, "again")
     user = os.path.join(again, "user")
     os.makedirs(user, exist_ok=True)
@@ -107,18 +121,18 @@ def run_load(program, game, work):
     # news (its 120 s limit is shorter than the jump on a loaded machine).
     steps = fixtures.LOAD_STEPS[:-1] + ["3600000 quit"]
     r, _ = fixtures.run(program, game, "classic", user, smoke_run.scaled_steps("classic", again, steps),
-                        {"RECOMP_SEASON_JUMP": "2010", "RECOMP_RULES_REPORT": report}, 7200)
+                        {"RECOMP_SEASON_JUMP": str(season), "RECOMP_RULES_REPORT": report}, 7200)
     with open(os.path.join(again, "stderr.txt"), "w") as f:
         f.write(r.stderr)
-    fails = [] if r.returncode == 0 else [f"load: the loaded game ended with code {r.returncode} ({again})"]
-    fails += [f"load: message box {b}" for b in ufr.BOX.findall(r.stderr)]
-    fails += group_draw_fails("load", r.stderr)
+    fails = [] if r.returncode == 0 else [f"{name}: the loaded game ended with code {r.returncode} ({again})"]
+    fails += [f"{name}: message box {b}" for b in ufr.BOX.findall(r.stderr)]
+    fails += group_draw_fails(name, r.stderr)
     if os.path.exists(report):
         lines = ufr.uefa_lines(report)
-        fails += ufr.expect(lines, 2010, "european_cup", CL, "load")
-        fails += ufr.expect(lines, 2010, "uefa_cup", EL, "load")
+        fails += ufr.expect(lines, season, "european_cup", CL, name)
+        fails += ufr.expect(lines, season, "uefa_cup", EL, name)
     else:
-        fails.append(f"load: no report ({again})")
+        fails.append(f"{name}: no report ({again})")
     return fails
 
 
@@ -169,6 +183,7 @@ RUNS = {
     "2010": run_season("2010", 2010, "September 2010 ODB", 76, LABELS_2009, None, "250 260 270 220"),
     "2018": run_season("2018", 2018, "October 2018", 79, LABELS_2018, 4, "240 230 250 260 270 220"),
     "load": run_load,
+    "load2018": load_run(2018, "October 2018", 20, "load2018"),
     "2013": run_2013,
     "repeat": run_repeat,
 }

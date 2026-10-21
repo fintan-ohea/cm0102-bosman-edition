@@ -1204,10 +1204,12 @@ int season_uefa_report_clubs(uint32_t obj)
  * entry is zeroed only when a club is put, 0x585693). The group draw news then reads the nation of that club
  * (0x5857f4, 0x9058b0, Database.cpp 13126 at 0x53b407): the box. The halves of the partners of an earlier pot
  * come before the pot is drawn: when 5 clubs of a pot have a partner in an earlier pot, and that partner has the
- * same half for all 5, the pot has 5 clubs for the 4 slots of a half.
+ * same half for all 5, the pot has 5 clubs for the 4 slots of a half. A pair of one nation inside the pot takes
+ * one slot of each half, so 4 such clubs and one such pair also leave a club with no slot.
  *
  * This file. For a Champions League of the access list, before the draw: the same sort (the game's qsort) and
- * pairs, and when a pot has 5 or more clubs with a partner in an earlier pot, a choice of the half of each club
+ * pairs, and when a pot has 5 or more clubs with a partner in an earlier pot or pairs in the pot (a pair counts
+ * once), a choice of the half of each club
  * (the partners in opposite halves, 4 of each half in every pot), found by search. The hook on the random function
  * (win.h) then returns the number that gives that half at the call at 0x5855b7 (return address 0x5855bc). The
  * clubs, the other random numbers and the count of calls stay the original's. A draw that cannot fail runs as the
@@ -1292,8 +1294,16 @@ RT_WRAP(00585290, cl_group_draw_guard)
             for (int i = 0; i < DG_N; i++)                  /* 0x58544c..0x585496 */
                 for (int j = i + 1; partner[i] < 0 && j < DG_N; j++)
                     if (partner[j] < 0 && nat[j] == nat[i]) partner[i] = j, partner[j] = i;
-            for (int i = 0; i < DG_N; i++)
-                if (partner[i] >= 0 && partner[i] / 8 < i / 8 && ++from_earlier[i / 8] >= 5) risky = 1;
+            /* The worst case of a half in a pot: every club with a partner in an earlier pot forced into it (their
+             * partners all drew the other half), and one club of each pair inside the pot (a pair takes one place
+             * of each half: 0x5855e1..0x585656 gives the partner the other half with no test of its places). Five
+             * or more is more than the 4 places of a half (slice 23 review 2, item 1). */
+            for (int i = 0; i < DG_N; i++) {
+                if (partner[i] >= 0 && partner[i] / 8 < i / 8) from_earlier[i / 8]++;
+                if (partner[i] > i && partner[i] / 8 == i / 8) from_earlier[i / 8]++;
+            }
+            for (int p = 0; p < 4; p++)
+                if (from_earlier[p] >= 5) risky = 1;
             cpu.esp = saved_esp;
             if (getenv("RECOMP_DRAW_GUARD") && !strcmp(getenv("RECOMP_DRAW_GUARD"), "force")) risky = 1;   /* a test run */
             if (risky) {
@@ -1307,7 +1317,7 @@ RT_WRAP(00585290, cl_group_draw_guard)
                     dg_on = 1;
                     win_random_hook = dg_hook;
                     fprintf(stderr, "recomp: uefa: Champions League group draw: 5 or more clubs of a pot have a partner "
-                            "in an earlier pot, the halves of the 32 clubs are set\n");
+                            "in an earlier pot or in the pot, the halves of the 32 clubs are set\n");
                 } else {
                     fprintf(stderr, "recomp: uefa: Champions League group draw: no balanced halves for the 32 clubs\n");
                 }

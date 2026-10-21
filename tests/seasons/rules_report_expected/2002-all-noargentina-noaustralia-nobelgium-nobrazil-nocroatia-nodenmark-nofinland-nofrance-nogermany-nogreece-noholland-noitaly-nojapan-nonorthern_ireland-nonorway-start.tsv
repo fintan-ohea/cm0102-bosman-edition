@@ -1,11 +1,5 @@
 # Differences between the rules report and the rules table that the check accepts. Made by
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
-2002	club_list	American Major League: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Miami Fusion FC, Tampa Bay Mutiny
-2002	club_list	Irish First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Dundalk F.C., Monaghan United; others: -
-2002	club_list	Irish Premier Division: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Dundalk F.C., Monaghan United
-2002	club_list	Russian First Division: 18 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 18 in all; not in it: Biokhimik-Mordovia Saransk, Metallurg-Zapsib Novokuznetsk, Sokol Saratov, Uralmash Yekaterinburg; others: -
-2002	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Aydinspor, Batman Petrolspor
-2002	clubs	con_champ (CONCACAF Champions' Cup), row club-world-28: game 8, table 16 (16)
 2002	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-13: game 5, table 50 (50)
 2002	clubs	european_cup (UEFA Champions League), row uefa-10: game 55, table 72 (72 (32 in the group stage))
 2002	clubs	fifa_confed (FIFA Confederations Cup), row int-world-22: game 0, table 8 (8)
@@ -33,9 +27,6 @@
 2002	no_row	record_utils (Reserve): no table row
 2002	no_row	record_utils (Under 21 International): no table row
 2002	no_row	spa_lower (Spanish Lower Division): no table row
-2002	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-35: the game holds 2002, the table says not held
-2002	not_held	con_merc_cup (Copa Merconorte), row club-world-25: the game holds 2002, the table says not held
-2002	not_held	inter_amer_cup (Copa Interamericana), row club-world-31: the game holds 2002, the table says not held
 2002	not_held	ire_leinster_cup (Leinster Senior Cup), row wal-nir-irl-46: the game holds 2002, the table says not held
 2002	not_held	ire_lge_cup (League of Ireland Cup), row wal-nir-irl-45: the game holds 2002, the table says not held
 2002	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-49: the game holds 2002, the table says not held
@@ -43,7 +34,6 @@
 2002	not_held	kor_super_cup (K League Super Cup), row aus-jap-kor-380: the game holds 2002, the table says not held
 2002	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-218: the game holds 2002, the table says not held
 2002	not_held	pol_super (Polish Super Cup), row gre-pol-cro-272: the game holds 2002, the table says not held
-2002	not_held	world_club_champ (FIFA Club World Championship), row club-world-21: the game holds 2003, the table says not held
 2002	not_in_game	arg-usa-353 usa_rules 'United States' (United States)
 2002	not_in_game	aus-jap-kor-299 korea_rules 'n/a' (South Korea)
 2002	not_in_game	club-world-23 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -60,7 +50,6 @@
 2002	playoffs	ire_first (League of Ireland First Division), row wal-nir-irl-42: game 1 up and 0 down play-off places, table 3 and 0 ('pos 2,3,4: promotion/relegation play-off')
 2002	playoffs	pol_first (I liga), row gre-pol-cro-191: game 0 up and 0 down play-off places, table 0 and 2 ('12th-13th: relegation play-offs')
 2002	playoffs	tur_second_b (Second League Category B), row rus-tur-218: game 2 up and 0 down play-off places, table 0 and 0 ('none')
-2002	up	con_merc_cup (Copa Merconorte), row club-world-25: game 1 (+0 play-off places), table na (n/a)
 2002	up	pol_first (I liga), row gre-pol-cro-191: game 4 (+0 play-off places), table na (n/a)
 2002	up	pol_second (II liga), row gre-pol-cro-245: game 2 (+2 play-off places), table 1 (1 (1st))
 2002	up	tur_second_b (Second League Category B), row rus-tur-218: game 0 (+2 play-off places), table 3 (3)

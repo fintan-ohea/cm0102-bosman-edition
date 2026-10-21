@@ -49,6 +49,7 @@
 2008	not_held	african_nations (Africa Cup of Nations), row int-continental-84: the game holds 2008, the table says not held
 2008	not_held	euro_champ (UEFA European Championship), row int-continental-78: the game holds 2008, the table says not held
 2008	not_held	ger_lge_cup (DFL-Ligapokal), row ger-102: the game holds 2008, the table says not held
+2008	not_held	new_concacaf_gold_cup (CONCACAF Gold Cup), row int-continental-82: the game holds 2009, the table says not held
 2008	not_in_game	eng-102 eng_conf 'Conference Premier' (England)
 2008	not_in_game	eng-343 eng_fa_trophy 'FA Trophy' (England)
 2008	not_in_game	eng-345 new 'Conference League Cup (Setanta Shield)' (England)

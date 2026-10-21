@@ -192,4 +192,8 @@ int season_cup_group_days(int clubs, int meetings);
  * later slots. The wrap is in season_uefa_qual.c (one wrap for slices 21c and 23). */
 void season_cup_groups_mapped(uint32_t self);
 
+/* Test only, RECOMP_CUP_GROUPS_READ=1: reads the cup's round table as Comp::build_match_date_list 0x48d500 does (the
+ * Schedule tab, scout duty), before the rules report writes its cupmore line (season_super_cups.c). */
+void season_cup_groups_read_test(uint32_t cup);
+
 #endif

@@ -6,8 +6,8 @@ Usage:
     python3 tests/smoke/team_views_run.py <cm0102_recomp> <game folder> <out folder> [--dir <fixtures folder>]
 
 Four runs from start.sav (tests/fixtures/fixtures.py), at the same time:
-    classic, widescreen  the tour: own squad (Arsenal) > Assistant > Team views > Squad depth > Compare
-                         players > Back; Premier Division table > Liverpool > Squad > Assistant > Team views >
+    classic, widescreen  the tour: own squad (Arsenal) > Assistant > Team views > Compare players > Best
+                         XI > Back; Premier Division table > Liverpool > Squad > Assistant > Team views >
                          Back. Screen dumps of each step in <out>/<mode>.
     same-on, same-off    the same-save check (classic): squad_views = on and off, the same steps (SAME_STEPS: both
                          drop-downs open and close, the screen stays shut), then one game day; the runtime
@@ -16,7 +16,7 @@ Four runs from start.sav (tests/fixtures/fixtures.py), at the same time:
 Checks, from the screen log (RECOMP_SCREEN_LOG=1) and the runtime's line "team views for club":
     - the screen opens twice, for two clubs, the first the own club
     - after each open the top screen is a new one, and after each Back it is the squad screen 0x454900
-    - the tabs switch (the screen is built again three times on the own club)
+    - the tabs switch (the screen is built three times on the own club: Best XI, Compare players, Best XI)
     - the two saves are equal
 """
 import os
@@ -44,12 +44,12 @@ TOUR = TO_SQUAD + [
     "1500 click 592 135",                   # Assistant
     "3000 click 540 241 | 928 288",         # Team views
     "5000 dump {d}/1-best-xi.bmp",
-    "5500 move 445 97",
-    "6000 click 445 97",                    # Squad depth
-    "8000 dump {d}/2-squad-depth.bmp",
-    "8500 move 675 97",
-    "9000 click 675 97",                    # Compare players
-    "11000 dump {d}/3-compare.bmp",
+    "5500 move 675 97",
+    "6000 click 675 97",                    # Compare players
+    "8000 dump {d}/2-compare.bmp",
+    "8500 move 272 97",
+    "9000 click 272 97",                    # Best XI again (two tabs since 0.6.0)
+    "11000 dump {d}/3-best-xi-again.bmp",
     "12000 click 358 573",                  # Back
     "wait screen:0x454900",
     "1500 dump {d}/4-back.bmp",
@@ -134,7 +134,7 @@ def check_tour(name, code, log):
                 problems.append(f"{name}: after an open the screens were {after[:2]}, expected the views, then "
                                 f"the squad screen")
     if builds < 4:
-        problems.append(f"{name}: the screen was built {builds} times, expected 3 tabs and the other club")
+        problems.append(f"{name}: the screen was built {builds} times, expected 3 on the own club and the other club")
     return problems
 
 

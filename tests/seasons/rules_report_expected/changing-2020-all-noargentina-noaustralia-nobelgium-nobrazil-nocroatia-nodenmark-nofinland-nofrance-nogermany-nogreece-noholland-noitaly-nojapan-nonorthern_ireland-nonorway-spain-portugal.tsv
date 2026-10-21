@@ -2,6 +2,7 @@
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
 2020	bench	asia_club_champ (AFC Champions League), row club-world-374: game 5/9, table 10 (10)
 2020	bench	eur_super_cup (UEFA Super Cup), row uefa-160: game 9, table 12 (12)
+2020	bench	new_uefa_nations_league (2020-21 UEFA Nations League), row int-continental-212: game 9, table 12 (12 (23 players on the match sheet, from October 2020))
 2020	bench	rus_first (Football National League), row rus-tur-47: game 9, table 12 (12)
 2020	bench	spa_first (Primera División), row spa-154: game 9, table 12 (12 (23-man squad))
 2020	bench	spa_second (Segunda División), row spa-155: game 9, table 12 (12 (23-man squad))
@@ -14,6 +15,7 @@
 2020	clubs	ire_chal_cup (FAI Cup), row wal-nir-irl-494: game 42, table 38 (38)
 2020	clubs	ire_prm (League of Ireland Premier Division), row wal-nir-irl-491: game 12, table 10 (10)
 2020	clubs	kor_league (K League 1), row aus-jap-kor-344: game 10, table 12 (12)
+2020	clubs	new_uefa_nations_league (2020-21 UEFA Nations League), row int-continental-212: game 4, table 55 (55)
 2020	clubs	pol_first (Ekstraklasa), row gre-pol-cro-209: game 8, table 16 (16)
 2020	clubs	por_cup (Taça de Portugal), row por-177: game 164, table 165 (165)
 2020	clubs	por_second_b (Campeonato de Portugal), row por-174: game 20, table 96 (96 (8 series of 12))
@@ -58,6 +60,7 @@
 2020	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-499: the game holds 2020, the table says not held
 2020	not_held	kor_league_cup (Korean League Cup), row aus-jap-kor-452: the game holds 2020, the table says not held
 2020	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-398: the game holds 2020, the table says not held
+2020	not_held	new_concacaf_gold_cup (CONCACAF Gold Cup), row int-continental-214: the game holds 2021, the table says not held
 2020	not_held	olympics (Football at the Summer Olympics), row int-world-239: the game holds 2020, the table says not held
 2020	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-236: the game holds 2020, the table says not held
 2020	not_held	sco_chal_cup (Scottish Challenge Cup), row sco-160: the game holds 2020, the table says not held
@@ -74,7 +77,6 @@
 2020	not_in_game	den-swe-280 swe_second 'Ettan' (Sweden)
 2020	not_in_game	eng-222 eng_conf 'National League' (England)
 2020	not_in_game	eng-415 eng_fa_trophy 'FA Trophy' (England)
-2020	not_in_game	int-continental-212 new '2020-21 UEFA Nations League' (UEFA)
 2020	not_in_game	por-179 new 'Taça da Liga (Allianz Cup)' (Portugal)
 2020	not_in_game	rus-tur-101 new 'Russian Super Cup' (Russia)
 2020	not_in_game	rus-tur-290 new 'Turkish Super Cup' (Turkey)
@@ -103,7 +105,8 @@
 2021	bench	asia_club_champ (AFC Champions League), row club-world-393: game 9, table 10 (10)
 2021	bench	eur_super_cup (UEFA Super Cup), row uefa-168: game 9, table 12 (12)
 2021	bench	european_cup (UEFA Champions League), row uefa-162: game 9, table 12 (12)
-2021	bench	new_conference_league (UEFA Europa League), row uefa-166: game 9, table 12 (12)
+2021	bench	new_conference_league (UEFA Europa Conference League), row uefa-166: game 9, table 12 (12)
+2021	bench	new_finalissima (2022 Finalissima), row int-continental-224: game 7, table 12 (12)
 2021	bench	rus_first (Football National League), row rus-tur-48: game 9, table 12 (12)
 2021	bench	rus_prm (Russian Premier League), row rus-tur-21: game 9, table 12 (12)
 2021	bench	spa_first (Primera División), row spa-162: game 9, table 12 (12)
@@ -120,6 +123,8 @@
 2021	clubs	ire_first (League of Ireland First Division), row wal-nir-irl-517: game 10, table 9 (9)
 2021	clubs	ire_prm (League of Ireland Premier Division), row wal-nir-irl-516: game 12, table 10 (10)
 2021	clubs	kor_league (K League 1), row aus-jap-kor-345: game 10, table 12 (12)
+2021	clubs	new_concacaf_gold_cup (CONCACAF Gold Cup), row int-continental-225: game 0/4, table 16 (16)
+2021	clubs	new_concacaf_nations_league (2022-23 CONCACAF Nations League), row int-continental-226: game 2, table 41 (41)
 2021	clubs	pol_first (Ekstraklasa), row gre-pol-cro-210: game 8, table 18 (18)
 2021	clubs	por_cup (Taça de Portugal), row por-186: game 164, table 154 (154)
 2021	clubs	por_second_b (Liga 3), row por-184: game 12, table 24 (24 (2 series of 12))
@@ -159,7 +164,7 @@
 2021	down	tur_second_b (TFF 2. Lig), row rus-tur-237: game 0 (+0 play-off places), table 7 (7 (White 16th to 18th, Red 17th to 20th))
 2021	down	wel_first (Cymru Premier), row wal-nir-irl-504: game 0 (+0 play-off places), table 2 (2 (pos 11,12))
 2021	idle	olympics (Football at the Summer Olympics), row int-world-251: the game waits for 2024, the table holds it
-2021	name	new_conference_league (UEFA Europa League), row uefa-166: game 'UEFA Europa League', table 'UEFA Europa Conference League'
+2021	name	new_uefa_nations_league (2020-21 UEFA Nations League), row int-continental-223: game '2020-21 UEFA Nations League', table '2020-21 Finals; 2022-23 UEFA Nations League (start)'
 2021	no_row	friendly (Friendly): no table row
 2021	no_row	record_utils ('B' International): no table row
 2021	no_row	record_utils (Reserve): no table row
@@ -182,9 +187,6 @@
 2021	not_in_game	den-swe-286 swe_second 'Ettan' (Sweden)
 2021	not_in_game	eng-232 eng_conf 'National League' (England)
 2021	not_in_game	eng-421 eng_fa_trophy 'FA Trophy' (England)
-2021	not_in_game	int-continental-223 new '2020-21 Finals; 2022-23 UEFA Nations League (start)' (UEFA)
-2021	not_in_game	int-continental-225 new '2021 CONCACAF Gold Cup' (CONCACAF)
-2021	not_in_game	int-continental-226 new '2022-23 CONCACAF Nations League' (CONCACAF)
 2021	not_in_game	por-188 new 'Taça da Liga (Allianz Cup)' (Portugal)
 2021	not_in_game	rus-tur-102 new 'Russian Super Cup' (Russia)
 2021	not_in_game	rus-tur-291 new 'Turkish Super Cup' (Turkey)
@@ -204,6 +206,7 @@
 2021	playoffs	spa_second_b (Primera División RFEF), row spa-164: game 0 up and 0 down play-off places, table 4 and 0 ('2nd to 5th of each group play off for 2 places: single-match semi-finals and fin')
 2021	playoffs	swe_first (Superettan), row den-swe-285: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2021	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-237: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
+2021	subs_used	new_finalissima (2022 Finalissima), row int-continental-224: game 3, table 5 (max 5, 12 named substitutes)
 2021	up	pol_first (Ekstraklasa), row gre-pol-cro-210: game 4 (+0 play-off places), table na (n/a)
 2021	up	por_second_b (Liga 3), row por-184: game 1 (+0 play-off places), table 2 (2 (winners of the two promotion series))
 2021	up	sco_second (Scottish League One), row sco-164: game 2 (+0 play-off places), table 1 (1)

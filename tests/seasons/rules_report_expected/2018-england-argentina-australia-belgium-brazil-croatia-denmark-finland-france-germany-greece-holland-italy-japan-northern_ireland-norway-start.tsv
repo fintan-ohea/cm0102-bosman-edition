@@ -19,26 +19,9 @@
 2018	bench	ita_ser_a (Serie A), row ita-291: game 9, table 12 (12)
 2018	bench	ita_ser_b (Serie B), row ita-292: game 9, table 12 (12 (inference: Lega B assembly asked for 12 "from next season" in July 2017))
 2018	bench	ita_super (Supercoppa Italiana), row ita-304: game 9, table 12 (12)
+2018	bench	new_recopa (Recopa Sudamericana), row club-world-331: game 9, table 12 (12)
+2018	bench	new_sudamericana (Copa Sudamericana), row club-world-330: game 9, table 12 (12)
 2018	bench	world_club_champ (FIFA Club World Cup), row club-world-325: game 7, table 12 (12)
-2018	club_list	Argentine Premier Division: 20 of 26 listed clubs that the database holds (26 listed), 0 other clubs, 20 in all; not in it: Aldosivi, Gimnasia y Esgrima de La Plata, Lanús, Newell's Old Boys, San Martín de Tucumán, Tigre; others: -
-2018	club_list	Belgian First Division: 16 of 16 listed clubs that the database holds (16 listed), 2 other clubs, 18 in all; not in it: -; others: RSC Templeuvois, RUS Genly-Quévy 89
-2018	club_list	Belgian Second Division: 8 of 8 listed clubs that the database holds (8 listed), 10 other clubs, 18 in all; not in it: -; others: AS Verbroedering Geel, FC Knokke, FC Rupel Boom, FCV Dender EH, KFC Dessel Sport, KMSK Deinze, KSK Heist, KSK Lierse Kempenzonen, RSC Chatelet-Farciennes, Royal Excelsior Virton
-2018	club_list	Brazilian National Third Division: 19 of 19 listed clubs that the database holds (20 listed), 37 other clubs, 56 in all; not in it: -; others: AER Auritânia Foz do Iguaçu, Associação Atlética Aparecidense, Associação Atlética Caldense, Associação Atlética Coruripe, Bangu Atlético Clube, Campinense Clube, Central Sport Club, Clube Atlético Linense, Clube Atlético Metropolitano (SC), Clube Recreativo e Atlético Catalano, Colo-Colo de Futebol e Regatas, Duque de Caxias Futebol Clube, EC Internacional, Esporte Clube Comercial, Esporte Clube Cruzeiro, Esporte Clube Novo Hamburgo (RS), Esporte Clube XV de Novembro, Estanciano Esporte Clube, Fluminense de Feira Futebol Clube, Goianésia Esporte Clube, Grêmio Osasco Audax, Guarani de Juazeiro, Ituano Futebol Clube, Mirassol Futebol Clube, Moto Club de São Luís, Nacional Futebol Clube (AM), Náutico Futebol Clube, Operário Futebol Club Ltda., Palmas Futebol e Regatas, Paulista Futebol Clube, Serrano Sport Club, Sociedade Desportiva Juazeirense, Sociedade Esportiva do Gama, União Recreativa dos Trabalhadores, Veranópolis Esporte Clube Recreativo e Cultural, Vilhena Esporte Clube, Villa Nova Atlético Clube (MG)
-2018	club_list	Croatian First Division: 10 of 10 listed clubs that the database holds (10 listed), 6 other clubs, 16 in all; not in it: -; others: HNK Cibalia Vinkovci, NK Jedinstvo Omladinac, NK NASK Nasice, NK Polet Sveti Martin na Muri, NK Zelina, NK Zrinski Tordinci
-2018	club_list	Croatian Second Division North: 14 of 14 listed clubs that the database holds (14 listed), 2 other clubs, 16 in all; not in it: -; others: BSK Zmaj Blato, NK Maksimir
-2018	club_list	Danish First Division: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: Brabrand IF, Esbjerg fB, Skive IK, Vendsyssel FF
-2018	club_list	Danish Premier Division: 12 of 14 listed clubs that the database holds (14 listed), 0 other clubs, 12 in all; not in it: Esbjerg fB, Vendsyssel FF; others: -
-2018	club_list	Danish Second Division: 16 of 24 listed clubs that the database holds (24 listed), 0 other clubs, 16 in all; not in it: Aarhus Fremad, Brabrand IF, Odder IGF, Skive IK, Slagelse B&I, Tarup-Paarup IF, Vanlöse IF, Vejgaard B; others: -
-2018	club_list	Dutch First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: AZ Alkmaar U21, FC Utrecht U21; others: -
-2018	club_list	French National: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: AC Arles-Avignon, Union Sportive Albigeoise
-2018	club_list	Greek National A Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Apollon Smyrnis, PAS Lamia 1964; others: -
-2018	club_list	Greek National B Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: AE Sparti, PASA Irodotos; others: -
-2018	club_list	Italian Serie A: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Frosinone Calcio, Parma Calcio 1913; others: -
-2018	club_list	Japanese J-League 1: 16 of 18 listed clubs that the database holds (18 listed), 0 other clubs, 16 in all; not in it: Matsumoto Yamaga FC, Nagoya Grampus; others: -
-2018	club_list	Japanese J-League 2: 12 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 12 in all; not in it: Ehime FC, FC Gifu, FC Machida Zelvia, FC Ryukyu, Fagiano Okayama, Kagoshima United FC, Kyoto Sanga FC, Renofa Yamaguchi FC, Tochigi SC, Zweigen Kanazawa; others: -
-2018	club_list	Northern Irish League First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Knockbreda FC, Limavady United; others: -
-2018	club_list	Northern Irish League Premier Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Institute FC, Newry City FC; others: -
-2018	club_list	Norwegian Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Lilleström SK, Mjøndalen IF; others: -
 2018	clubs	african_nations (Africa Cup of Nations), row int-continental-194: game 0, table 24 (24)
 2018	clubs	arg_prm (Superliga Argentina), row arg-usa-18: game 20, table 26 (26)
 2018	clubs	asia_club_champ (AFC Champions League), row club-world-336: game 16, table 32 (32)
@@ -48,10 +31,9 @@
 2018	clubs	bra_champ_cup (Copa dos Campeões), row bra-207: game 3, table 0 (0)
 2018	clubs	bra_cup (Copa do Brasil), row bra-153: game 71, table 91 (91)
 2018	clubs	bra_nat_third (Campeonato Brasileiro Série C), row bra-99: game 7, table 20 (20)
-2018	clubs	bra_reg_central (Campeonato Mato-Grossense), row bra-531: game 15, table 10 (10)
 2018	clubs	bra_reg_gaucho (Campeonato Gaúcho), row bra-558: game 17, table 12 (12)
 2018	clubs	bra_reg_goias (Campeonato Goiano), row bra-585: game 14, table 12 (12)
-2018	clubs	bra_reg_northeast (Campeonato Cearense), row bra-666: game 16, table 10 (10)
+2018	clubs	bra_reg_northeast (Campeonato Cearense), row bra-666: game 9, table 10 (10)
 2018	clubs	bra_reg_rio (Campeonato Carioca), row bra-477: game 12, table 16 (16)
 2018	clubs	conmebol_liber (Copa Libertadores), row club-world-327: game 4, table 47 (47)
 2018	clubs	cro_a1 (Prva HNL), row gre-pol-cro-342: game 16, table 10 (10)
@@ -72,6 +54,10 @@
 2018	clubs	ita_ser_a (Serie A), row ita-291: game 18, table 20 (20)
 2018	clubs	jap_j1 (J1 League), row aus-jap-kor-207: game 16, table 18 (18)
 2018	clubs	jap_j2 (J2 League), row aus-jap-kor-234: game 12, table 22 (22)
+2018	clubs	new_brasiliense_state_championship (Campeonato Brasiliense), row bra-990: game 10, table 12 (12)
+2018	clubs	new_maranhense_state_championship (Campeonato Maranhense), row bra-882: game 7, table 8 (8)
+2018	clubs	new_paraibano_state_championship (Campeonato Paraibano), row bra-801: game 9, table 10 (10)
+2018	clubs	new_sergipano_state_championship (Campeonato Sergipano), row bra-855: game 6, table 9 (9)
 2018	clubs	nir_cup (Irish Cup), row wal-nir-irl-438: game 32, table 126 (126)
 2018	clubs	nir_first (NIFL Championship), row wal-nir-irl-436: game 10, table 12 (12)
 2018	clubs	nir_lge_cup (NIFL Cup), row wal-nir-irl-439: game 5, table 36 (36)
@@ -105,18 +91,13 @@
 2018	no_row	record_utils ('B' International): no table row
 2018	no_row	record_utils (Reserve): no table row
 2018	no_row	record_utils (Under 21 International): no table row
-2018	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-339: the game holds 2018, the table says not held
-2018	not_held	asia_super_cup (Asian Super Cup), row club-world-340: the game holds 2018, the table says not held
 2018	not_held	bra_champ_cup (Copa dos Campeões), row bra-207: the game holds 2018, the table says not held
-2018	not_held	conmebol_merc (Copa Mercosur), row club-world-328: the game holds 2018, the table says not held
 2018	not_held	cro_a2b (Druga HNL South), row gre-pol-cro-396: the game holds 2018, the table says not held
 2018	not_held	ger_lge_cup (DFL-Ligapokal), row ger-232: the game holds 2018, the table says not held
 2018	not_held	gre_super (Greek Super Cup), row gre-pol-cro-99: the game holds 2018, the table says not held
-2018	not_held	inter_amer_cup (Copa Interamericana), row club-world-335: the game holds 2018, the table says not held
 2018	not_held	ita_ser_c1a (Italian Serie C1/A), row ita-293: the game holds 2018, the table says not held
 2018	not_held	ita_ser_c1b (Italian Serie C1/B), row ita-294: the game holds 2018, the table says not held
 2018	not_held	nir_charity (Charity Shield), row wal-nir-irl-440: the game holds 2018, the table says not held
-2018	not_held	world_club_cup (Intercontinental Cup), row club-world-324: the game holds 2018, the table says not held
 2018	not_in_game	arg-usa-126 new 'Trofeo de Campeones de la Superliga' (Argentina)
 2018	not_in_game	arg-usa-153 new 'Copa de la Superliga 2019' (Argentina)
 2018	not_in_game	arg-usa-207 argentina_rules 'Argentina' (Argentina)
@@ -125,23 +106,12 @@
 2018	not_in_game	aus-jap-kor-126 japan_rules 'n/a' (Japan)
 2018	not_in_game	aus-jap-kor-18 australia_rules 'n/a' (Australia)
 2018	not_in_game	aus-jap-kor-68 new 'FFA Cup' (Australia)
-2018	not_in_game	bra-1017 new 'Campeonato Capixaba' (Brazil)
-2018	not_in_game	bra-1044 new 'Campeonato Sul-Mato-Grossense' (Brazil)
 2018	not_in_game	bra-1071 new 'Campeonato Tocantinense' (Brazil)
 2018	not_in_game	bra-18 brazil_rules 'Brazil' (Brazil)
 2018	not_in_game	bra-234 new 'Copa do Nordeste' (Brazil)
 2018	not_in_game	bra-261 new 'Copa Verde' (Brazil)
-2018	not_in_game	bra-774 new 'Campeonato Potiguar' (Brazil)
-2018	not_in_game	bra-801 new 'Campeonato Paraibano' (Brazil)
-2018	not_in_game	bra-828 new 'Campeonato Alagoano' (Brazil)
-2018	not_in_game	bra-855 new 'Campeonato Sergipano' (Brazil)
-2018	not_in_game	bra-882 new 'Campeonato Maranhense' (Brazil)
-2018	not_in_game	bra-909 new 'Campeonato Amazonense' (Brazil)
 2018	not_in_game	bra-936 new 'Campeonato Piauiense' (Brazil)
 2018	not_in_game	bra-963 new 'Campeonato Acriano' (Brazil)
-2018	not_in_game	bra-990 new 'Campeonato Brasiliense' (Brazil)
-2018	not_in_game	club-world-330 new 'Copa Sudamericana' (CONMEBOL)
-2018	not_in_game	club-world-331 new 'Recopa Sudamericana' (CONMEBOL)
 2018	not_in_game	eng-202 eng_conf 'National League' (England)
 2018	not_in_game	eng-403 eng_fa_trophy 'FA Trophy' (England)
 2018	not_in_game	fra-158 fra_cfa 'National 2' (France)
@@ -176,12 +146,12 @@
 2018	playoffs	nir_first (NIFL Championship), row wal-nir-irl-436: game 1 up and 0 down play-off places, table 2 and 1 ('pos 2,3: promotion play-off; pos 11: relegation play-off')
 2018	playoffs	nor_first (OBOS-ligaen), row nor-fin-173: game 1 up and 0 down play-off places, table 4 and 1 ('3rd-6th single-leg knockout; winner v top-flight 14th, two legs. 14th v 2. divis')
 2018	subs_used	ita_c1_super (Supercoppa Serie C), row ita-305: game 3, table 5 (5)
+2018	subs_used	new_suruga_bank (Suruga Bank Championship), row club-world-530: game 3, table 6 (6)
 2018	up	arg_second (Primera B Nacional), row arg-usa-45: game 1 (+0 play-off places), table 2 (2 (champion; Torneo Reducido winner))
 2018	up	aus_nsl (A-League), row aus-jap-kor-41: game 6 (+0 play-off places), table na (n/a)
 2018	up	bra_nat_first (Campeonato Brasileiro Série A), row bra-45: game 4 (+0 play-off places), table na (n/a)
 2018	up	bra_nat_third (Campeonato Brasileiro Série C), row bra-99: game 2 (+0 play-off places), table 4 (4)
 2018	up	conmebol_liber (Copa Libertadores), row club-world-327: game 2 (+0 play-off places), table na (n/a)
-2018	up	conmebol_merc (Copa Mercosur), row club-world-328: game 1 (+0 play-off places), table na (n/a)
 2018	up	cro_a2a (Druga HNL), row gre-pol-cro-369: game 0 (+0 play-off places), table 1 (1 (1st))
 2018	up	den_second (Danish 2nd Divisions), row den-swe-106: game 3 (+0 play-off places), table 2 (2)
 2018	up	fin_first (Ykkönen), row nor-fin-178: game 2 (+0 play-off places), table 1 (1st (1))

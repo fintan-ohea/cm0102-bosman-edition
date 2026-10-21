@@ -31,6 +31,9 @@ CALL_SITES = {
     "ratings_area": (0x722FA3, 0x55FBA0),
     # Data set choice (#39): the menu builder call of the Setup Game build 0x81bab0, with 9 items.
     "setup_menu": (0x81BCC5, 0x5ED300),
+    # Setup Game menu B (0.6.0, Max's play test): the sub-heading "Setup Game" of the build 0x81bab0. The
+    # season strip takes its place (database.c).
+    "setup_subheading": (0x81BB5F, 0x803F80),
     # Assistant drop-down (#12): the Clear Squad button of the squad list 0x456900.
     "squad_clear": (0x458AD0, 0x8040A0),
     # Team views (#22): the Filter button of the squad list 0x456900, made after Clear Squad.

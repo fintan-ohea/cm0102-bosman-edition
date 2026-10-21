@@ -6,20 +6,6 @@
 2008	bench	fra_lge_cup (Coupe de la Ligue), row fra-71: game 3, table 7 (7)
 2008	bench	ger_cup (DFB-Pokal), row ger-101: game 6, table 7 (7)
 2008	bench	world_club_champ (FIFA Club World Cup), row club-world-135: game 7, table 12 (12)
-2008	club_list	Argentine Second Division: 20 of 20 listed clubs that the database holds (20 listed), 5 other clubs, 25 in all; not in it: -; others: Almirante Brown, Ben Hur de Rafaela, Nueva Chicago, Racing de Córdoba, Sportivo Italiano
-2008	club_list	Belgian Second Division: 18 of 19 listed clubs that the database holds (19 listed), 0 other clubs, 18 in all; not in it: Union Royale Namur; others: -
-2008	club_list	Brazilian National Third Division: 19 of 19 listed clubs that the database holds (19 listed), 37 other clubs, 56 in all; not in it: -; others: Alagoinhas Atlético Clube, América Football Club (RJ), Anápolis Futebol Clube, Associação Atlética Coruripe, Atlético Progresso Clube, Bangu Atlético Clube, Barras Futebol Clube, Club Sportivo Sergipe, Clube Atlético Linense, Clube Esportivo Bento Gonçalves, Clube Recreativo e Atlético Catalano, Clube do Remo, Esporte Clube Dom Pedro II, Esporte Clube Noroeste, Esporte Clube Águia Negra, Horizonte Futebol Clube, Itabuna Esporte Clube, Ituano Futebol Clube, Joinville Esporte Clube, Macaé Sports, Mirassol Futebol Clube, Nacional Atlético Clube, Nacional Fast Clube, Operário Futebol Clube, Palmas Futebol e Regatas, Paulista Futebol Clube, Petrolina Social Futebol Clube, Rio Bananal Futebol Clube, Roma Esporte Apucarana, Santa Cruz Futebol Clube, Serra Futebol Clube, Sociedade Esportiva Picos, Sport Club Boavista, Sport Club Santa Cruz, Sport Club Ulbra, Treze Futebol Clube, Vilhena Esporte Clube
-2008	club_list	Croatian First Division: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: NK Olimpija, NK Podravac, NK Slavonija, NK Zminj
-2008	club_list	Danish Second Division: 16 of 22 listed clubs that the database holds (32 listed), 0 other clubs, 16 in all; not in it: IK Skovbakken, Skovlunde Idrætsforening, Svendborg forenede Boldklubber, Vanløse Idræts Forening, Vedbæk Boldklub, Værløse Boldklub; others: -
-2008	club_list	Dutch First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: FC Eindhoven, HFC Haarlem; others: -
-2008	club_list	Finnish Premier Division: 12 of 14 listed clubs that the database holds (14 listed), 0 other clubs, 12 in all; not in it: Jyväskylän Jalkapalloklubi, Rovaniemen Palloseura; others: -
-2008	club_list	Greek National A Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Panthrakikos, Thrasivoulos; others: -
-2008	club_list	Italian Serie A: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Calcio Catania, Reggina; others: -
-2008	club_list	Italian Serie B: 20 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 20 in all; not in it: Ancona, Cittadella; others: -
-2008	club_list	Japanese J-League 1: 16 of 18 listed clubs that the database holds (18 listed), 0 other clubs, 16 in all; not in it: Kyoto Sanga FC, Montedio Yamagata; others: -
-2008	club_list	Japanese J-League 2: 12 of 18 listed clubs that the database holds (18 listed), 0 other clubs, 12 in all; not in it: Ehime F.C., FC Gifu, Fagiano Okayama F.C., Kataller Toyama, Roasso Kumamoto, Tochigi S.C.; others: -
-2008	club_list	Northern Irish League Premier Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Bangor, Glenavon; others: -
-2008	club_list	Norwegian Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: IK Start, Sandefjord Fotball; others: -
 2008	clubs	arg_second (Primera B Nacional), row arg-usa-35: game 25, table 20 (20)
 2008	clubs	asia_club_champ (AFC Champions League), row club-world-146: game 16, table 32 (32)
 2008	clubs	bel_second (Belgian Second Division), row hol-bel-100: game 18, table 19 (19)
@@ -28,11 +14,10 @@
 2008	clubs	bra_cup (Copa do Brasil), row bra-143: game 71, table 64 (64)
 2008	clubs	bra_nat_third (Campeonato Brasileiro Série C), row bra-89: game 7, table 20 (20)
 2008	clubs	bra_reg_bahia (Campeonato Baiano), row bra-440: game 10, table 12 (12)
-2008	clubs	bra_reg_central (Campeonato Mato-Grossense), row bra-521: game 15, table 16 (16)
+2008	clubs	bra_reg_central (Campeonato Mato-Grossense), row bra-521: game 11, table 16 (16)
 2008	clubs	bra_reg_gaucho (Campeonato Gaúcho), row bra-548: game 17, table 16 (16)
 2008	clubs	bra_reg_goias (Campeonato Goiano), row bra-575: game 14, table 12 (12)
-2008	clubs	bra_reg_north (Campeonato Paraense), row bra-629: game 10, table 14 (14)
-2008	clubs	bra_reg_northeast (Campeonato Cearense), row bra-656: game 16, table 10 (10)
+2008	clubs	bra_reg_north (Campeonato Paraense), row bra-629: game 13, table 14 (14)
 2008	clubs	bra_reg_parana (Campeonato Paranaense), row bra-683: game 12, table 16 (16)
 2008	clubs	bra_reg_pern (Campeonato Pernambucano), row bra-737: game 10, table 12 (12)
 2008	clubs	bra_reg_rio (Campeonato Carioca), row bra-467: game 12, table 16 (16)
@@ -55,6 +40,12 @@
 2008	clubs	ita_ser_b (Serie B), row ita-122: game 20, table 22 (22)
 2008	clubs	jap_j1 (J.League Division 1), row aus-jap-kor-197: game 16, table 18 (18)
 2008	clubs	jap_j2 (J.League Division 2), row aus-jap-kor-224: game 12, table 18 (18)
+2008	clubs	new_acriano_state_championship (Campeonato Acriano), row bra-953: game 5, table 10 (10)
+2008	clubs	new_alagoano_state_championship (Campeonato Alagoano), row bra-818: game 9, table 10 (10)
+2008	clubs	new_piauiense_state_championship (Campeonato Piauiense), row bra-926: game 6, table 12 (12)
+2008	clubs	new_sergipano_state_championship (Campeonato Sergipano), row bra-845: game 7, table 10 (10)
+2008	clubs	new_sul-mato-grossense_state_championship (Campeonato Sul-Mato-Grossense), row bra-1034: game 10, table 18 (18)
+2008	clubs	new_tocantinense_state_championship (Campeonato Tocantinense), row bra-1061: game 6, table 10 (10)
 2008	clubs	nir_cup (Irish Cup), row wal-nir-irl-188: game 32, table 100 (100)
 2008	clubs	nir_first (IFA Championship), row wal-nir-irl-186: game 10, table 17 (17)
 2008	clubs	nir_lge_cup (Irish League Cup), row wal-nir-irl-189: game 5, table 29 (29)
@@ -97,19 +88,7 @@
 2008	not_in_game	arg-usa-197 argentina_rules 'Argentina' (Argentina)
 2008	not_in_game	aus-jap-kor-116 japan_rules 'n/a' (Japan)
 2008	not_in_game	aus-jap-kor-8 australia_rules 'n/a' (Australia)
-2008	not_in_game	bra-1007 new 'Campeonato Capixaba' (Brazil)
-2008	not_in_game	bra-1034 new 'Campeonato Sul-Mato-Grossense' (Brazil)
-2008	not_in_game	bra-1061 new 'Campeonato Tocantinense' (Brazil)
-2008	not_in_game	bra-764 new 'Campeonato Potiguar' (Brazil)
-2008	not_in_game	bra-791 new 'Campeonato Paraibano' (Brazil)
 2008	not_in_game	bra-8 brazil_rules 'Brazil' (Brazil)
-2008	not_in_game	bra-818 new 'Campeonato Alagoano' (Brazil)
-2008	not_in_game	bra-845 new 'Campeonato Sergipano' (Brazil)
-2008	not_in_game	bra-872 new 'Campeonato Maranhense' (Brazil)
-2008	not_in_game	bra-899 new 'Campeonato Amazonense' (Brazil)
-2008	not_in_game	bra-926 new 'Campeonato Piauiense' (Brazil)
-2008	not_in_game	bra-953 new 'Campeonato Acriano' (Brazil)
-2008	not_in_game	bra-980 new 'Campeonato Brasiliense' (Brazil)
 2008	not_in_game	eng-102 eng_conf 'Conference Premier' (England)
 2008	not_in_game	eng-343 eng_fa_trophy 'FA Trophy' (England)
 2008	not_in_game	eng-345 new 'Conference League Cup (Setanta Shield)' (England)

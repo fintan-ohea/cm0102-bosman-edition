@@ -12,7 +12,7 @@ import os
 import re
 
 CALLBACK_FILES = ("picker.c", "assistant.c", "commentary.c", "holiday_next.c", "views.c", "print_pdf.c", "best_xi.c",
-                  "tactics.c", "groups.c", "compare.c", "compare_screen.c", "squad_depth.c", "names.c", "pdf.c", "dbfolders.c",
+                  "tactics.c", "groups.c", "compare.c", "compare_screen.c", "names.c", "pdf.c", "dbfolders.c",
                   "foreign.c", "season.c", "season_dates.c", "season_history.c",
                   "season_change.c", "season_kind_club_world.c", "season_comps.c", "season_bra_states.c",
                   "season_super_cups.c", "season_new_cups.c", "season_cup_groups.c",
@@ -84,6 +84,7 @@ CALLBACKS = {
     0x54C5B0: ("83ec10a06924ae00", "date plus days"),
     0x55F990: ("81ec00020000568b", "popup item create"),
     0x55FBA0: ("a10c29ae008b1510", "popup area create"),
+    0x8AC600: ("a0201ede0083ec38", "draw_pitch (l, t, r, b, *ol, *ot, *or, *ob, across, owner, float scale): best_xi.c"),
     0x5ACBE0: ("81ec240200008b84", "fixture search"),
     0x5E8290: ("83ec6c8b0d307ab6", "message box (title, text, flags)"),
     0x5FCFF0: ("8b44240481ec0002", "commentary speed of a manager"),

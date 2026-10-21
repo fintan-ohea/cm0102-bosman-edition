@@ -62,6 +62,8 @@
 #define F_MATCH_DATE 0x00521eb0u        /* cdecl (table, round, day, month, year+, weekday, a7, year, venue) */
 #define F_MALLOC 0x00944e46u            /* cdecl (size) */
 #define F_FREE 0x009452cau              /* cdecl (block) */
+#define F_LINKED 0x00540a50u            /* club_get_linked_b_team, cdecl (club, &out, require_in_league) */
+#define CLUB_DIVISION 0x57u             /* the competition record of a club's division (the club lines of the report) */
 #define F_NEW 0x00944cf1u               /* operator new, cdecl (size) */
 
 #define GAME_DATE 0x00ae2c90u           /* s16 day of the year (0 = 1 January), +2 s16 year */
@@ -90,6 +92,7 @@
 #define PLAYOFF_CLUBS 4
 #define ROUND_SIZE 0x68u
 #define PLAYOFF_DAYS 12                 /* the last match on day 11 after the table is complete */
+#define FINAL_LEG_DAYS 3                /* a two-leg final: the second leg 3 days after the first (0x425f99) */
 #define NO_WEEKDAY 0xffffffffu          /* Date::Date 0x549f70 keeps the date for weekday -1 (src/si/date.c) */
 
 static int readable(uint32_t p) { return p >= 0x10000u && p < 0xfff00000u; }
@@ -270,26 +273,76 @@ static void promote_first(uint32_t obj, int first)
     wr32(g_mem, obj + COMP_STAGE_COUNT, 0);          /* the season closes as the original's (0x6849d1) */
 }
 
+static uint32_t league_above(uint32_t obj);
+static int season_now(uint32_t obj, const char *file);
+
+/* 1 when a club's paired side plays in the division above: a reserve side may not go up into the division of its
+ * senior club (the rows' play-off text: "reserve teams excluded, next club moves up"). club_get_linked_b_team
+ * 0x540a50 gives the paired club of a Spanish, German or Portuguese club from fixed key id pairs (the nation test
+ * at 0x540af6..0x540b10, the pairs from 0x540b1b and 0x541871, *out 1 at 0x54187c), or 0. Which side is the
+ * reserve one does not matter: a senior club's reserve side never plays in the division above it. */
+static int barred(uint32_t obj, uint32_t club)
+{
+    uint32_t above = league_above(obj);
+    if (!above || !readable(club)) return 0;
+    uint32_t out = game_malloc(4);
+    if (!out) return 0;
+    uint32_t a[3] = {club, out, 0};
+    uint32_t pair = call_cdecl(F_LINKED, 3, a);
+    game_free(out);
+    if (rt_unwinding || !readable(pair)) return 0;
+    uint32_t div = rd32(g_mem, pair + CLUB_DIVISION);
+    return readable(div) && div == rd32(g_mem, above + COMP_RECORD);
+}
+
+/* The rows of the play-off: the 4 rows from the first play-off place on that no reserve side holds. Gives the
+ * count found (fewer than 4 only at the foot of a short table). */
+static int playoff_rows(uint32_t obj, int first, int rows[PLAYOFF_CLUBS])
+{
+    int n = (int16_t)rd16(g_mem, obj + COMP_CLUBS), k = 0;
+    for (int i = first; i < n && k < PLAYOFF_CLUBS && !rt_unwinding; i++) {
+        if (barred(obj, row_club(obj, i))) {
+            fprintf(stderr, "recomp: playoffs: %s: place %d is a reserve side of a club above, the next place plays\n",
+                    season_change_file(obj), i + 1);
+            continue;
+        }
+        rows[k++] = i;
+    }
+    return k;
+}
+
+/* 1 when the final of the row is two legs at the clubs' grounds ("two-legged final": the Segunda from 2010/11).
+ * Else it is one match at a neutral ground, as EngFirst's final (venue flag 4, 0x572b49..0x572b5b; outside
+ * England Stadium::set_fixture_venue 0x85c260 gives a neutral venue, 0x85c5a7: the Turkish final). */
+static int two_leg_final(uint32_t obj, const char *file)
+{
+    const SeasonRule *r = row_of_season(file, season_now(obj, file));
+    return r && r->playoffs_text && strstr(r->playoffs_text, "two-legged final");
+}
+
 /* Builds the play-off stage of a marked league on the day its table is complete. */
 static void build_stage(uint32_t obj)
 {
     const char *file = season_change_file(obj);
     int first = (int8_t)g_mem[obj + UP];             /* row index of the first play-off place */
     uint32_t year = (uint32_t)(int16_t)rd16(g_mem, obj + COMP_YEAR);
-    int left = days_to_change(obj);
-    uint32_t clubs[PLAYOFF_CLUBS] = {row_club(obj, first + 3), row_club(obj, first), row_club(obj, first + 2),
-                                     row_club(obj, first + 1)};
+    int left = days_to_change(obj), two = two_leg_final(obj, file);
+    int rows[PLAYOFF_CLUBS] = {first, first + 1, first + 2, first + 3};
+    if (playoff_rows(obj, first, rows) < PLAYOFF_CLUBS) left = -1;
+    if (rt_unwinding) return;
+    uint32_t clubs[PLAYOFF_CLUBS] = {row_club(obj, rows[3]), row_club(obj, rows[0]), row_club(obj, rows[2]),
+                                     row_club(obj, rows[1])};
     for (int i = 0; i < PLAYOFF_CLUBS; i++)
         if (!readable(clubs[i])) left = -1;
-    if (left >= 0 && left <= PLAYOFF_DAYS) {
+    if (left >= 0 && left <= PLAYOFF_DAYS + (two ? FINAL_LEG_DAYS : 0)) {
         fprintf(stderr, "recomp: playoffs: %s %u: %d days to the season change, no time for the play-off; place %d "
-                        "goes up\n", file, year, left, first + 1);
-        promote_first(obj, first);
+                        "goes up\n", file, year, left, rows[0] + 1);
+        promote_first(obj, rows[0]);
         return;
     }
     if (left < 0) {
-        fprintf(stderr, "recomp: playoffs: %s %u: no entry or no clubs, place %d goes up\n", file, year, first + 1);
-        promote_first(obj, first);
+        fprintf(stderr, "recomp: playoffs: %s %u: no entry or no clubs, place %d goes up\n", file, year, rows[0] + 1);
+        promote_first(obj, rows[0]);
         return;
     }
     /* The round table of EngFirst's stage 0: two rounds of 0x68 bytes in the right layout. */
@@ -308,7 +361,18 @@ static void build_stage(uint32_t obj)
         return;
     }
     set_dates(table, 0, 1, 3, 1, 0, year);          /* semi-finals: first legs on day 3, second legs 4 days later */
-    if (!rt_unwinding) set_dates(table, 1, 8, 11, 2, 4, year);       /* the final on day 11 (venue 4 as 0x572b5b) */
+    if (!rt_unwinding) set_dates(table, 1, 8, 11, 2, two ? 0 : 4, year);   /* the final on day 11 (venue 4 as 0x572b5b) */
+    if (two) {
+        /* A two-leg final at the clubs' grounds, as the semi-finals of this table (+0x21 2 legs and +0x22 4 days
+         * between them, 0x572b1c, 0x572b20) and the two-leg final of BraChampCup::create_schedule 0x425c10 (+0x89 2
+         * at 0x425f92, +0x8a 3 days at 0x425f99, venue 0 at 0x425f38). 3 days here, so that the play-off ends 15
+         * days after the table. The final's tie rule (+0xd) is that of the semi-finals without their fixed pairs
+         * flag 0x200 (0x572af3). Inference: +0x21 is the count of legs and +0x22 the days between them. */
+        uint32_t f = table + ROUND_SIZE;
+        g_mem[f + 0x21] = 2;
+        g_mem[f + 0x22] = FINAL_LEG_DAYS;
+        wr16(g_mem, f + 0xd, rd16(g_mem, table + 0xd) & 0xffu);
+    }
     uint32_t list = rt_unwinding ? 0 : game_malloc(4 * PLAYOFF_CLUBS);
     if (!list) {
         game_free(table);
@@ -333,8 +397,9 @@ static void build_stage(uint32_t obj)
     if (!rt_unwinding) call_this(F_SET_UP_ROUND, stage, 1, r0);
     if (rt_unwinding) return;
     wr32(g_mem, obj + COMP_STAGE_NOW, 0);            /* only now: the save reads stages[0..+0x30] (0x689918) */
-    fprintf(stderr, "recomp: playoffs: %s %u: play-off of places %d to %d drawn\n", file, year, first + 1,
-            first + PLAYOFF_CLUBS);
+    fprintf(stderr, "recomp: playoffs: %s %u: play-off of places %d, %d, %d and %d drawn on day %d, %s final\n", file,
+            year, rows[0] + 1, rows[1] + 1, rows[2] + 1, rows[3] + 1, (int16_t)rd16(g_mem, GAME_DATE),
+            two ? "a two-leg" : "a one-match");
 }
 
 int season_playoffs_advance(uint32_t obj)
@@ -352,8 +417,9 @@ RT_WRAP(00686940, playoff_result)
 {
     if (marked(cpu.ecx) && g_mem[cpu.esp + 0xc] != 0xff) {
         if (getenv("RECOMP_PLAYOFF_LOG"))
-            fprintf(stderr, "recomp: playoffs: %s: result club %x code %d stage %d\n", season_change_file(cpu.ecx),
-                    rd32(g_mem, cpu.esp + 4), (int8_t)g_mem[cpu.esp + 8], (int8_t)g_mem[cpu.esp + 0xc]);
+            fprintf(stderr, "recomp: playoffs: %s: result club %x code %d stage %d, day %d of %d\n",
+                    season_change_file(cpu.ecx), rd32(g_mem, cpu.esp + 4), (int8_t)g_mem[cpu.esp + 8],
+                    (int8_t)g_mem[cpu.esp + 0xc], (int16_t)rd16(g_mem, GAME_DATE), (int16_t)rd16(g_mem, GAME_DATE + 2));
         rt_jump(F_ENG_RESULT);
         return;
     }
@@ -440,6 +506,11 @@ void season_playoffs_rules(uint32_t obj)
     g_mem[obj + UP] = (uint8_t)direct;
     g_mem[obj + UP_PLAYOFF] = PLAYOFF_CLUBS;
     fprintf(stderr, "recomp: playoffs: %s %d: places %d to %d\n", file, season, direct + 1, direct + PLAYOFF_CLUBS);
+    if (getenv("RECOMP_PLAYOFF_LOG"))                /* the reserve sides that the play-off would skip */
+        for (int i = 0; i < (int16_t)rd16(g_mem, obj + COMP_CLUBS) && i < 64 && !rt_unwinding; i++)
+            if (barred(obj, row_club(obj, i)))
+                fprintf(stderr, "recomp: playoffs: %s %d: %.51s is a reserve side of a club above\n", file, season,
+                        win_str(row_club(obj, i) + 4));
 }
 
 /* ---- The season change waits for the play-off ---- */

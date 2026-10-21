@@ -417,9 +417,11 @@ static int load(uint32_t club, uint32_t fixture, uint32_t viewer, Candidate *c, 
         /* Without a fixture 0x45cbe0 answers yes at once, so test injury and national duty here too. */
         uint32_t intl[5] = {staff, TODAY, club, 0, 0};
         uint32_t av[4] = {staff, fixture, club, TODAY};
-        int cannot = (call_this(0x62c400u, rd32(g_mem, FITNESS), 1, s1) & 0xff) == 2   /* al */
-                  || call_this(0x7757d0u, rd32(g_mem, NATIONS), 5, intl)
-                  || (fixture && !(call_cdecl(AVAILABLE, 4, av) & 0xff));
+        /* The reason, for Best XI's tags: 1 injured, 2 away with a national team, 3 the squad screen's test
+         * (a ban, a loan or the competition's rules). */
+        int cannot = (call_this(0x62c400u, rd32(g_mem, FITNESS), 1, s1) & 0xff) == 2   /* al */ ? 1
+                   : call_this(0x7757d0u, rd32(g_mem, NATIONS), 5, intl)                ? 2
+                   : fixture && !(call_cdecl(AVAILABLE, 4, av) & 0xff)                 ? 3 : 0;
         if (cannot && !out) continue;
         if (out) out[n] = cannot;
         c[n].staff = staff;

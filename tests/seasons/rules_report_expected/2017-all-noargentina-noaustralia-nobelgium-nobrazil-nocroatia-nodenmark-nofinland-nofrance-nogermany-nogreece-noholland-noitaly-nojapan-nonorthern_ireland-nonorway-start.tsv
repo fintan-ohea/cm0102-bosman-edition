@@ -7,18 +7,9 @@
 2017	bench	rus_first (Football National League), row rus-tur-44: game 9, table 11 (11)
 2017	bench	tur_first (Süper Lig), row rus-tur-179: game 9, table 10 (10 (21-man matchday list from 2017–18))
 2017	bench	tur_second (TFF 1. Lig), row rus-tur-206: game 9, table 10 (10)
-2017	bench	world_club_champ (FIFA Club World Cup), row club-world-306: game 9, table 12 (12)
+2017	bench	world_club_champ (FIFA Club World Cup), row club-world-306: game 7, table 12 (12)
 2017	bench	world_cup (FIFA World Cup), row int-world-194: game 7, table 12 (12)
-2017	club_list	American Major League: 12 of 20 listed clubs that the database holds (23 listed), 0 other clubs, 12 in all; not in it: Atlanta United, Montreal Impact, New York City FC, Orlando City, Philadelphia Union, Portland Timbers, Real Salt Lake, Vancouver Whitecaps; others: -
-2017	club_list	Irish Premier Division: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Mullingar Town, Saint Joseph's Boys
-2017	club_list	Korean League: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Daegu FC, Gangwon Football Club; others: -
-2017	club_list	Portuguese Second League: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Sporting Clube de Portugal B, Vitória Sport Club B; others: -
-2017	club_list	Russian First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Spartak-2 Moscow, Zenit-2 St. Petersburg; others: -
-2017	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Dalkurd FF, Trelleborgs FF; others: -
-2017	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Bandirmaspor, Sanliurfaspor
-2017	club_list	Welsh Premier Division: 12 of 12 listed clubs that the database holds (12 listed), 6 other clubs, 18 in all; not in it: -; others: Airbus UK Broughton, Caernarfon Town, Cardiff Met, Denbigh Town, Haverfordwest County, Port Talbot Town
 2017	clubs	asia_club_champ (AFC Champions League), row club-world-317: game 16, table 32 (32)
-2017	clubs	con_champ (CONCACAF Champions League), row club-world-313: game 8, table 16 (16)
 2017	clubs	ire_chal_cup (FAI Cup), row wal-nir-irl-419: game 42, table 40 (40 (inference from RSSSF round list))
 2017	clubs	ire_lge_cup (League of Ireland Cup), row wal-nir-irl-420: game 3, table 24 (24)
 2017	clubs	ire_prm (League of Ireland Premier Division), row wal-nir-irl-416: game 12, table 10 (10)
@@ -42,7 +33,7 @@
 2017	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-200: game 5, table 2 (2)
 2017	clubs	wel_first (Welsh Premier League), row wal-nir-irl-404: game 18, table 12 (12)
 2017	clubs	wel_lge_cup (Welsh League Cup), row wal-nir-irl-408: game 3, table 28 (28)
-2017	clubs	world_club_champ (FIFA Club World Cup), row club-world-306: game 4, table 7 (7)
+2017	clubs	world_club_champ (FIFA Club World Cup), row club-world-306: game 0, table 7 (7)
 2017	clubs	world_cup (FIFA World Cup), row int-world-194: game 0, table 32 (32)
 2017	down	eng_third (EFL League Two), row eng-191: game 1 (+0 play-off places), table 2 (2)
 2017	down	kor_league (K League 1), row aus-jap-kor-341: game 0 (+0 play-off places), table 1 (1 (12th))
@@ -60,17 +51,12 @@
 2017	no_row	record_utils (Reserve): no table row
 2017	no_row	record_utils (Under 21 International): no table row
 2017	no_row	spa_lower (Spanish Lower Division): no table row
-2017	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-320: the game holds 2017, the table says not held
-2017	not_held	asia_super_cup (Asian Super Cup), row club-world-321: the game holds 2017, the table says not held
-2017	not_held	con_merc_cup (Copa Merconorte), row club-world-310: the game holds 2017, the table says not held
 2017	not_held	euro_champ_qual (UEFA European Championship qualifying), row int-continental-178: the game holds 2018, the table says not held
-2017	not_held	inter_amer_cup (Copa Interamericana), row club-world-316: the game holds 2017, the table says not held
 2017	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-424: the game holds 2017, the table says not held
 2017	not_held	kor_league_cup (Korean League Cup), row aus-jap-kor-449: the game holds 2017, the table says not held
 2017	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-395: the game holds 2017, the table says not held
 2017	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-233: the game holds 2017, the table says not held
 2017	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-409: the game holds 2017, the table says not held
-2017	not_held	world_club_cup (Intercontinental Cup), row club-world-305: the game holds 2017, the table says not held
 2017	not_in_game	arg-usa-368 usa_rules 'United States' (United States)
 2017	not_in_game	aus-jap-kor-314 korea_rules 'n/a' (South Korea)
 2017	not_in_game	club-world-308 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -98,7 +84,7 @@
 2017	playoffs	sco_third (Scottish League Two), row sco-133: game 0 up and 0 down play-off places, table 3 and 1 ('2nd to 4th play off with League One 9th for a League One place (two-legged semi-')
 2017	playoffs	swe_first (Superettan), row den-swe-261: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2017	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-233: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2017	up	con_merc_cup (Copa Merconorte), row club-world-310: game 1 (+0 play-off places), table na (n/a)
+2017	subs_used	new_suruga_bank (Suruga Bank Championship), row club-world-529: game 3, table 7 (7)
 2017	up	pol_first (Ekstraklasa), row gre-pol-cro-206: game 4 (+0 play-off places), table na (n/a)
 2017	up	sco_second (Scottish League One), row sco-132: game 2 (+0 play-off places), table 1 (1)
 2017	up	sco_third (Scottish League Two), row sco-133: game 2 (+0 play-off places), table 1 (1)

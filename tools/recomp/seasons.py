@@ -430,7 +430,8 @@ INSNS = {
     # loads the real groups, fixtures and results of the 2002 campaign (load_2002_campaign 0x580bd0, at 0x57d025:
     # its fixed list of 49 nations and the results of 2002 and 2003). That is right only for the 2002 campaign
     # (a 2002/03 or 2003/04 start). A later start (2019: campaign 2018 of 10 groups) loaded the 2002 data into
-    # its own campaign and stopped at the box "euro_champ_qual.cpp 2358" (0x58325b). The base game never loads
-    # (game year 2001, campaign 2002), so its path is the original's.
-    0x57D021: ("jle 0x57d02a", "if (cc_le(F) || R16(esi + 0x40u) != 0x7d2u) goto L_57d02a;"),
+    # its own campaign and stopped at the box "euro_champ_qual.cpp 2358" (0x58325b). rt_euroq_skip_2002 skips
+    # the load only in a season game (season_intl_on): the base game keeps the original's path, also when a
+    # save of a later year is loaded (the ctor runs with the game year of the save).
+    0x57D021: ("jle 0x57d02a", "if (cc_le(F) || rt_euroq_skip_2002(esi)) goto L_57d02a;"),
 }

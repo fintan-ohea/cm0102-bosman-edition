@@ -317,6 +317,7 @@ void season_cups_more_report(void *file, int season, const char *phase)
         if (!readable(obj)) continue;
         const char *name = season_change_file(obj);
         if (!reported(name)) continue;
+        season_cup_groups_read_test(obj);       /* test only: RECOMP_CUP_GROUPS_READ=1 (season_cup_groups.c) */
         int stages = (int32_t)rd32(g_mem, obj + 0x2c), now = (int32_t)rd32(g_mem, obj + 0x30);
         uint32_t arr = rd32(g_mem, obj + 0xc);
         int group_clubs = 0, groups = 0, ko_clubs = 0, ko_rounds = 0;

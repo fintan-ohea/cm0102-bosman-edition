@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Best XI check (spec 2026-10-15-features-0.4.0, slice 4): the Best XI tab of the Team views screen.
+"""Best XI check (spec 2026-10-15-features-0.4.0, slices 4 and 5; one card per slot with the best three since
+Max's play test of 0.6.0): the Best XI tab of the Team views screen.
 
 Usage:
     python3 tests/smoke/best_xi_run.py <cm0102_recomp> <game folder> <out folder> [--dir <fixtures folder>]
@@ -14,12 +15,12 @@ The runtime writes a line for each draw of the eleven (RECOMP_VIEWS_LOG=1):
     recomp: best xi club <club> tactic <i> "<name>" masks <11 hex> staff <11 staff indices> fit <11>
         selection <11 staff indices of the club's stored selection> score <11 picker values> shown <11 numbers>
 a line for the Formation list: recomp: best xi tactics <n> current <i>,
-and two lines for each draw (Q154, Q155), in 800x600 numbers:
-    recomp: best xi pitch <x1> <y1> <x2> <y2> boxes <x1> <x2> ... (left and right edge of each name box)
-    recomp: best xi bench subs <staff of the pick's sub slots> list <staff> fit <fit> score <picker values>
-        numbers <numbers on the screen> shown <rows>
-A picker value is the score times 1200 (picker.c value()); the number on the screen is the score rounded,
-1 to 20 (Q156).
+and for each draw, in 800x600 numbers, a pitch line and a line for each of the 11 cards:
+    recomp: best xi pitch <x1> <y1> <x2> <y2> columns <n> most <n> card <w> x <h>
+    recomp: best xi card pos <position> rect <x1> <y1> <x2> <y2> staff <1 to 3 staff> score <picker values>
+        halves <half stars 1 to 10, 0 for no score> out <0, or 1 injured, 2 international, 3 another reason>
+A picker value is the score times 1200 (picker.c value()); the score is rounded, 1 to 20 (Q156), and shows
+as half stars: (score + 1) // 2, 0 for no score (Q420).
 
 Checks:
     - the first draw is on the current tactic (tactic 0) and has 11 players, each fit 1 to 20
@@ -28,11 +29,10 @@ Checks:
     - after "Pick best team" the stored selection equals the eleven of the first draw (same day)
     - the other club's draw has 11 players of another club
     - no draw holds a player twice
-    - every name box lies inside the pitch (Q154)
-    - the list on the right starts with the pick's subs, holds no player of the eleven and no player twice,
-      shows every player, and each fit is 1 to 20 (Q155)
-    - each number on the screen, in the eleven and the list, is the picker's score rounded, 1 to 20 (Q156), and
-      "-" (0) for a player whose key attributes are all hidden
+    - each draw has 11 cards, each inside the pitch, no two overlapping; the first player of each card is a
+      player of the eleven, each eleven player is first on one card, and a card holds no player twice (its
+      2nd and 3rd are the next for that slot and may play elsewhere in the eleven, Q420)
+    - each card's stars are the picker's score rounded (Q156), as half stars
     - no hidden attribute of another club's player feeds a score (hidden_check.py)
     - a Formation list that does not fit is paged: with RECOMP_VIEWS_FORMATION_PAGE=5 (a classic run), "More
       formations" opens page 2 and its first item draws the sixth tactic
@@ -135,17 +135,22 @@ def draws(log):
     return out
 
 
-PITCH = re.compile(r"recomp: best xi pitch (-?\d+) (-?\d+) (-?\d+) (-?\d+) boxes ([-0-9 ]+)")
-BENCH = re.compile(r"recomp: best xi bench subs ([-0-9 ]*) list ([-0-9 ]*) fit ([-0-9 ]*) score ([-0-9 ]*) "
-                   r"numbers ([-0-9 ]*) shown (\d+)")
+PITCH = re.compile(r"recomp: best xi pitch (-?\d+) (-?\d+) (-?\d+) (-?\d+) columns")
+CARD = re.compile(r"recomp: best xi card pos (\S+) rect (-?\d+) (-?\d+) (-?\d+) (-?\d+) staff ([-0-9 ]*) "
+                  r"score ([-0-9 ]*) halves ([-0-9 ]*) out ([-0-9 ]*)")
 
 
 def shown_score(value):
-    """The number on the screen for a picker value (Q156): the score value / 1200, rounded, 1 to 20. 0 for a
-    player with no score: the screen shows "-"."""
+    """The score on the screen for a picker value (Q156): the score value / 1200, rounded, 1 to 20. 0 for a
+    player with no score."""
     if value == -2:                         # PICK_UNSCORED
         return 0
     return max(1, min(20, (value + 600) // 1200))
+
+
+def halves(value):
+    shown = shown_score(value)
+    return (shown + 1) // 2 if shown else 0
 
 
 def score_problems(name, values, numbers):
@@ -155,39 +160,46 @@ def score_problems(name, values, numbers):
 
 
 def check_layout(name, log):
-    """Problems of the pitch boxes and the list on the right."""
+    """Problems of the cards: each draw of the eleven, then its pitch line and 11 card lines."""
     problems = []
-    pitches, benches = PITCH.findall(log), BENCH.findall(log)
-    if not pitches or not benches:
-        return [f"{name}: no pitch or list line in the log"]
-    for x1, y1, x2, y2, boxes in pitches:
-        e = [int(v) for v in boxes.split()]
-        for left, right in zip(e[0::2], e[1::2]):
-            if left < int(x1) or right > int(x2):
-                problems.append(f"{name}: a name box {left}..{right} sticks out of the pitch {x1}..{x2}")
-                break
-    # Each list belongs to the draw of the eleven that the log wrote just before it.
     events = sorted([(m.start(), "draw", m) for m in LINE.finditer(log)] +
-                    [(m.start(), "list", m) for m in BENCH.finditer(log)], key=lambda e: e[0])
-    pairs, eleven = [], None
+                    [(m.start(), "pitch", m) for m in PITCH.finditer(log)] +
+                    [(m.start(), "card", m) for m in CARD.finditer(log)], key=lambda e: e[0])
+    groups, eleven, pitch = [], None, None
     for _, kind, m in events:
         if kind == "draw":
-            eleven = {int(x) for x in m.group(5).split()}
-        else:
-            pairs.append((eleven, m.groups()))
-    for eleven, (subs, staff, fit, values, numbers, shown) in pairs:
-        subs, staff, fit, values, numbers = ([int(v) for v in t.split()] for t in (subs, staff, fit, values, numbers))
-        problems += score_problems(name + " list", values, numbers[:len(values)])
-        if staff[:len(subs)] != subs:
-            problems.append(f"{name}: the list starts {staff[:len(subs)]}, not with the subs {subs}")
-        if len(staff) != len(set(staff)):
-            problems.append(f"{name}: a player twice in the list {staff}")
-        if eleven is None or set(staff) & eleven:
-            problems.append(f"{name}: the list {staff} holds a player of its eleven {sorted(eleven or [])}")
-        if int(shown) != len(staff) or not staff:
-            problems.append(f"{name}: the list shows {shown} of {len(staff)} players")
-        if any(not 1 <= f <= 20 for f in fit):
-            problems.append(f"{name}: a fit outside 1 to 20 in the list {fit}")
+            eleven = [int(x) for x in m.group(5).split()]
+        elif kind == "pitch":
+            pitch = [int(v) for v in m.groups()]
+            groups.append((eleven, pitch, []))
+        elif groups:
+            groups[-1][2].append(m.groups())
+    if not groups:
+        return [f"{name}: no pitch line in the log"]
+    for eleven, (px1, py1, px2, py2), cards in groups:
+        if len(cards) != 11:
+            problems.append(f"{name}: {len(cards)} cards, expected 11")
+            continue
+        firsts, rects = [], []
+        for pos, x1, y1, x2, y2, staff, values, hv, out in cards:
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+            staff, values, hv = ([int(v) for v in t.split()] for t in (staff, values, hv))
+            if x1 < px1 or x2 > px2 or y1 < py1 or y2 > py2:
+                problems.append(f"{name}: the card {pos} {x1} {y1} {x2} {y2} sticks out of the pitch")
+            for o in rects:
+                if x1 < o[2] and o[0] < x2 and y1 < o[3] and o[1] < y2:
+                    problems.append(f"{name}: the card {pos} overlaps another card")
+            rects.append((x1, y1, x2, y2))
+            if not staff:
+                problems.append(f"{name}: the card {pos} is empty")
+                continue
+            firsts.append(staff[0])
+            if len(staff) != len(set(staff)):
+                problems.append(f"{name}: the card {pos} holds a player twice: {staff}")
+            if hv != [halves(v) for v in values]:
+                problems.append(f"{name}: the card {pos} shows {hv} half stars for the scores {values}")
+        if eleven is not None and sorted(firsts) != sorted(s for s in eleven if s >= 0):
+            problems.append(f"{name}: the first players {sorted(firsts)} are not the eleven {sorted(eleven)}")
     return problems
 
 

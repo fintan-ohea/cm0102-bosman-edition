@@ -20,24 +20,9 @@
 2020	bench	ita_ser_a (Serie A), row ita-325: game 9, table 12 (12)
 2020	bench	ita_ser_b (Serie B), row ita-326: game 9, table 12 (12 (inference: Lega B assembly asked for 12 "from next season" in July 2017))
 2020	bench	ita_super (Supercoppa Italiana), row ita-338: game 9, table 12 (12)
+2020	bench	new_recopa (Recopa Sudamericana), row club-world-369: game 9, table 12 (12)
+2020	bench	new_sudamericana (Copa Sudamericana), row club-world-368: game 9, table 12 (12)
 2020	bench	world_club_champ (FIFA Club World Cup), row club-world-363: game 7, table 12 (12)
-2020	club_list	Argentine Premier Division: 20 of 26 listed clubs that the database holds (26 listed), 0 other clubs, 20 in all; not in it: Aldosivi, Club Atlético Sarmiento (Junin), Colón de Santa Fé, Godoy Cruz Antonio Tomba, Huracán, Platense; others: -
-2020	club_list	Argentine Second Division: 25 of 35 listed clubs that the database holds (35 listed), 0 other clubs, 25 in all; not in it: AA Estudiantes de Río Cuarto, Club Atletico Güemes, Club Atlético San Telmo, Club Deportivo Riestra, Club Social y Atlético Guillermo Brown, Club Social y Deportivo Tristan Suarez, Deportivo Morón, Deportivo Santamarina, Gimnasia y Esgrima de Mendoza, Instituto de Córdoba; others: -
-2020	club_list	Belgian Second Division: 8 of 8 listed clubs that the database holds (8 listed), 10 other clubs, 18 in all; not in it: -; others: AFC Tubize, FC Rupel Boom, FCV Dender EH, KFC Dessel Sport, KSK Heist, KVV Thes Sport, Olympic Club Charleroi Farciennes, Patro Eisden Maasmechelen, RFC Liège, Royal Excelsior Virton
-2020	club_list	Brazilian National Third Division: 20 of 20 listed clubs that the database holds (20 listed), 36 other clubs, 56 in all; not in it: -; others: AA Aparecidense (GO), AA Portuguesa (RJ), Agremiação Sportiva Arapiraquense (AL), Associação Atlética Anapolina (GO), Associação Atlética Caldense (MG), Associação Atlética Coruripe (AL), Associação Ferroviária de Esportes (SP), Associação Olímpica de Itabaiana (SE), Atlético Acreano (AC), Atlético Cajazeirense de Desportos (PB), Boavista Sport Club (RJ), Brasiliense Futebol Clube (DF), CA Patrocinense (MG), Campinense Clube (PB), Central Sport Club (PE), Cianorte Futebol Clube (PR), Corumbaense Futebol Clube (MS), Esporte Clube Avenida (RS), Esporte Clube Internacional, Fluminense de Feira Futebol Clube (BA), Foz do Iguaçu FC, Globo Futebol Clube RN, Iporá EC, Maringá Futebol Clube (PR), Moto Club de São Luís (MA), Operário (MS), Palmas Futebol e Regatas, Salgueiro Atlético Clube (PE), Sociedade Desportiva Juazeirense (BA), Sociedade Imperatriz de Desportos (MA), Treze Futebol Clube (PB), União Recreativa dos Trabalhadores (MG), União Rondonópolis, Vilhena Esporte Clube (RO), Villa Nova Atlético Clube (MG), XV de Piracicaba
-2020	club_list	Croatian First Division: 10 of 10 listed clubs that the database holds (10 listed), 6 other clubs, 16 in all; not in it: -; others: BSK Zmaj Blato, HNK Hajduk Split II, HNK Segesta Sisak, NK Granicar Djurdjevac, NK Tehnicar 1974 Cvetkovec, NK Vodice
-2020	club_list	Croatian Second Division North: 16 of 18 listed clubs that the database holds (18 listed), 0 other clubs, 16 in all; not in it: HNK Hajduk Split II, NK Junak Sinj; others: -
-2020	club_list	Danish First Division: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: Aarhus Fremad, FC Roskilde, Naestved Boldklub, Nyköbing FC
-2020	club_list	Danish Second Division: 16 of 28 listed clubs that the database holds (28 listed), 0 other clubs, 16 in all; not in it: AB Taarnby, Aarhus Fremad, FC Roskilde, FC Sydvest 05, Holstebro Boldklub, Naesby Boldklub, Naestved Boldklub, Nyköbing FC, Roskilde KFUM, Skovshoved IF, Slagelse B&I, Svendborg fb - Oure FA; others: -
-2020	club_list	Dutch First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: AZ Alkmaar U21, FC Utrecht U21; others: -
-2020	club_list	French National: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: US Le Pontet, Union Sportive Municipale Senlisienne
-2020	club_list	Greek National B Division: 12 of 12 listed clubs that the database holds (12 listed), 2 other clubs, 14 in all; not in it: -; others: AO Egaleo, AO Platanias
-2020	club_list	Italian Serie A: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: FC Crotone, Spezia Calcio; others: -
-2020	club_list	Japanese J-League 1: 16 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 16 in all; not in it: Avispa Fukuoka, Shonan Bellmare, Tokushima Vortis, Vegalta Sendai; others: -
-2020	club_list	Japanese J-League 2: 12 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 12 in all; not in it: Blaublitz Akita, Ehime FC, Fagiano Okayama, Matsumoto Yamaga, Mito HollyHock, Renofa Yamaguchi, SC Sagamihara, ThespaKusatsu Gunma, Tokyo Verdy, Zweigen Kanazawa; others: -
-2020	club_list	Northern Irish League First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Knockbreda FC, Queen's University; others: -
-2020	club_list	Northern Irish League Premier Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Portadown FC, Warrenpoint Town FC; others: -
-2020	club_list	Norwegian Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Sandefjord Fotball, Tromsø IL; others: -
 2020	clubs	african_nations (Africa Cup of Nations), row int-continental-216: game 0, table 24 (24)
 2020	clubs	arg_prm (Liga Profesional de Fútbol), row arg-usa-20: game 20, table 26 (26)
 2020	clubs	arg_second (Primera Nacional), row arg-usa-47: game 25, table 35 (35)
@@ -46,11 +31,8 @@
 2020	clubs	bra_champ_cup (Copa dos Campeões), row bra-209: game 3, table 0 (0)
 2020	clubs	bra_cup (Copa do Brasil), row bra-155: game 71, table 92 (92)
 2020	clubs	bra_nat_third (Campeonato Brasileiro Série C), row bra-101: game 7, table 20 (20)
-2020	clubs	bra_reg_central (Campeonato Mato-Grossense), row bra-533: game 15, table 10 (10)
 2020	clubs	bra_reg_gaucho (Campeonato Gaúcho), row bra-560: game 17, table 12 (12)
 2020	clubs	bra_reg_goias (Campeonato Goiano), row bra-587: game 14, table 12 (12)
-2020	clubs	bra_reg_north (Campeonato Paraense), row bra-641: game 10, table 12 (12)
-2020	clubs	bra_reg_northeast (Campeonato Cearense), row bra-668: game 16, table 10 (10)
 2020	clubs	bra_reg_rio (Campeonato Carioca), row bra-479: game 12, table 17 (17)
 2020	clubs	bra_reg_santa (Campeonato Catarinense), row bra-506: game 10, table 12 (12)
 2020	clubs	conmebol_liber (Copa Libertadores), row club-world-365: game 4, table 47 (47)
@@ -68,6 +50,9 @@
 2020	clubs	ita_ser_a (Serie A), row ita-325: game 18, table 20 (20)
 2020	clubs	jap_j1 (J1 League), row aus-jap-kor-209: game 16, table 20 (20)
 2020	clubs	jap_j2 (J2 League), row aus-jap-kor-236: game 12, table 22 (22)
+2020	clubs	new_brasiliense_state_championship (Campeonato Brasiliense), row bra-992: game 11, table 12 (12)
+2020	clubs	new_potiguar_state_championship (Campeonato Potiguar), row bra-776: game 7, table 8 (8)
+2020	clubs	new_sergipano_state_championship (Campeonato Sergipano), row bra-857: game 7, table 10 (10)
 2020	clubs	nir_first (NIFL Championship), row wal-nir-irl-486: game 10, table 12 (12)
 2020	clubs	nir_prm (NIFL Premiership), row wal-nir-irl-485: game 10, table 12 (12)
 2020	clubs	nor_prm (Eliteserien), row nor-fin-192: game 14, table 16 (16)
@@ -100,17 +85,13 @@
 2020	no_row	record_utils ('B' International): no table row
 2020	no_row	record_utils (Reserve): no table row
 2020	no_row	record_utils (Under 21 International): no table row
-2020	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-377: the game holds 2020, the table says not held
-2020	not_held	asia_super_cup (Asian Super Cup), row club-world-378: the game holds 2020, the table says not held
 2020	not_held	bel_super (Belgian Super Cup), row hol-bel-260: the game holds 2020, the table says not held
 2020	not_held	bra_champ_cup (Copa dos Campeões), row bra-209: the game holds 2020, the table says not held
-2020	not_held	conmebol_merc (Copa Mercosur), row club-world-366: the game holds 2020, the table says not held
 2020	not_held	cro_a2b (Druga HNL South), row gre-pol-cro-398: the game holds 2020, the table says not held
 2020	not_held	fra_lge_cup (Coupe de la Ligue), row fra-179: the game holds 2020, the table says not held
 2020	not_held	ger_lge_cup (DFL-Ligapokal), row ger-258: the game holds 2020, the table says not held
 2020	not_held	gre_super (Greek Super Cup), row gre-pol-cro-101: the game holds 2020, the table says not held
 2020	not_held	hol_super (Johan Cruyff Shield), row hol-bel-253: the game holds 2020, the table says not held
-2020	not_held	inter_amer_cup (Copa Interamericana), row club-world-373: the game holds 2020, the table says not held
 2020	not_held	ita_c_cup (Coppa Italia Serie C), row ita-337: the game holds 2020, the table says not held
 2020	not_held	ita_ser_c1a (Italian Serie C1/A), row ita-327: the game holds 2020, the table says not held
 2020	not_held	ita_ser_c1b (Italian Serie C1/B), row ita-328: the game holds 2020, the table says not held
@@ -118,30 +99,18 @@
 2020	not_held	nir_lge_cup (NIFL Cup), row wal-nir-irl-489: the game holds 2020, the table says not held
 2020	not_held	olympics (Football at the Summer Olympics), row int-world-239: the game holds 2020, the table says not held
 2020	not_held	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-236: the game holds 2020, the table says not held
-2020	not_held	world_club_cup (Intercontinental Cup), row club-world-362: the game holds 2020, the table says not held
 2020	not_in_game	arg-usa-128 new 'Trofeo de Campeones' (Argentina)
 2020	not_in_game	arg-usa-155 new 'Copa de la Liga Profesional 2021' (Argentina)
 2020	not_in_game	arg-usa-209 argentina_rules 'Argentina' (Argentina)
 2020	not_in_game	aus-jap-kor-128 japan_rules 'n/a' (Japan)
 2020	not_in_game	aus-jap-kor-20 australia_rules 'n/a' (Australia)
-2020	not_in_game	bra-1019 new 'Campeonato Capixaba' (Brazil)
-2020	not_in_game	bra-1046 new 'Campeonato Sul-Mato-Grossense' (Brazil)
 2020	not_in_game	bra-1073 new 'Campeonato Tocantinense' (Brazil)
 2020	not_in_game	bra-182 new 'Supercopa do Brasil' (Brazil)
 2020	not_in_game	bra-20 brazil_rules 'Brazil' (Brazil)
 2020	not_in_game	bra-236 new 'Copa do Nordeste' (Brazil)
 2020	not_in_game	bra-263 new 'Copa Verde' (Brazil)
-2020	not_in_game	bra-776 new 'Campeonato Potiguar' (Brazil)
-2020	not_in_game	bra-803 new 'Campeonato Paraibano' (Brazil)
-2020	not_in_game	bra-830 new 'Campeonato Alagoano' (Brazil)
-2020	not_in_game	bra-857 new 'Campeonato Sergipano' (Brazil)
-2020	not_in_game	bra-884 new 'Campeonato Maranhense' (Brazil)
-2020	not_in_game	bra-911 new 'Campeonato Amazonense' (Brazil)
 2020	not_in_game	bra-938 new 'Campeonato Piauiense' (Brazil)
 2020	not_in_game	bra-965 new 'Campeonato Acriano' (Brazil)
-2020	not_in_game	bra-992 new 'Campeonato Brasiliense' (Brazil)
-2020	not_in_game	club-world-368 new 'Copa Sudamericana' (CONMEBOL)
-2020	not_in_game	club-world-369 new 'Recopa Sudamericana' (CONMEBOL)
 2020	not_in_game	eng-222 eng_conf 'National League' (England)
 2020	not_in_game	eng-415 eng_fa_trophy 'FA Trophy' (England)
 2020	not_in_game	fra-176 fra_cfa 'National 2' (France)
@@ -185,7 +154,6 @@
 2020	up	bra_nat_first (Campeonato Brasileiro Série A), row bra-47: game 4 (+0 play-off places), table na (n/a)
 2020	up	bra_nat_third (Campeonato Brasileiro Série C), row bra-101: game 2 (+0 play-off places), table 4 (4)
 2020	up	conmebol_liber (Copa Libertadores), row club-world-365: game 2 (+0 play-off places), table na (n/a)
-2020	up	conmebol_merc (Copa Mercosur), row club-world-366: game 1 (+0 play-off places), table na (n/a)
 2020	up	cro_a2a (Druga HNL), row gre-pol-cro-371: game 0 (+0 play-off places), table 1 (1 (1st))
 2020	up	den_second (Danish 2nd Divisions), row den-swe-118: game 3 (+0 play-off places), table 2 (2)
 2020	up	fin_first (Ykkönen), row nor-fin-198: game 2 (+0 play-off places), table 1 (1st (1))

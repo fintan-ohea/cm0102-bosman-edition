@@ -119,7 +119,10 @@ TARGETS = [
     ("ita", r"(Serie C2|Lega Pro Seconda Divisione) girone A", "Italian Serie C2/A"),
     ("ita", r"(Serie C2|Lega Pro Seconda Divisione) girone B", "Italian Serie C2/B"),
     ("ita", r"(Serie C2|Lega Pro Seconda Divisione) girone C", "Italian Serie C2/C"),
-    ("ita", r"(Serie C|Lega Pro) girone [ABC]", None, SKIP_NEW),
+    # Slice 20b: the single Serie C (2014/15 on) plays its groups A, B and C in the objects of C1/A, C1/B and C2/A.
+    ("ita", r"(Serie C|Lega Pro) girone A", "Italian Serie C1/A"),
+    ("ita", r"(Serie C|Lega Pro) girone B", "Italian Serie C1/B"),
+    ("ita", r"(Serie C|Lega Pro) girone C", "Italian Serie C2/A"),
     ("nor-fin", r"Tippeligaen|Eliteserien", "Norwegian Premier Division"),
     ("nor-fin", r"1\. divisjon", "Norwegian First Division"),
     ("nor-fin", r"Veikkausliiga", "Finnish Premier Division"),

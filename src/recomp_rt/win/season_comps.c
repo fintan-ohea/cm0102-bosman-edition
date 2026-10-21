@@ -63,6 +63,10 @@ extern const SeasonCompDef season_bra_state_ma, season_bra_state_am, season_bra_
     season_bra_state_rn, season_bra_state_pb, season_bra_state_al, season_bra_state_se, season_bra_state_df,
     season_bra_state_es, season_bra_state_ms, season_bra_state_to;
 
+/* Slice 20b: group C of the single Serie C (2014/15 on) on the C2/A object (season_divisions_ita.c). The original
+ * makes C2/A only with the extra division flag; without it the module makes the object. */
+extern const SeasonCompDef season_ita_group_c;
+
 const SeasonCompDef *const season_comp_defs[] = {
     &test_new_cup,                      /* test only, see above */
     /* slice 26c */
@@ -84,6 +88,7 @@ const SeasonCompDef *const season_comp_defs[] = {
     &season_def_rus_lge_cup,
     &season_def_conf_cup,
     &season_def_all_ireland,
+    &season_ita_group_c,                /* slice 20b */
 };
 const int season_comp_def_count = (int)(sizeof season_comp_defs / sizeof season_comp_defs[0]);
 

@@ -63,7 +63,7 @@ TOUR = [
     "10500 click 160 327 | 220 370",  # David Seaman
     "12500 click 610 137 | 1080 180",  # the second name box
     # Classic: More players (page 2). Widescreen and HD: Rami Shaaban on page 1.
-    "14000 click 610 559 | 1140 641",
+    "14000 click 610 538 | 1140 641",
     "16000 click 610 137 | 1080 180",  # the second name box again
     "17500 dump {d}/3-second-list.bmp",
     # Classic: Rami Shaaban on page 2. Widescreen and HD: a click beside the list closes it.
@@ -130,9 +130,9 @@ TOUR = [
 # hides 11 attributes (John Welsh), from page 2 of the first drop-down of the start.sav.
 HIDDEN_CLASSIC = [
     "12000 click 160 137",                  # the first name box
-    "13500 click 160 557",                  # More players
+    "13500 click 160 538",                  # More players (font 2 name boxes since 0.6.0: one row fewer)
     "15000 click 160 137",                  # the first name box again
-    "16500 click 160 244",                  # John Welsh
+    "16500 click 160 265",                  # John Welsh (one row lower since the page holds one name less)
     "18000 dump {d}/9-hidden-attributes.bmp",
 ]
 
@@ -234,19 +234,26 @@ def check_sides(name, bs):
     return problems
 
 
-def colour_pixels(path, rgb, tol=6):
-    """The pixels of a dump within tol of an RGB colour in each channel."""
+def colour_pixels(path, rgb, tol=6, middle=False):
+    """The pixels of a dump within tol of an RGB colour in each channel; middle: only in the middle panel of the
+    comparison (x 35 % to 65 %, y 22 % to 90 % of the screen), away from the heading and the name boxes."""
     w, h, bpp, rows = smoke_run.read_bmp(path)
     n = 0
-    for row in rows:
+    for y, row in enumerate(rows):
+        if middle and not 0.22 * h <= y <= 0.9 * h:
+            continue
         for i in range(0, len(row), bpp):
+            if middle and not 0.35 * w <= i // bpp <= 0.65 * w:
+                continue
             if (abs(row[i + 2] - rgb[0]) <= tol and abs(row[i + 1] - rgb[1]) <= tol and
                     abs(row[i] - rgb[2]) <= tol):
                 n += 1
     return n
 
 
-POLYGON_COLOURS = ((74, 155, 255), (255, 154, 46))      # player 1 and player 2 (compare.c BLUE, ORANGE)
+# Player 1 and player 2: the original's green [0xae31aa] and red [0xae31a8] (compare.c). The original's pitch
+# lines on the Best XI tab are the same green, so only red tells that no polygon stays there.
+POLYGON_COLOURS = ((0, 130, 0), (255, 0, 0))
 
 
 def check_polygon_gone(name, folder):
@@ -256,10 +263,10 @@ def check_polygon_gone(name, folder):
     if not (os.path.exists(tab) and os.path.exists(after)):
         return [f"{name}: the dumps of the Compare tab and the Best XI tab after it are missing"]
     for rgb in POLYGON_COLOURS:
-        shown, stale = colour_pixels(tab, rgb), colour_pixels(after, rgb)
+        shown, stale = colour_pixels(tab, rgb, middle=True), colour_pixels(after, rgb, middle=True)
         if shown < 50:
             problems.append(f"{name}: the Compare tab has {shown} pixels of {rgb}, expected the polygon")
-        if stale > 4:
+        if rgb == (255, 0, 0) and stale > 4:
             problems.append(f"{name}: the Best XI tab after the Compare tab has {stale} pixels of {rgb}")
     return problems
 

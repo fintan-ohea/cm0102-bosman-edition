@@ -1,17 +1,9 @@
 # Differences between the rules report and the rules table that the check accepts. Made by
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
+2015	bench	new_suruga_bank (Suruga Bank Championship), row club-world-527: game 7, table 9 (9)
 2015	bench	sco_lge_cup (Scottish League Cup), row sco-119: game 5, table 7 (7)
-2015	bench	world_club_champ (FIFA Club World Cup), row club-world-268: game 9, table 12 (12)
-2015	club_list	American Major League: 12 of 18 listed clubs that the database holds (20 listed), 0 other clubs, 12 in all; not in it: Montreal Impact, Orlando City, Philadelphia Union, Real Salt Lake, Toronto FC, Vancouver Whitecaps; others: -
-2015	club_list	Irish First Division: 8 of 8 listed clubs that the database holds (8 listed), 2 other clubs, 10 in all; not in it: -; others: FC Carlow, Tralee Dynamos
-2015	club_list	Korean League: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Gwangju FC, Suwon City; others: -
-2015	club_list	Portuguese Second League: 18 of 23 listed clubs that the database holds (24 listed), 0 other clubs, 18 in all; not in it: Associação Desportiva Oliveirense, Futebol Clube do Porto B, Sporting Clube de Braga B, Sporting Clube de Portugal B, Varzim Sport Clube; others: -
-2015	club_list	Russian First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Spartak-2 Moscow, Zenit-2 St. Petersburg; others: -
-2015	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: GIF Sundsvall, Jönköping Södra IF; others: -
-2015	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Bucaspor, Manisaspor
-2015	club_list	Welsh Premier Division: 12 of 12 listed clubs that the database holds (12 listed), 6 other clubs, 18 in all; not in it: -; others: Caerau Ely, Caernarfon Town, Cefn Druids, Conwy Borough, Guilsfield FC, Prestatyn Town
+2015	bench	world_club_champ (FIFA Club World Cup), row club-world-268: game 7, table 12 (12)
 2015	clubs	asia_club_champ (AFC Champions League), row club-world-279: game 16, table 32 (32)
-2015	clubs	con_champ (CONCACAF Champions League), row club-world-275: game 8, table 24 (24)
 2015	clubs	euro_champ (UEFA European Championship), row int-continental-155: game 0, table 24 (24)
 2015	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-156: game 0, table 53 (53)
 2015	clubs	goldcup (Copa América Centenario), row int-continental-165: game 0, table 16 (16)
@@ -38,7 +30,7 @@
 2015	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-176: game 5, table 11 (11 entrants)
 2015	clubs	wel_first (Welsh Premier League), row wal-nir-irl-354: game 18, table 12 (12)
 2015	clubs	wel_lge_cup (Welsh League Cup), row wal-nir-irl-358: game 3, table 28 (28)
-2015	clubs	world_club_champ (FIFA Club World Cup), row club-world-268: game 4, table 7 (7)
+2015	clubs	world_club_champ (FIFA Club World Cup), row club-world-268: game 0, table 7 (7)
 2015	down	eng_third (Football League Two), row eng-171: game 1 (+0 play-off places), table 2 (2)
 2015	down	kor_league (K League Classic), row aus-jap-kor-339: game 0 (+0 play-off places), table 1 (1 (12th))
 2015	down	pol_first (Ekstraklasa), row gre-pol-cro-204: game 0 (+0 play-off places), table 2 (2 (15th-16th))
@@ -55,10 +47,6 @@
 2015	no_row	record_utils (Reserve): no table row
 2015	no_row	record_utils (Under 21 International): no table row
 2015	no_row	spa_lower (Spanish Lower Division): no table row
-2015	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-282: the game holds 2015, the table says not held
-2015	not_held	asia_super_cup (Asian Super Cup), row club-world-283: the game holds 2015, the table says not held
-2015	not_held	con_merc_cup (Copa Merconorte), row club-world-272: the game holds 2015, the table says not held
-2015	not_held	inter_amer_cup (Copa Interamericana), row club-world-278: the game holds 2015, the table says not held
 2015	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-374: the game holds 2015, the table says not held
 2015	not_held	kor_league_cup (Korean League Cup), row aus-jap-kor-447: the game holds 2015, the table says not held
 2015	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-393: the game holds 2015, the table says not held
@@ -66,7 +54,6 @@
 2015	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-231: the game holds 2015, the table says not held
 2015	not_held	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-171: the game holds 2016, the table says not held
 2015	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-359: the game holds 2015, the table says not held
-2015	not_held	world_club_cup (Intercontinental Cup), row club-world-267: the game holds 2015, the table says not held
 2015	not_in_game	arg-usa-366 usa_rules 'United States' (United States)
 2015	not_in_game	aus-jap-kor-312 korea_rules 'n/a' (South Korea)
 2015	not_in_game	club-world-270 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -93,7 +80,7 @@
 2015	playoffs	sco_third (Scottish League Two), row sco-117: game 0 up and 0 down play-off places, table 3 and 1 ('2nd to 4th play off with League One 9th for a League One place (two-legged semi-')
 2015	playoffs	swe_first (Superettan), row den-swe-249: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2015	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-231: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2015	up	con_merc_cup (Copa Merconorte), row club-world-272: game 1 (+0 play-off places), table na (n/a)
+2015	subs_used	new_suruga_bank (Suruga Bank Championship), row club-world-527: game 3, table 6 (6)
 2015	up	pol_first (Ekstraklasa), row gre-pol-cro-204: game 4 (+0 play-off places), table na (n/a)
 2015	up	sco_second (Scottish League One), row sco-116: game 2 (+0 play-off places), table 1 (1)
 2015	up	sco_third (Scottish League Two), row sco-117: game 2 (+0 play-off places), table 1 (1)

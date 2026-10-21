@@ -39,4 +39,8 @@ void draw_polygon(const DrawTarget *t, const int *xy, int n, uint16_t colour, in
  * penalty areas, goal areas and penalty spots. */
 void draw_pitch(const DrawTarget *t, int x1, int y1, int x2, int y2);
 
+/* A five-pointed star of radius r around (cx, cy): fill 0 empty (in empty), 1 the left half in colour, 2 full
+ * in colour (Best XI, Q420). */
+void draw_star(const DrawTarget *t, int cx, int cy, int r, int fill, uint16_t colour, uint16_t empty);
+
 #endif

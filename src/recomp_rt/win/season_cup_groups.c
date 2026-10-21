@@ -251,12 +251,16 @@ static void merge_auto_halves(uint32_t cup)
     wr16(g_mem, cup + CUP_TEAMS, (uint16_t)(2 * n));
 }
 
-static int inner;                       /* 1 while the knockout builder asks the class for its table */
-
-/* After the class's create_round_table: self, stage and count_ptr as the wrap read them, the table in cpu.eax. */
+/* After the class's create_round_table: self, stage and count_ptr as the wrap read them, the table in cpu.eax.
+ * Only a set-up of the season's rounds acts: it asks for stage -1 with the cup's own round count +0x3c, as
+ * Cup::set_up_rounds 0x4c15f0 (call at 0x4c160a) and the constructors do (ScoLgeCup 0x7efad3, EngAutoCup 0x56ab7e and
+ * its set_up_rounds 0x56b71a, TurCup 0x8fc489, RusCup 0x7e9307: lea reg, [esi + 0x3c]). A caller that only reads the
+ * tables passes its own buffer, for example Comp::build_match_date_list 0x48d500 (the Schedule tab, scout duty:
+ * lea ecx, [esp + 0x16], call at 0x48d5c4); there the groups of a running season must stay (free_stages below would
+ * delete them, and merge_auto_halves would read a list it already merged). */
 void season_cup_groups_table(uint32_t cup, uint32_t stage, uint32_t count_ptr)
 {
-    if (inner || stage != 0xffu || !season_game() || !readable(cup)) return;
+    if (stage != 0xffu || count_ptr != cup + CUP_ROUND_COUNT || !season_game() || !readable(cup)) return;
     const SeasonCupGroups *g = format_at(cup, cup_season(cup));
     int32_t had = (int32_t)rd32(g_mem, cup + CUP_STAGE_COUNT), class_count = is_auto_cup(cup) ? 2 : 0;
     Cpu saved = cpu;
@@ -285,6 +289,25 @@ void season_cup_groups_table(uint32_t cup, uint32_t stage, uint32_t count_ptr)
     cpu = saved;
     fprintf(stderr, "recomp: cup groups: %s %d with %d groups after %d rounds (%d clubs)\n", format_file(cup),
             cup_season(cup), g->groups, g->base_rounds, clubs);
+}
+
+void season_cup_groups_read_test(uint32_t cup)
+{
+    static int on = -1;
+    if (on < 0) on = getenv("RECOMP_CUP_GROUPS_READ") && *getenv("RECOMP_CUP_GROUPS_READ") == '1';
+    if (!on || !readable(cup)) return;
+    /* As Comp::build_match_date_list 0x48d500 at 0x48d5a1..0x48d5c4: stage -1 and three buffers on its own stack,
+     * then the table goes back to the game's heap. */
+    Cpu saved = cpu;
+    cpu.esp -= 0x40;
+    uint32_t buf = cpu.esp;
+    uint32_t a[4] = {0xffffffffu, buf + 0x10, buf + 0x20, buf + 0x30};
+    uint32_t t = call_this(rd32(g_mem, rd32(g_mem, cup) + 0x3c), cup, 4, a);
+    if (rt_unwinding) return;
+    cpu = saved;
+    game_free(t);
+    if (rt_unwinding) return;
+    cpu = saved;
 }
 
 /* After map_fixture_tree 0x518790 of a cup with base rounds: the later slots count as done. */

@@ -1,12 +1,5 @@
 # Differences between the rules report and the rules table that the check accepts. Made by
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
-2003	club_list	American Major League: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Miami Fusion FC, Tampa Bay Mutiny
-2003	club_list	Irish First Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Dundalk F.C., Monaghan United; others: -
-2003	club_list	Irish Premier Division: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Dundalk F.C., Monaghan United
-2003	club_list	Polish First Division: 14 of 14 listed clubs that the database holds (14 listed), 2 other clubs, 16 in all; not in it: -; others: Astra Krotoszyn, RKS Motor Lublin
-2003	club_list	Russian First Division: 18 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 18 in all; not in it: Baltika Kaliningrad, Biokhimik-Mordovia Saransk, Metallurg-Zapsib Novokuznetsk, Uralan Elista; others: -
-2003	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Aydinspor, Batman Petrolspor
-2003	club_list	Welsh Premier Division: 17 of 17 listed clubs that the database holds (17 listed), 1 other clubs, 18 in all; not in it: -; others: Llandudno
 2003	clubs	african_nations (African Cup of Nations), row int-continental-29: game 0, table 16 (16)
 2003	clubs	asia_club_champ (AFC Champions League), row club-world-51: game 16, table 28 (28)
 2003	clubs	euro_champ (UEFA European Championship), row int-continental-23: game 0, table 16 (16)
@@ -41,12 +34,8 @@
 2003	no_row	record_utils (Reserve): no table row
 2003	no_row	record_utils (Under 21 International): no table row
 2003	no_row	spa_lower (Spanish Lower Division): no table row
-2003	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-54: the game holds 2003, the table says not held
 2003	not_held	asia_nations (AFC Asian Cup), row int-continental-31: the game holds 2004, the table says not held
-2003	not_held	asia_super_cup (Asian Super Cup), row club-world-55: the game holds 2003, the table says not held
-2003	not_held	con_merc_cup (Copa Merconorte), row club-world-44: the game holds 2003, the table says not held
 2003	not_held	goldcup (Copa América), row int-continental-33: the game holds 2004, the table says not held
-2003	not_held	inter_amer_cup (Copa Interamericana), row club-world-50: the game holds 2003, the table says not held
 2003	not_held	ire_leinster_cup (Leinster Senior Cup), row wal-nir-irl-71: the game holds 2003, the table says not held
 2003	not_held	ire_pres_cup (President's Cup), row wal-nir-irl-73: the game holds 2003, the table says not held
 2003	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-74: the game holds 2003, the table says not held
@@ -54,7 +43,6 @@
 2003	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-219: the game holds 2003, the table says not held
 2003	not_held	pol_super (Polish Super Cup), row gre-pol-cro-273: the game holds 2003, the table says not held
 2003	not_held	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-27: the game holds 2004, the table says not held
-2003	not_held	world_club_champ (FIFA Club World Championship), row club-world-40: the game holds 2003, the table says not held
 2003	not_in_game	arg-usa-354 usa_rules 'United States' (United States)
 2003	not_in_game	aus-jap-kor-300 korea_rules 'n/a' (South Korea)
 2003	not_in_game	club-world-42 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -74,7 +62,6 @@
 2003	playoffs	pol_first (I liga), row gre-pol-cro-192: game 0 up and 0 down play-off places, table 0 and 1 ('12th: relegation play-off')
 2003	playoffs	pol_second (II liga), row gre-pol-cro-246: game 2 up and 0 down play-off places, table 1 and 4 ('3rd: promotion play-off; 11th-14th: relegation play-offs')
 2003	playoffs	tur_second_b (Second League Category B), row rus-tur-219: game 2 up and 0 down play-off places, table 0 and 0 ('none')
-2003	up	con_merc_cup (Copa Merconorte), row club-world-44: game 1 (+0 play-off places), table na (n/a)
 2003	up	pol_first (I liga), row gre-pol-cro-192: game 4 (+0 play-off places), table na (n/a)
 2003	up	tur_second_b (Second League Category B), row rus-tur-219: game 0 (+2 play-off places), table 3 (3)
 2003	up	usa_mls (Major League Soccer), row arg-usa-219: game 1 (+0 play-off places), table na (n/a (closed league))

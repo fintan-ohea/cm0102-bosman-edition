@@ -24,6 +24,7 @@
 #include "season_uefa.h"
 #include "season_uefa_league.h"
 #include "season_cups.h"
+#include "season_divisions_ita.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -127,10 +128,11 @@ void o_006835c0(void);
 
 /* League::create_fixtures, thiscall () returning 1 or 0. Only the league phase stage that is being made gets the
  * list; every other league runs as it is. The one wrap of 0x6835c0: slice 21b's cup that waits for ever makes no
- * fixture (season_cup_breaks_no_fixtures, season_cups.h). */
+ * fixture (season_cup_breaks_no_fixtures, season_cups.h), and nor does slice 20b's group C until the regroup
+ * (season_ita_no_fixtures, season_divisions_ita.h). */
 RT_WRAP(006835c0, league_create_fixtures)
 {
-    if (season_cup_breaks_no_fixtures()) {
+    if (season_cup_breaks_no_fixtures() || season_ita_no_fixtures(cpu.ecx)) {
         rt_ret_stdcall(1, 0);
         return;
     }

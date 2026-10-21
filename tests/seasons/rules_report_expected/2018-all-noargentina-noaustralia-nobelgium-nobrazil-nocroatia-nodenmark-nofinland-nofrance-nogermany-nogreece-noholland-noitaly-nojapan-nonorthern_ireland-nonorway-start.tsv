@@ -9,17 +9,9 @@
 2018	bench	sco_fa_cup (Scottish Cup), row sco-142: game 5, table 7 (up to 7)
 2018	bench	tur_first (Süper Lig), row rus-tur-180: game 9, table 10 (10 (21-man matchday list from 2017–18))
 2018	bench	world_club_champ (FIFA Club World Cup), row club-world-325: game 7, table 12 (12)
-2018	club_list	American Major League: 12 of 22 listed clubs that the database holds (24 listed), 0 other clubs, 12 in all; not in it: Atlanta United, FC Cincinnati, Minnesota United FC, Montreal Impact, New York City FC, Orlando City SC, Philadelphia Union, Portland Timbers, Real Salt Lake City, Vancouver Whitecaps; others: -
-2018	club_list	Irish Premier Division: 10 of 10 listed clubs that the database holds (10 listed), 2 other clubs, 12 in all; not in it: -; others: Mullingar Town, Saint Joseph's Boys
-2018	club_list	Korean League: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Incheon United FC, Seongnam FC; others: -
-2018	club_list	Russian First Division: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Spartak 2 Moscow, Zenit 2 St. Petersburg; others: -
-2018	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Athletic Eskilstuna, Falkenbergs FF; others: -
-2018	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Karagümrük, Samsunspor
-2018	club_list	Welsh Premier Division: 12 of 12 listed clubs that the database holds (12 listed), 6 other clubs, 18 in all; not in it: -; others: Airbus UK Broughton, Denbigh Town, Haverfordwest County, Port Talbot Town, Prestatyn Town FC, Rhyl
 2018	clubs	african_nations (Africa Cup of Nations), row int-continental-194: game 0, table 24 (24)
 2018	clubs	asia_club_champ (AFC Champions League), row club-world-336: game 16, table 32 (32)
 2018	clubs	asia_nations (AFC Asian Cup), row int-continental-196: game 0, table 24 (24)
-2018	clubs	con_champ (CONCACAF Champions League), row club-world-332: game 8, table 16 (16)
 2018	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-189: game 5, table 55 (55)
 2018	clubs	goldcup (Copa América), row int-continental-198: game 0, table 12 (12)
 2018	clubs	ire_chal_cup (FAI Cup), row wal-nir-irl-444: game 42, table 40 (40)
@@ -56,16 +48,11 @@
 2018	no_row	record_utils (Reserve): no table row
 2018	no_row	record_utils (Under 21 International): no table row
 2018	no_row	spa_lower (Spanish Lower Division): no table row
-2018	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-339: the game holds 2018, the table says not held
-2018	not_held	asia_super_cup (Asian Super Cup), row club-world-340: the game holds 2018, the table says not held
-2018	not_held	con_merc_cup (Copa Merconorte), row club-world-329: the game holds 2018, the table says not held
-2018	not_held	inter_amer_cup (Copa Interamericana), row club-world-335: the game holds 2018, the table says not held
 2018	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-449: the game holds 2018, the table says not held
 2018	not_held	kor_league_cup (Korean League Cup), row aus-jap-kor-450: the game holds 2018, the table says not held
 2018	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-396: the game holds 2018, the table says not held
 2018	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-234: the game holds 2018, the table says not held
 2018	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-434: the game holds 2018, the table says not held
-2018	not_held	world_club_cup (Intercontinental Cup), row club-world-324: the game holds 2018, the table says not held
 2018	not_in_game	arg-usa-369 usa_rules 'United States' (United States)
 2018	not_in_game	aus-jap-kor-315 korea_rules 'n/a' (South Korea)
 2018	not_in_game	club-world-327 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -95,7 +82,7 @@
 2018	playoffs	sco_third (Scottish League Two), row sco-141: game 0 up and 0 down play-off places, table 3 and 1 ('2nd to 4th play off with League One 9th for a League One place (two-legged semi-')
 2018	playoffs	swe_first (Superettan), row den-swe-267: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2018	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-234: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2018	up	con_merc_cup (Copa Merconorte), row club-world-329: game 1 (+0 play-off places), table na (n/a)
+2018	subs_used	new_suruga_bank (Suruga Bank Championship), row club-world-530: game 3, table 6 (6)
 2018	up	pol_first (Ekstraklasa), row gre-pol-cro-207: game 4 (+0 play-off places), table na (n/a)
 2018	up	sco_second (Scottish League One), row sco-140: game 2 (+0 play-off places), table 1 (1)
 2018	up	sco_third (Scottish League Two), row sco-141: game 2 (+0 play-off places), table 1 (1)

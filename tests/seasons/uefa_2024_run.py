@@ -10,8 +10,10 @@ Each run is a season jump of tests/seasons/rules_report_check.py with England. T
     2024    October 2024, changing rules off, the season 2024/25
     2025    December 2025, changing rules off, the season 2025/26
     change  October 2023, changing rules on, 2023/24 to the end of 2024/25: the news sentences of the change
-    load    October 2024: a save in the league phase (120 days) and one in the knockout phase (215 days: 13 February,
-            after the play-off draw of 31 January), each loaded by a new program that plays to the final
+    load    October 2024: a save in the qualifying rounds (20 days, late July, before the league phase draw, which
+            reads the direct clubs of the list +0x14), one in the league phase (120 days) and one in the knockout
+            phase (215 days: 13 February, after the play-off draw of 31 January), each loaded by a new program that
+            plays to the final
     repeat  two October 2024 games with the same steps give equal saves 130 days after the start (in the league
             phase)
 The checks of a season: the jump ends with code 0 and shows no message box of the game; the log of
@@ -144,7 +146,7 @@ def run_load(program, game, work):
     import smoke_run
     db = os.path.join(DB, "October 2024")
     fails = []
-    for days in (120, 215):
+    for days in (20, 120, 215):            # 20: late July, before the league phase draw (slice 23 review 2)
         w = os.path.join(work, f"d{days}")
         code, _ = rrc.run(program, game, 2024, 2024, db, ["England"], [], w, 7200, None,
                           {"RECOMP_SAVE_AFTER_DAYS": str(days)})
@@ -166,7 +168,7 @@ def run_load(program, game, work):
         with open(os.path.join(user, "settings.txt"), "a") as f:
             f.write(f"database = folder:{os.path.basename(db)}\nfaster_days = on\n")
         report = os.path.join(again, "report.tsv")
-        steps = fixtures.LOAD_STEPS + ["3600000 quit"]
+        steps = fixtures.LOAD_STEPS[:-1] + ["3600000 quit"]     # no first-news wait (its 120 s limit under load)
         r, _ = fixtures.run(program, game, "classic", user, smoke_run.scaled_steps("classic", again, steps),
                             {"RECOMP_SEASON_JUMP": "2024", "RECOMP_RULES_REPORT": report}, 7200)
         with open(os.path.join(again, "stderr.txt"), "w") as f:

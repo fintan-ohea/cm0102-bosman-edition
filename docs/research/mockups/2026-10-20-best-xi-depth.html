@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Best XI mockups</title>
+<style>
+:root {
+  --page: #0b0d1c; --ink: #e6e8f5; --muted: #9aa0c0;
+  --navy: #1b1470; --navy2: #120d52; --navy-edge: #3a33a8; --panel: rgba(14, 18, 50, .92);
+  --yellow: #f5e000; --light: #d6d6d6; --red: #e00000; --grey: #8a8a8a; --grey-ink: #e8e8e8;
+  --pitch1: #2f8f2f; --pitch2: #2a832a; --line: rgba(255, 255, 255, .85);
+  --low: #ff5050; --mid: #ffb020; --good: #a0e060; --top: #30ff30; --unavail: #8a8a9c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 Verdana, Tahoma, sans-serif; }
+main { max-width: 1320px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; margin: 0 0 6px; }
+h2 { font-size: 18px; margin: 36px 0 4px; }
+p { margin: 0 0 10px; color: var(--muted); max-width: 80ch; }
+.frame { width: 100%; aspect-ratio: 1280 / 800; position: relative; overflow: hidden; border: 1px solid #333; }
+.screen { width: 1280px; height: 800px; position: absolute; left: 0; top: 0; transform-origin: 0 0;
+  background: radial-gradient(ellipse at 70% 60%, #3a2a24 0%, #1a1414 45%, #0a0a0e 100%); font-family: Tahoma, Verdana, sans-serif; }
+/* the frame of the game */
+.side { position: absolute; left: 0; top: 0; width: 144px; height: 800px; background: linear-gradient(#0a0a8a, #050540 70%, #000); }
+.side div { height: 58px; margin: 0 8px; border-bottom: 1px solid #1d1da0; display: flex; align-items: center; justify-content: center;
+  text-align: center; font-size: 11px; font-weight: bold; color: var(--light); }
+.side .date { color: var(--yellow); height: 60px; }
+.side .opt { color: var(--yellow); }
+.heading { position: absolute; left: 160px; top: 14px; width: 1104px; height: 76px; background: var(--red);
+  display: flex; align-items: center; justify-content: center; font: bold 30px Tahoma, sans-serif; color: #fff;
+  border: 1px solid #ff4a4a; text-shadow: 1px 1px 0 #600; }
+.heading .formation { position: absolute; right: 12px; top: 10px; width: 160px; height: 22px; background: var(--grey);
+  font: bold 11px Tahoma; color: var(--grey-ink); display: flex; align-items: center; justify-content: center; text-shadow: none; }
+.tabs { position: absolute; left: 160px; top: 104px; width: 1104px; height: 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.tabs div { background: var(--navy); border: 1px solid var(--navy-edge); display: flex; align-items: center; justify-content: center;
+  font: bold 12px Tahoma; color: var(--light); }
+.tabs .on { color: var(--yellow); border-color: var(--yellow); }
+.bottom { position: absolute; left: 160px; top: 740px; width: 1104px; height: 46px; display: grid; grid-template-columns: 3fr 1fr; gap: 2px; }
+.bottom div { background: var(--grey); display: flex; align-items: center; justify-content: center; font: bold 17px Tahoma; color: var(--grey-ink); }
+.bottom div + div { color: #b4b4b4; }
+.content { position: absolute; left: 160px; top: 162px; width: 1104px; height: 566px; }
+/* the pitch */
+.pitch { position: absolute; background: repeating-linear-gradient(var(--dir, 90deg), var(--pitch1) 0 9.09%, var(--pitch2) 9.09% 18.18%);
+  border: 2px solid var(--line); }
+.pitch .ln { position: absolute; border: 2px solid var(--line); }
+/* a position card */
+.card { position: absolute; background: var(--panel); border: 1px solid var(--navy-edge); box-shadow: 0 2px 0 rgba(0,0,0,.5); }
+.card .pos { background: var(--navy); color: var(--yellow); font: bold 11px Tahoma; padding: 2px 6px; display: flex; justify-content: space-between; }
+.row { display: grid; grid-template-columns: 1fr 74px; align-items: center; padding: 0 4px 0 6px; height: 21px; font: 12px Tahoma; color: var(--light); }
+.row.first { height: 24px; font: bold 13px Tahoma; color: #fff; }
+.row + .row { border-top: 1px solid rgba(255,255,255,.07); }
+.row .n { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.row .n i { font-style: normal; color: var(--muted); font-size: 10px; margin-left: 4px; }
+.r { width: 24px; height: 17px; border-radius: 2px; background: #0b0e2c; border: 1px solid #2a2f70; display: flex; align-items: center;
+  justify-content: center; font: bold 11px Tahoma; }
+.row.first .r { height: 19px; font-size: 12px; }
+.top { color: var(--top); } .good { color: var(--good); } .mid { color: var(--mid); } .low { color: var(--low); }
+.row.out .n { color: var(--unavail); }
+.legend { position: absolute; font: 11px Tahoma; color: var(--light); display: flex; gap: 14px; align-items: center; }
+.legend b { font-weight: bold; }
+.st { display: inline-flex; gap: 1px; justify-content: flex-end; }
+.st i { position: relative; width: 13px; height: 13px; display: inline-block; }
+.st i::before, .st i::after { content: ""; position: absolute; inset: 0;
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.st i::before { background: #2c3170; }
+.st i.f::after { background: var(--yellow); }
+.st i.h::after { background: linear-gradient(90deg, var(--yellow) 50%, transparent 50%); }
+.row.first .st i { width: 14px; height: 14px; }
+.row.out .st i.f::after, .row.out .st i.h::after { background: var(--unavail); }
+.row.out .st i.h::after { background: linear-gradient(90deg, var(--unavail) 50%, transparent 50%); }
+.shirt .st i { width: 11px; height: 11px; }
+.slot { position: absolute; width: 236px; background: var(--panel); border: 1px solid var(--navy-edge); box-shadow: 0 2px 0 rgba(0,0,0,.5); }
+.slot .pos { background: var(--navy); color: var(--yellow); font: bold 12px Tahoma; padding: 3px 8px; }
+.slot .ln3 { display: grid; grid-template-columns: 30px 78px 1fr; align-items: center; height: 22px; padding: 0 6px; font: 12px Tahoma; color: var(--light); }
+.slot .ln3 + .ln3 { border-top: 1px solid rgba(255,255,255,.07); }
+.slot .ln3 .k { color: var(--muted); font-size: 11px; }
+.slot .ln3.one { font-weight: bold; color: #fff; }
+.slot .ln3 .nm { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.slot .ln3 .nm i { font-style: normal; color: var(--muted); font-size: 10px; margin-left: 4px; }
+.slot .ln3.out .nm { color: var(--unavail); }
+.slot .ln3.out .st i.f::after { background: var(--unavail); }
+/* variant C: shirt markers */
+.shirt { position: absolute; width: 150px; text-align: center; }
+.shirt .tee { width: 30px; height: 26px; margin: 0 auto 2px; background: #e00000; border: 2px solid #fff;
+  clip-path: polygon(25% 0, 75% 0, 100% 22%, 86% 42%, 80% 36%, 80% 100%, 20% 100%, 20% 36%, 14% 42%, 0 22%); }
+.shirt .tee.gk { background: #f5e000; }
+.shirt .name { display: inline-flex; gap: 6px; align-items: center; background: rgba(8,10,40,.9); border: 1px solid var(--navy-edge);
+  padding: 1px 4px 1px 6px; font: bold 12px Tahoma; color: #fff; }
+.shirt .next { font: 11px Tahoma; color: #eaf2ea; text-shadow: 0 1px 1px #000; margin-top: 1px; }
+.shirt .next span { margin: 0 3px; }
+.notes { margin: 10px 0 0; padding-left: 18px; color: var(--muted); max-width: 90ch; }
+.notes li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<main>
+<h1>Best XI: one screen with the best three at each position</h1>
+<p>Three ways to show Best XI and Squad depth together, in widescreen (1280 x 800). The data is an example: Arsenal in July 2001, 4-4-2. Each card holds the player that Best XI picks first, then the next two for that position. The stars show the score for the position (1 to 20) as half stars, 0.5 to 5, as Max asked on 2026-10-20. Players who cannot play the next match show in grey with the reason. The two DC slots, and the two FC slots, share one card, as in Squad depth today. The tabs become Best XI and Compare players.</p>
+
+<h2>D. Side-on pitch, one card per slot (as Max's squad planner picture)</h2>
+<p>Max's picture of 2026-10-20: a card for each slot of the formation with 1st, 2nd and 3rd, the stars before the name. The two DC slots get a card each: the first name is the Best XI player of that slot, then the two best players for the position who are not in the eleven, so both DC cards show the same 2nd and 3rd.</p>
+<div class="frame"><div class="screen" id="d"></div></div>
+
+<h2>A. Side-on pitch, one card per slot (Max's pick)</h2>
+<p>The pitch lies across the screen, goal on the left. Each line of the formation is a column of cards, one card for each of the 11 slots, from left side at the top to right side at the bottom. Each card shows the Best XI player of the slot, then the two best players for the position who are not in the eleven.</p>
+<div class="frame"><div class="screen" id="a"></div></div>
+
+<h2>B. Upright pitch, as the tactics screen</h2>
+<p>The pitch stands up the middle with the goalkeeper at the bottom, as on the game's own tactics screen. Cards sit on the pitch at their places. The legend for the numbers runs down the right.</p>
+<div class="frame"><div class="screen" id="b"></div></div>
+
+<h2>C. Shirts on the pitch, the next two under each</h2>
+<p>Closest to the original look: a shirt for each slot with the first name and score on a dark tag, and the next two names in small text under it. Less box on the pitch, but the next two are harder to read.</p>
+<div class="frame"><div class="screen" id="c"></div></div>
+</main>
+<script>
+// The example: each position, its slot count and the players in order [name, score, reason when out].
+const POS = {
+  GK: {k: 1, p: [["Seaman, D", 16], ["Wright, R", 13], ["Taylor, S", 11]]},
+  DR: {k: 1, p: [["Lauren", 14], ["Luzhny, O", 13], ["Dixon, L", 12]]},
+  DC: {k: 2, p: [["Campbell, S", 17], ["Keown, M", 15], ["Adams, T", 15, "Inj"], ["Upson, M", 12]]},
+  DL: {k: 1, p: [["Cole, A", 15], ["Van Bronckhorst, G", 13], ["Luzhny, O", 10]]},
+  MR: {k: 1, p: [["Ljungberg, F", 16], ["Wiltord, S", 14], ["Parlour, R", 13]]},
+  MC: {k: 2, p: [["Vieira, P", 19], ["Parlour, R", 14], ["Edu", 13], ["Van Bronckhorst, G", 13]]},
+  ML: {k: 1, p: [["Pires, R", 17], ["Van Bronckhorst, G", 13], ["Cole, A", 9]]},
+  FC: {k: 2, p: [["Henry, T", 19], ["Bergkamp, D", 17], ["Kanu, N", 15], ["Wiltord, S", 15, "Sus"]]},
+};
+// The score 1 to 20 as 0.5 to 5 stars in half stars.
+const stars = s => { const h = Math.max(1, Math.round(s / 2)); let o = ""; for (let i = 1; i <= 5; i++) o += `<i class="${2 * i <= h ? "f" : 2 * i - 1 === h ? "h" : ""}"></i>`; return `<span class="st">${o}</span>`; };
+const band = s => s >= 16 ? "top" : s >= 11 ? "good" : s >= 6 ? "mid" : "low";
+const row = (pl, first) => `<div class="row${first ? " first" : ""}${pl[2] ? " out" : ""}"><span class="n">${pl[0]}${pl[2] ? `<i>${pl[2]}</i>` : ""}</span>${stars(pl[1])}</div>`;
+function card(code, x, y, w) {
+  const d = POS[code];
+  const label = d.k > 1 ? `${code} x${d.k}` : code;
+  const rows = d.p.map((pl, i) => row(pl, i < d.k)).join("");
+  return `<div class="card" style="left:${x}px;top:${y}px;width:${w}px"><div class="pos"><span>${label}</span></div>${rows}</div>`;
+}
+const frame = `
+<div class="side"><div class="date">Saturday<br>14.7.01 AM</div><div>&larr; &nbsp; &rarr;</div><div>Continue<br>Game</div><div>Competitions</div><div>Nations<br>&amp; Clubs</div><div>Find</div><div class="opt">Game<br>Options</div></div>
+<div class="heading">Arsenal<div class="formation">Formation: 4-4-2 &#9662;</div></div>
+<div class="tabs"><div class="on">Best XI</div><div>Compare players</div></div>
+<div class="bottom"><div>Back</div><div>Next</div></div>`;
+const legend = `<span>${stars(20)} best fit for the place</span><span>${stars(10)} half as good</span><span style="color:var(--unavail)">Grey: cannot play the next match</span>`;
+
+// D: one card per slot, 1st 2nd 3rd, stars before the name.
+const slot = (label, code, i, x, y) => {
+  const d = POS[code], list = [d.p[i], ...d.p.slice(d.k, d.k + 2)];
+  const rows = list.map((pl, r) => `<div class="ln3${r === 0 ? " one" : ""}${pl[2] ? " out" : ""}"><span class="k">${["1st", "2nd", "3rd"][r]}</span>${stars(pl[1])}<span class="nm">&nbsp;${pl[0]}${pl[2] ? `<i>${pl[2]}</i>` : ""}</span></div>`).join("");
+  return `<div class="slot" style="left:${x}px;top:${y}px"><div class="pos">${label}</div>${rows}</div>`;
+};
+document.getElementById("d").innerHTML = frame + `<div class="content">
+  <div class="pitch" style="--dir:90deg;left:0;top:0;width:1104px;height:540px">
+    <div class="ln" style="left:551px;top:-2px;width:0;height:540px;border-width:0 0 0 2px"></div>
+    <div class="ln" style="left:487px;top:203px;width:130px;height:130px;border-radius:50%"></div>
+    <div class="ln" style="left:-2px;top:120px;width:150px;height:300px;border-left:0"></div>
+    <div class="ln" style="left:954px;top:120px;width:150px;height:300px;border-right:0"></div>
+  </div>
+  ${slot("GK", "GK", 0, 14, 222)}
+  ${slot("DL", "DL", 0, 270, 12)}${slot("DCL", "DC", 0, 270, 150)}${slot("DCR", "DC", 1, 270, 296)}${slot("DR", "DR", 0, 270, 434)}
+  ${slot("ML", "ML", 0, 560, 12)}${slot("MCL", "MC", 0, 560, 150)}${slot("MCR", "MC", 1, 560, 296)}${slot("MR", "MR", 0, 560, 434)}
+  ${slot("FCL", "FC", 0, 852, 150)}${slot("FCR", "FC", 1, 852, 296)}
+  <div class="legend" style="left:4px;top:546px">${legend}</div>
+</div>`;
+
+// A (Max's pick, 2026-10-20): one card for each of the 11 slots: the slot's Best XI player, then the two best
+// players for the position who are not in the eleven.
+const one = (label, code, i, x, y) => {
+  const d = POS[code], list = [d.p[i], ...d.p.slice(d.k, d.k + 2)];
+  return `<div class="card" style="left:${x}px;top:${y}px;width:220px"><div class="pos"><span>${label}</span></div>${list.map((pl, r) => row(pl, r === 0)).join("")}</div>`;
+};
+// A: side-on pitch, goal left.
+document.getElementById("a").innerHTML = frame + `<div class="content">
+  <div class="pitch" style="--dir:90deg;left:0;top:0;width:1104px;height:540px">
+    <div class="ln" style="left:551px;top:-2px;width:0;height:540px;border-width:0 0 0 2px"></div>
+    <div class="ln" style="left:487px;top:203px;width:130px;height:130px;border-radius:50%"></div>
+    <div class="ln" style="left:-2px;top:120px;width:150px;height:300px;border-left:0"></div>
+    <div class="ln" style="left:954px;top:120px;width:150px;height:300px;border-right:0"></div>
+  </div>
+  ${one("GK", "GK", 0, 14, 222)}
+  ${one("DL", "DL", 0, 250, 14)}${one("DCL", "DC", 0, 250, 150)}${one("DCR", "DC", 1, 250, 296)}${one("DR", "DR", 0, 250, 432)}
+  ${one("ML", "ML", 0, 560, 14)}${one("MCL", "MC", 0, 560, 150)}${one("MCR", "MC", 1, 560, 296)}${one("MR", "MR", 0, 560, 432)}
+  ${one("FCL", "FC", 0, 860, 150)}${one("FCR", "FC", 1, 860, 296)}
+</div>`;
+
+// B: upright pitch, goalkeeper at the bottom.
+document.getElementById("b").innerHTML = frame + `<div class="content">
+  <div class="pitch" style="--dir:0deg;left:170px;top:0;width:764px;height:566px">
+    <div class="ln" style="left:-2px;top:281px;width:764px;height:0;border-width:2px 0 0 0"></div>
+    <div class="ln" style="left:316px;top:216px;width:130px;height:130px;border-radius:50%"></div>
+    <div class="ln" style="left:222px;top:-2px;width:320px;height:96px;border-top:0"></div>
+    <div class="ln" style="left:222px;top:470px;width:320px;height:96px;border-bottom:0"></div>
+  </div>
+  ${card("FC", 382, 20, 340)}
+  ${card("ML", 182, 158, 180)}${card("MC", 382, 158, 340)}${card("MR", 742, 158, 180)}
+  ${card("DL", 182, 316, 180)}${card("DC", 382, 316, 340)}${card("DR", 742, 316, 180)}
+  ${card("GK", 462, 462, 180)}
+</div>`.replace(/left:(182|382|462|742)px/g, (m, v) => `left:${+v - 0}px`);
+
+// C: shirts.
+const shirt = (code, i, x, y) => {
+  const d = POS[code], first = d.p[i], rest = d.p.slice(d.k).slice(0, 2);
+  const next = i === 0 ? rest.map(pl => `<span style="color:${pl[2] ? "var(--unavail)" : "inherit"}">${pl[0].split(",")[0]} ${stars(pl[1])}</span>`).join("") : "";
+  return `<div class="shirt" style="left:${x}px;top:${y}px"><div class="tee${code === "GK" ? " gk" : ""}"></div><div class="name">${first[0].split(",")[0]} ${stars(first[1])}</div><div class="next">${next}</div></div>`;
+};
+document.getElementById("c").innerHTML = frame + `<div class="content">
+  <div class="pitch" style="--dir:0deg;left:170px;top:0;width:764px;height:566px">
+    <div class="ln" style="left:-2px;top:281px;width:764px;height:0;border-width:2px 0 0 0"></div>
+    <div class="ln" style="left:316px;top:216px;width:130px;height:130px;border-radius:50%"></div>
+    <div class="ln" style="left:222px;top:-2px;width:320px;height:96px;border-top:0"></div>
+    <div class="ln" style="left:222px;top:470px;width:320px;height:96px;border-bottom:0"></div>
+  </div>
+  ${shirt("FC", 0, 380, 40)}${shirt("FC", 1, 580, 40)}
+  ${shirt("ML", 0, 200, 175)}${shirt("MC", 0, 380, 190)}${shirt("MC", 1, 580, 190)}${shirt("MR", 0, 760, 175)}
+  ${shirt("DL", 0, 200, 330)}${shirt("DC", 0, 380, 345)}${shirt("DC", 1, 580, 345)}${shirt("DR", 0, 760, 330)}
+  ${shirt("GK", 0, 477, 470)}
+  <div class="legend" style="left:950px;top:20px;flex-direction:column;align-items:flex-start;gap:6px">${legend}<span style="color:var(--muted);max-width:150px">The two shared places show the next two under the left shirt.</span></div>
+</div>`;
+
+// "#a", "#b" or "#c": that screen alone at 1280 x 800, for a picture.
+const only = location.hash.slice(1);
+if (only) {
+  const s = document.getElementById(only);
+  document.body.replaceChildren(s);
+  s.style.position = "static";
+  document.body.style.margin = "0";
+}
+function fit() {
+  if (only) return;
+  for (const s of document.querySelectorAll(".screen")) s.style.transform = `scale(${s.parentElement.clientWidth / 1280})`;
+}
+addEventListener("resize", fit); fit();
+</script>
+</body>
+</html>

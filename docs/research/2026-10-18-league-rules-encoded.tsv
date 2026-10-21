@@ -1672,102 +1672,74 @@ ita-211	2013	ita_ser_c2b	4	18	-	-	-	partial: the play-out places are not given	-
 ita-212	2013	ita_ser_c2c	4	-1	-	-	-	ok	-	split
 ita-223	2014	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-224	2014	ita_ser_b	2	22	3-8	-	-	ok	-	split
-ita-225	2014	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-226	2014	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-227	2014	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-228	2014	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-229	2014	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-230	2014	ita_ser_c1a	3	20	2-4	-	-	partial: the places of each group or zone	-	split
+ita-231	2014	ita_ser_c1b	3	20	2-4	-	-	partial: the places of each group or zone	-	split
+ita-232	2014	ita_ser_c2a	3	20	2-4	-	-	partial: the places of each group or zone	-	split
 ita-240	2015	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-241	2015	ita_ser_b	2	22	3-8	-	-	ok	-	split
-ita-242	2015	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-243	2015	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-244	2015	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-245	2015	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-246	2015	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-247	2015	ita_ser_c1a	3	18	2-4	-	-	partial: the places of each group or zone	-	split
+ita-248	2015	ita_ser_c1b	3	18	2-4	-	-	partial: the places of each group or zone	-	split
+ita-249	2015	ita_ser_c2a	3	18	2-4	-	-	partial: the places of each group or zone	-	split
 ita-257	2016	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-258	2016	ita_ser_b	2	22	3-8	-	-	ok	-	split
-ita-259	2016	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-260	2016	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-261	2016	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-262	2016	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-263	2016	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-264	2016	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-265	2016	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-266	2016	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-274	2017	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-275	2017	ita_ser_b	2	22	3-8	-	-	ok	-	split
-ita-276	2017	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-277	2017	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-278	2017	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-279	2017	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-280	2017	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-281	2017	ita_ser_c1a	3	19	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-282	2017	ita_ser_c1b	3	19	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-283	2017	ita_ser_c2a	3	19	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-291	2018	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-292	2018	ita_ser_b	2	19	3-8	-	-	ok	-	split
-ita-293	2018	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-294	2018	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-295	2018	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-296	2018	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-297	2018	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-298	2018	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-299	2018	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-300	2018	ita_ser_c2a	3	19	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-308	2019	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-309	2019	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-310	2019	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-311	2019	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-312	2019	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-313	2019	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-314	2019	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-315	2019	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-316	2019	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-317	2019	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-325	2020	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-326	2020	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-327	2020	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-328	2020	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-329	2020	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-330	2020	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-331	2020	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-332	2020	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-333	2020	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-334	2020	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-342	2021	ita_ser_a	1	20	-	-	-	ok	-	split
 ita-343	2021	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-344	2021	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-345	2021	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-346	2021	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-347	2021	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-348	2021	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-349	2021	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-350	2021	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-351	2021	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-359	2022	ita_ser_a	1	20	-	-	tiebreak	ok	-	split
 ita-360	2022	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-361	2022	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-362	2022	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-363	2022	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-364	2022	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-365	2022	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-366	2022	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-367	2022	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-368	2022	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-376	2023	ita_ser_a	1	20	-	-	tiebreak	ok	-	split
 ita-377	2023	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-378	2023	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-379	2023	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-380	2023	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-381	2023	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-382	2023	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-383	2023	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-384	2023	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-385	2023	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-393	2024	ita_ser_a	1	20	-	-	tiebreak	ok	-	split
 ita-394	2024	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-395	2024	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-396	2024	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-397	2024	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-398	2024	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-399	2024	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-400	2024	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-401	2024	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-402	2024	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-410	2025	ita_ser_a	1	20	-	-	tiebreak	ok	-	split
 ita-411	2025	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-412	2025	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-413	2025	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-414	2025	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-415	2025	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-416	2025	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-417	2025	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-418	2025	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-419	2025	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-427	2026	ita_ser_a	1	20	-	-	tiebreak	ok	-	split
 ita-428	2026	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-429	2026	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-430	2026	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-431	2026	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-432	2026	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-433	2026	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-434	2026	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-435	2026	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-436	2026	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 ita-444	2027	ita_ser_a	1	20	-	-	tiebreak	ok	-	split
 ita-445	2027	ita_ser_b	2	20	3-8	-	-	ok	-	split
-ita-446	2027	ita_ser_c1a	3	-1	-	-	-	ok	-	split
-ita-447	2027	ita_ser_c1b	3	-1	-	-	-	ok	-	split
-ita-448	2027	ita_ser_c2a	4	-1	-	-	-	ok	-	split
-ita-449	2027	ita_ser_c2b	4	-1	-	-	-	ok	-	split
-ita-450	2027	ita_ser_c2c	4	-1	-	-	-	ok	-	split
+ita-451	2027	ita_ser_c1a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-452	2027	ita_ser_c1b	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
+ita-453	2027	ita_ser_c2a	3	20	-	-	-	gap: a national phase of the clubs of the three Serie C groups: not a play-off of one league	-	split
 nor-fin-2	2001	nor_prm	1	14	-	12	-	ok	-	calendar
 nor-fin-3	2001	nor_first	2	16	3	-	-	ok	-	calendar
 nor-fin-7	2001	fin_prm	1	12	-	-	-	ok	groups	calendar

@@ -215,3 +215,32 @@ void host_display_notes(char *out, size_t room)
         snprintf(out + len, room - len, "AppImage: %s\n", getenv("APPIMAGE") ? "yes" : "no");
 #endif
 }
+
+/* The folder picker: AppleScript's choose folder on a Mac, zenity or kdialog on Linux. Their answer is the
+ * path on one line; a cancel gives no line. */
+int host_pick_folder(const char *title, char *out, size_t room)
+{
+    char cmd[512];
+#ifdef __APPLE__
+    snprintf(cmd, sizeof cmd, "osascript -e 'POSIX path of (choose folder with prompt \"%s\")' 2>/dev/null", title);
+#else
+    if (!system("command -v zenity >/dev/null 2>&1"))
+        snprintf(cmd, sizeof cmd, "zenity --file-selection --directory --title='%s' 2>/dev/null", title);
+    else if (!system("command -v kdialog >/dev/null 2>&1"))
+        snprintf(cmd, sizeof cmd, "kdialog --getexistingdirectory ~ --title '%s' 2>/dev/null", title);
+    else
+        return -1;
+#endif
+    FILE *f = popen(cmd, "r");
+    if (!f) return -1;
+    char line[2048] = "";
+    char *got = fgets(line, sizeof line, f);
+    pclose(f);
+    if (!got) return 0;
+    size_t n = strcspn(line, "\r\n");
+    line[n] = 0;
+    while (n > 1 && line[n - 1] == '/') line[--n] = 0;
+    if (!n || n >= room) return 0;
+    memcpy(out, line, n + 1);
+    return 1;
+}

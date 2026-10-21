@@ -70,8 +70,6 @@
 2001	down	tur_second (Turkish 2. Division Category A), row rus-tur-190: game 3 (+0 play-off places), table 5 (5)
 2001	down	tur_second_b (Turkish 2. Division Category B), row rus-tur-217: game 0 (+0 play-off places), table 10 (10 (bottom two of each of five classification groups))
 2001	down	wel_first (Welsh Premier Division), row wal-nir-irl-4: game 0 (+0 play-off places), table 2 (2 (pos 17,18))
-2001	idle	fra_first (French CFA), row fra-2: the game waits for 0, the table holds it
-2001	idle	fra_first (French Lower Division), row fra-2: the game waits for -1, the table holds it
 2001	idle	wc_asia_league (World Cup Asian Qualifying Section), row int-world-7: the game waits for 2004, the table holds it
 2001	idle	wc_europe_league (World Cup European Qualifying Section), row int-world-3: the game waits for 2004, the table holds it
 2001	idle	wc_south_american_league (World Cup South American Qualifying Section), row int-world-4: the game waits for 2004, the table holds it

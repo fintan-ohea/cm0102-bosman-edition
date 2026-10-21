@@ -4,16 +4,9 @@
 2014	bench	eng_fa_cup (FA Cup), row eng-376: game 5, table 7 (7)
 2014	bench	ire_chal_cup (FAI Cup), row wal-nir-irl-344: game 5, table 7 (7 (inference from final line-ups))
 2014	bench	world_club_champ (FIFA Club World Cup), row club-world-249: game 7, table 12 (12)
-2014	club_list	American Major League: 12 of 18 listed clubs that the database holds (20 listed), 0 other clubs, 12 in all; not in it: New York City FC, Orlando City, Philadelphia Union, Portland Timbers, Toronto FC, Vancouver Whitecaps; others: -
-2014	club_list	Korean League: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Daejeon Citizen, Gwangju FC; others: -
-2014	club_list	Portuguese Second League: 18 of 23 listed clubs that the database holds (24 listed), 0 other clubs, 18 in all; not in it: Associação Desportiva Oliveirense, Clube Sport Marítimo B, Futebol Clube do Porto B, Sporting Clube de Braga B, Sporting Clube de Portugal B; others: -
-2014	club_list	Swedish Premier Division: 14 of 16 listed clubs that the database holds (16 listed), 0 other clubs, 14 in all; not in it: Falkenberg FF, GIF Sundsvall; others: -
-2014	club_list	Turkish 2. Division Category A: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: Göztepe A.S., Hatayspor
-2014	club_list	Welsh Premier Division: 12 of 12 listed clubs that the database holds (12 listed), 6 other clubs, 18 in all; not in it: -; others: Afan Lido, Caernarfon Town, Caersws, Conwy Borough, Monmouth Town, Taffs Well
 2014	clubs	african_nations (Africa Cup of Nations), row int-continental-150: game 0, table 16 (16)
 2014	clubs	asia_club_champ (AFC Champions League), row club-world-260: game 16, table 32 (32)
 2014	clubs	asia_nations (AFC Asian Cup), row int-continental-152: game 0, table 16 (16)
-2014	clubs	con_champ (CONCACAF Champions League), row club-world-256: game 8, table 24 (24)
 2014	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-145: game 6, table 53 (53)
 2014	clubs	goldcup (Copa América), row int-continental-154: game 0, table 12 (12)
 2014	clubs	ire_chal_cup (FAI Cup), row wal-nir-irl-344: game 42, table 40 (40)
@@ -50,16 +43,11 @@
 2014	no_row	record_utils (Reserve): no table row
 2014	no_row	record_utils (Under 21 International): no table row
 2014	no_row	spa_lower (Spanish Lower Division): no table row
-2014	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-263: the game holds 2014, the table says not held
-2014	not_held	asia_super_cup (Asian Super Cup), row club-world-264: the game holds 2014, the table says not held
-2014	not_held	con_merc_cup (Copa Merconorte), row club-world-253: the game holds 2014, the table says not held
-2014	not_held	inter_amer_cup (Copa Interamericana), row club-world-259: the game holds 2014, the table says not held
 2014	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-349: the game holds 2014, the table says not held
 2014	not_held	kor_league_cup (Korean League Cup), row aus-jap-kor-446: the game holds 2014, the table says not held
 2014	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-392: the game holds 2014, the table says not held
 2014	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-230: the game holds 2014, the table says not held
 2014	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-334: the game holds 2014, the table says not held
-2014	not_held	world_club_cup (Intercontinental Cup), row club-world-248: the game holds 2014, the table says not held
 2014	not_in_game	arg-usa-365 usa_rules 'United States' (United States)
 2014	not_in_game	aus-jap-kor-311 korea_rules 'n/a' (South Korea)
 2014	not_in_game	club-world-251 conmebol_liber 'Copa Libertadores' (CONMEBOL)
@@ -87,7 +75,7 @@
 2014	playoffs	sco_third (Scottish League Two), row sco-109: game 0 up and 0 down play-off places, table 3 and 1 ('2nd to 4th play off with League One 9th for a League One place (two-legged semi-')
 2014	playoffs	swe_first (Superettan), row den-swe-243: game 1 up and 0 down play-off places, table 1 and 2 ('3rd plays the Allsvenskan 14th; 13th and 14th play the Division 1 (Ettan) runner')
 2014	playoffs	tur_second_b (TFF 2. Lig), row rus-tur-230: game 2 up and 0 down play-off places, table 0 and 0 ('see format')
-2014	up	con_merc_cup (Copa Merconorte), row club-world-253: game 1 (+0 play-off places), table na (n/a)
+2014	subs_used	new_suruga_bank (Suruga Bank Championship), row club-world-526: game 3, table 7 (7)
 2014	up	pol_first (Ekstraklasa), row gre-pol-cro-203: game 4 (+0 play-off places), table na (n/a)
 2014	up	sco_second (Scottish League One), row sco-108: game 2 (+0 play-off places), table 1 (1)
 2014	up	sco_third (Scottish League Two), row sco-109: game 2 (+0 play-off places), table 1 (1)

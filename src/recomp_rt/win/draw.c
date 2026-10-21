@@ -133,3 +133,20 @@ void draw_pitch(const DrawTarget *t, int x1, int y1, int x2, int y2)
     draw_pixel(t, cx, y1 + spot, DRAW_PITCH_LINE, 256);
     draw_pixel(t, cx, y2 - spot, DRAW_PITCH_LINE, 256);
 }
+
+/* A five-pointed star of radius r around (cx, cy). fill: 0 empty, 1 the left half, 2 full. */
+void draw_star(const DrawTarget *t, int cx, int cy, int r, int fill, uint16_t colour, uint16_t empty)
+{
+    static const int unit[20] = {0, -100, 22, -31, 95, -31, 36, 12, 59, 81, 0, 38, -59, 81, -36, 12, -95, -31, -22, -31};
+    int xy[20];
+    for (int i = 0; i < 20; i += 2) {
+        xy[i] = cx + unit[i] * r / 100;
+        xy[i + 1] = cy + 1 + unit[i + 1] * r / 100;    /* the points reach 0.81 r down: one pixel lower */
+    }
+    draw_polygon(t, xy, 10, fill == 2 ? colour : empty, 256);
+    if (fill == 1 && cx > 0) {
+        DrawTarget left = *t;                      /* the left half: a target that ends at the middle */
+        if (left.w > cx) left.w = cx;
+        draw_polygon(&left, xy, 10, colour, 256);
+    }
+}

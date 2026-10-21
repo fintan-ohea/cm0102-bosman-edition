@@ -123,7 +123,7 @@
 2022	bench	eur_super_cup (UEFA Super Cup), row uefa-176: game 9, table 12 (12)
 2022	bench	european_cup (UEFA Champions League), row uefa-170: game 9, table 12 (12)
 2022	bench	ire_chal_cup (FAI Cup), row wal-nir-irl-544: game 5, table 9 (9 (inference from final line-ups))
-2022	bench	new_conference_league (UEFA Europa League), row uefa-174: game 9, table 12 (12)
+2022	bench	new_conference_league (UEFA Europa Conference League), row uefa-174: game 9, table 12 (12)
 2022	bench	rus_first (Football National League), row rus-tur-49: game 9, table 12 (12)
 2022	bench	rus_prm (Russian Premier League), row rus-tur-22: game 9, table 12 (12)
 2022	bench	sco_first (Scottish Championship), row sco-171: game 7, table 9 (9)
@@ -149,7 +149,10 @@
 2022	clubs	ire_chal_cup (FAI Cup), row wal-nir-irl-544: game 42, table 40 (40)
 2022	clubs	ire_prm (League of Ireland Premier Division), row wal-nir-irl-541: game 12, table 10 (10)
 2022	clubs	kor_league (K League 1), row aus-jap-kor-346: game 10, table 12 (12)
-2022	clubs	new_conference_league (UEFA Europa League), row uefa-174: game 139/181, table 177 (177 (134 entered + 43 from the Champions League and Europa League); 32 in the gr)
+2022	clubs	new_concacaf_gold_cup (2021 CONCACAF Gold Cup), row int-continental-236: game 0/4, table 16 (16)
+2022	clubs	new_concacaf_nations_league (2022-23 CONCACAF Nations League), row int-continental-237: game 2, table 41 (41)
+2022	clubs	new_conference_league (UEFA Europa Conference League), row uefa-174: game 139/181, table 177 (177 (134 entered + 43 from the Champions League and Europa League); 32 in the gr)
+2022	clubs	new_uefa_nations_league (2020-21 Finals; 2022-23 UEFA Nations League (start), row int-continental-234: game 4, table 55 (55 entered, 54 played)
 2022	clubs	pol_first (Ekstraklasa), row gre-pol-cro-211: game 8, table 18 (18)
 2022	clubs	por_cup (Taça de Portugal), row por-195: game 164, table 152 (152)
 2022	clubs	por_second_b (Liga 3), row por-193: game 12, table 24 (24 (2 series of 12))
@@ -170,7 +173,6 @@
 2022	clubs	world_club_champ (FIFA Club World Cup), row club-world-401: game 0, table 7 (7)
 2022	clubs	world_cup (FIFA World Cup), row int-world-254: game 4, table 32 (32)
 2022	down	eng_third (EFL League Two), row eng-241: game 1 (+0 play-off places), table 2 (2)
-2022	down	gre_prm (Super League 1), row gre-pol-cro-49: game 3 (+0 play-off places), table 2 (2 (13th-14th))
 2022	down	gre_second (Super League 2 North), row gre-pol-cro-76: game 2 (+0 play-off places), table 4 (4 (12th-15th))
 2022	down	ire_prm (League of Ireland Premier Division), row wal-nir-irl-541: game 3 (+1 play-off places), table 1 (1 (pos 10))
 2022	down	kor_league (K League 1), row aus-jap-kor-346: game 0 (+0 play-off places), table 1 (1 (12th))
@@ -185,7 +187,9 @@
 2022	down	tur_second (TFF 1. Lig), row rus-tur-211: game 3 (+0 play-off places), table 2 (2)
 2022	down	tur_second_b (TFF 2. Lig), row rus-tur-238: game 0 (+0 play-off places), table 6 (6)
 2022	down	wel_first (Cymru Premier), row wal-nir-irl-529: game 0 (+0 play-off places), table 2 (2 (pos 11,12))
-2022	name	new_conference_league (UEFA Europa League), row uefa-174: game 'UEFA Europa League', table 'UEFA Europa Conference League'
+2022	name	new_concacaf_gold_cup (2021 CONCACAF Gold Cup), row int-continental-236: game '2021 CONCACAF Gold Cup', table '2023 CONCACAF Gold Cup'
+2022	name	new_finalissima (2022 Finalissima), row int-continental-235: game '2022 Finalissima', table 'Finalissima'
+2022	name	new_uefa_nations_league (2020-21 Finals; 2022-23 UEFA Nations League (start), row int-continental-234: game '2020-21 Finals; 2022-23 UEFA Nations League (start', table '2022-23 UEFA Nations League'
 2022	name	rus_first (Football National League), row rus-tur-49: game 'Football National League', table 'Russian First League'
 2022	name	spa_second_b (Primera División RFEF), row spa-172: game 'Primera División RFEF', table 'Primera Federación'
 2022	no_row	friendly (Friendly): no table row
@@ -198,6 +202,7 @@
 2022	not_held	ire_super_cup (FAI Super Cup), row wal-nir-irl-549: the game holds 2021, the table says not held
 2022	not_held	kor_league_cup (Korean League Cup), row aus-jap-kor-454: the game holds 2022, the table says not held
 2022	not_held	kor_super_cup (Korean Super Cup), row aus-jap-kor-400: the game holds 2022, the table says not held
+2022	not_held	new_finalissima (2022 Finalissima), row int-continental-235: the game holds 2022, the table says not held
 2022	not_held	pol_lge_cup (Polish League Cup), row gre-pol-cro-238: the game holds 2022, the table says not held
 2022	not_held	wel_prm_cup (FAW Premier Cup), row wal-nir-irl-534: the game holds 2022, the table says not held
 2022	not_in_game	arg-usa-373 usa_rules 'United States' (United States)
@@ -208,9 +213,6 @@
 2022	not_in_game	den-swe-292 swe_second 'Ettan' (Sweden)
 2022	not_in_game	eng-242 eng_conf 'National League' (England)
 2022	not_in_game	eng-427 eng_fa_trophy 'FA Trophy' (England)
-2022	not_in_game	int-continental-234 new '2022-23 UEFA Nations League' (UEFA)
-2022	not_in_game	int-continental-236 new '2023 CONCACAF Gold Cup' (CONCACAF)
-2022	not_in_game	int-continental-237 new '2022-23 CONCACAF Nations League' (CONCACAF)
 2022	not_in_game	por-197 new 'Taça da Liga (Allianz Cup)' (Portugal)
 2022	not_in_game	rus-tur-103 new 'Russian Super Cup' (Russia)
 2022	not_in_game	rus-tur-292 new 'Turkish Super Cup' (Turkey)
@@ -245,7 +247,6 @@
 2022	subs_used	wel_first (Cymru Premier), row wal-nir-irl-529: game 3, table 5 (5 (fourth needs one youth substitute, fifth two); 6 in a play-off with extra tim)
 2022	subs_used	world_cup (FIFA World Cup), row int-world-254: game 3, table 5 (5 in normal time, a sixth in extra time; one concussion substitute that does not)
 2022	up	gre_cup (Greek Football Cup), row gre-pol-cro-22: game 2 (+0 play-off places), table na (n/a)
-2022	up	gre_second (Super League 2 North), row gre-pol-cro-76: game 2 (+0 play-off places), table 1 (1 (group winner))
 2022	up	pol_first (Ekstraklasa), row gre-pol-cro-211: game 4 (+0 play-off places), table na (n/a)
 2022	up	por_second_b (Liga 3), row por-193: game 1 (+0 play-off places), table 2 (2 (winners of the two promotion series))
 2022	up	sco_second (Scottish League One), row sco-172: game 2 (+0 play-off places), table 1 (1)

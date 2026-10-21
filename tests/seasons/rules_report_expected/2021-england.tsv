@@ -1,88 +1,62 @@
 # Differences between the rules report and the rules table that the check accepts. Made by
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
-2021	bench	eur_super_cup (European Super Cup), row uefa-168: game 9, table 12 (12)
-2021	bench	european_cup (European Champions Cup), row uefa-162: game 9, table 12 (12)
+2021	bench	eur_super_cup (UEFA Super Cup), row uefa-168: game 9, table 12 (12)
+2021	bench	european_cup (UEFA Champions League), row uefa-162: game 9, table 12 (12)
 2021	bench	new_conference_league (UEFA Europa Conference League), row uefa-166: game 9, table 12 (12)
-2021	bench	uefa_cup (UEFA Cup), row uefa-165: game 7/9, table 12 (12)
-2021	bench	world_club_champ (FIFA Club World Championship), row club-world-382: game 9, table 12 (12)
-2021	clubs	wc_african_cup (World Cup African Qualifying Section), row int-world-246: game 50, table 40 (40, then 10)
-2021	clubs	wc_asia_league (World Cup Asian Qualifying Section), row int-world-247: game 4, table 12 (12)
-2021	clubs	wc_concacaf_cup (World Cup CONCACAF Qualifying Section), row int-world-245: game 24, table 8 (8)
-2021	clubs	wc_europe_league (World Cup European Qualifying Section), row int-world-243: game 0, table 55 (55 entrants)
-2021	clubs	wc_oceania_league (World Cup Oceania Qualifying Section), row int-world-248: game 5, table 8 (8 in groups (Tonga withdrew); Cook Islands and Vanuatu withdrew because of COVID)
-2021	clubs	world_club_champ (FIFA Club World Championship), row club-world-382: game 0, table 7 (7)
-2021	down	eng_third (English Third Division), row eng-231: game 1 (+0 play-off places), table 2 (2)
-2021	idle	olympics (Olympic Games), row int-world-251: the game waits for 2024, the table holds it
-2021	name	eng_auto_cup (English Vans Trophy), row eng-420: game 'English Vans Trophy', table 'EFL Trophy'
-2021	name	eng_cc_cup (English League Cup), row eng-419: game 'English League Cup', table 'EFL Cup'
-2021	name	eng_charity (English Charity Shield), row eng-422: game 'English Charity Shield', table 'FA Community Shield'
-2021	name	eng_fa_cup (English FA Cup), row eng-418: game 'English FA Cup', table 'FA Cup'
-2021	name	eng_first (English First Division), row eng-229: game 'English First Division', table 'EFL Championship'
-2021	name	eng_prm (English Premier Division), row eng-228: game 'English Premier Division', table 'Premier League'
-2021	name	eng_second (English Second Division), row eng-230: game 'English Second Division', table 'EFL League One'
-2021	name	eng_third (English Third Division), row eng-231: game 'English Third Division', table 'EFL League Two'
-2021	name	eur_super_cup (European Super Cup), row uefa-168: game 'European Super Cup', table 'UEFA Super Cup'
-2021	name	euro_champ_qual (European Championship Qualifying), row int-continental-222: game 'European Championship Qualifying', table 'UEFA European Championship qualifying'
-2021	name	european_cup (European Champions Cup), row uefa-162: game 'European Champions Cup', table 'UEFA Champions League'
-2021	name	uefa_cup (UEFA Cup), row uefa-165: game 'UEFA Cup', table 'UEFA Europa League'
-2021	name	wc_african_cup (World Cup African Qualifying Section), row int-world-246: game 'World Cup African Qualifying Section', table '2022 FIFA World Cup qualification (CAF)'
-2021	name	wc_asia_league (World Cup Asian Qualifying Section), row int-world-247: game 'World Cup Asian Qualifying Section', table '2022 FIFA World Cup qualification (AFC)'
-2021	name	wc_concacaf_cup (World Cup CONCACAF Qualifying Section), row int-world-245: game 'World Cup CONCACAF Qualifying Section', table '2022 FIFA World Cup qualification (CONCACAF)'
-2021	name	wc_europe_league (World Cup European Qualifying Section), row int-world-243: game 'World Cup European Qualifying Section', table '2022 FIFA World Cup qualification (UEFA)'
-2021	name	wc_oceania_league (World Cup Oceania Qualifying Section), row int-world-248: game 'World Cup Oceania Qualifying Section', table '2022 FIFA World Cup qualification (OFC)'
-2021	name	wc_south_american_league (World Cup South American Qualifying Section), row int-world-244: game 'World Cup South American Qualifying Section', table '2022 FIFA World Cup qualification (CONMEBOL)'
-2021	name	world_club_champ (FIFA Club World Championship), row club-world-382: game 'FIFA Club World Championship', table 'FIFA Club World Cup'
+2021	bench	new_finalissima (2022 Finalissima), row int-continental-224: game 9, table 12 (12)
+2021	bench	uefa_cup (UEFA Europa League), row uefa-165: game 7/9, table 12 (12)
+2021	bench	world_club_champ (FIFA Club World Cup), row club-world-382: game 7/9, table 12 (12)
+2021	clubs	new_concacaf_nations_league (2022-23 CONCACAF Nations League), row int-continental-226: game 2, table 41 (41)
+2021	clubs	wc_african_cup (FIFA World Cup qualification (CAF)), row int-world-246: game 50, table 40 (40, then 10)
+2021	clubs	wc_asia_league (FIFA World Cup qualification (AFC)), row int-world-247: game 4, table 12 (12)
+2021	clubs	wc_concacaf_cup (FIFA World Cup qualification (CONCACAF)), row int-world-245: game 24, table 8 (8)
+2021	clubs	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-243: game 0, table 55 (55 entrants)
+2021	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-248: game 5, table 8 (8 in groups (Tonga withdrew); Cook Islands and Vanuatu withdrew because of COVID)
+2021	clubs	world_club_champ (FIFA Club World Cup), row club-world-382: game 0, table 7 (7)
+2021	down	eng_third (EFL League Two), row eng-231: game 1 (+0 play-off places), table 2 (2)
+2021	idle	new_concacaf_gold_cup (2021 CONCACAF Gold Cup), row int-continental-225: the game waits for 2023, the table holds it
+2021	idle	olympics (Football at the Summer Olympics), row int-world-251: the game waits for 2024, the table holds it
+2021	name	new_uefa_nations_league (2020-21 Finals; 2022-23 UEFA Nations League (start), row int-continental-223: game '2020-21 Finals; 2022-23 UEFA Nations League (start', table '2020-21 Finals; 2022-23 UEFA Nations League (start)'
 2021	no_row	friendly (Friendly): no table row
 2021	no_row	record_utils ('B' International): no table row
 2021	no_row	record_utils (Reserve): no table row
 2021	no_row	record_utils (Under 21 International): no table row
-2021	not_held	euro_champ_qual (European Championship Qualifying), row int-continental-222: the game holds 2022, the table says not held
+2021	not_held	euro_champ_qual (UEFA European Championship qualifying), row int-continental-222: the game holds 2022, the table says not held
 2021	not_held	world_cup (FIFA World Cup), row int-world-242: the game holds 2022, the table says not held
 2021	not_in_game	eng-232 eng_conf 'National League' (England)
 2021	not_in_game	eng-421 eng_fa_trophy 'FA Trophy' (England)
-2021	not_in_game	int-continental-223 new '2020-21 Finals; 2022-23 UEFA Nations League (start)' (UEFA)
 2021	not_in_game	uefa-161 uefa_seeding 'UEFA access list and seeding' (UEFA)
-2022	bench	eur_super_cup (European Super Cup), row uefa-176: game 9, table 12 (12)
-2022	bench	european_cup (European Champions Cup), row uefa-170: game 9, table 12 (12)
+2022	bench	eur_super_cup (UEFA Super Cup), row uefa-176: game 9, table 12 (12)
+2022	bench	european_cup (UEFA Champions League), row uefa-170: game 9, table 12 (12)
 2022	bench	new_conference_league (UEFA Europa Conference League), row uefa-174: game 9, table 12 (12)
-2022	bench	uefa_cup (UEFA Cup), row uefa-173: game 9, table 12 (12)
-2022	bench	world_club_champ (FIFA Club World Championship), row club-world-401: game 9, table 12 (12)
+2022	bench	uefa_cup (UEFA Europa League), row uefa-173: game 9, table 12 (12)
+2022	bench	world_club_champ (FIFA Club World Cup), row club-world-401: game 7/9, table 12 (12)
 2022	bench	world_cup (FIFA World Cup), row int-world-254: game 7, table 15 (15)
-2022	clubs	african_nations (African Cup of Nations), row int-continental-238: game 0/4, table 24 (24)
-2022	clubs	asia_nations (Asian Cup), row int-continental-240: game 0/4, table 24 (24)
-2022	clubs	euro_champ_qual (European Championship Qualifying), row int-continental-233: game 5, table 53 (53)
-2022	clubs	european_cup (European Champions Cup), row uefa-170: game 80, table 78 (78 (32 in the group stage))
+2022	clubs	african_nations (Africa Cup of Nations), row int-continental-238: game 0/4, table 24 (24)
+2022	clubs	asia_nations (AFC Asian Cup), row int-continental-240: game 0/4, table 24 (24)
+2022	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-233: game 5, table 53 (53)
+2022	clubs	european_cup (UEFA Champions League), row uefa-170: game 80, table 78 (78 (32 in the group stage))
+2022	clubs	new_concacaf_gold_cup (2021 CONCACAF Gold Cup), row int-continental-236: game 0/4, table 16 (16)
+2022	clubs	new_concacaf_nations_league (2022-23 CONCACAF Nations League), row int-continental-237: game 2, table 41 (41)
 2022	clubs	new_conference_league (UEFA Europa Conference League), row uefa-174: game 139/181, table 177 (177 (134 entered + 43 from the Champions League and Europa League); 32 in the gr)
-2022	clubs	uefa_cup (UEFA Cup), row uefa-173: game 21/58, table 57 (57 (21 entered + 36 from the Champions League); 32 in the group stage (+8 Champi)
-2022	clubs	world_club_champ (FIFA Club World Championship), row club-world-401: game 0, table 7 (7)
+2022	clubs	new_uefa_nations_league (2020-21 Finals; 2022-23 UEFA Nations League (start), row int-continental-234: game 4, table 55 (55 entered, 54 played)
+2022	clubs	uefa_cup (UEFA Europa League), row uefa-173: game 21/58, table 57 (57 (21 entered + 36 from the Champions League); 32 in the group stage (+8 Champi)
+2022	clubs	world_club_champ (FIFA Club World Cup), row club-world-401: game 0, table 7 (7)
 2022	clubs	world_cup (FIFA World Cup), row int-world-254: game 4, table 32 (32)
-2022	down	eng_third (English Third Division), row eng-241: game 1 (+0 play-off places), table 2 (2)
-2022	name	african_nations (African Cup of Nations), row int-continental-238: game 'African Cup of Nations', table '2023 Africa Cup of Nations'
-2022	name	asia_nations (Asian Cup), row int-continental-240: game 'Asian Cup', table '2023 AFC Asian Cup'
-2022	name	eng_auto_cup (English Vans Trophy), row eng-426: game 'English Vans Trophy', table 'EFL Trophy'
-2022	name	eng_cc_cup (English League Cup), row eng-425: game 'English League Cup', table 'EFL Cup'
-2022	name	eng_charity (English Charity Shield), row eng-428: game 'English Charity Shield', table 'FA Community Shield'
-2022	name	eng_fa_cup (English FA Cup), row eng-424: game 'English FA Cup', table 'FA Cup'
-2022	name	eng_first (English First Division), row eng-239: game 'English First Division', table 'EFL Championship'
-2022	name	eng_prm (English Premier Division), row eng-238: game 'English Premier Division', table 'Premier League'
-2022	name	eng_second (English Second Division), row eng-240: game 'English Second Division', table 'EFL League One'
-2022	name	eng_third (English Third Division), row eng-241: game 'English Third Division', table 'EFL League Two'
-2022	name	eur_super_cup (European Super Cup), row uefa-176: game 'European Super Cup', table 'UEFA Super Cup'
-2022	name	euro_champ_qual (European Championship Qualifying), row int-continental-233: game 'European Championship Qualifying', table 'UEFA Euro 2024 qualifying'
-2022	name	european_cup (European Champions Cup), row uefa-170: game 'European Champions Cup', table 'UEFA Champions League'
-2022	name	uefa_cup (UEFA Cup), row uefa-173: game 'UEFA Cup', table 'UEFA Europa League'
-2022	name	world_club_champ (FIFA Club World Championship), row club-world-401: game 'FIFA Club World Championship', table 'FIFA Club World Cup'
-2022	name	world_cup (FIFA World Cup), row int-world-254: game 'FIFA World Cup', table '2022 FIFA World Cup'
+2022	down	eng_third (EFL League Two), row eng-241: game 1 (+0 play-off places), table 2 (2)
+2022	name	new_concacaf_gold_cup (2021 CONCACAF Gold Cup), row int-continental-236: game '2021 CONCACAF Gold Cup', table '2023 CONCACAF Gold Cup'
+2022	name	new_finalissima (2022 Finalissima), row int-continental-235: game '2022 Finalissima', table 'Finalissima'
+2022	name	new_uefa_nations_league (2020-21 Finals; 2022-23 UEFA Nations League (start), row int-continental-234: game '2020-21 Finals; 2022-23 UEFA Nations League (start', table '2022-23 UEFA Nations League'
 2022	no_row	friendly (Friendly): no table row
 2022	no_row	record_utils ('B' International): no table row
 2022	no_row	record_utils (Reserve): no table row
 2022	no_row	record_utils (Under 21 International): no table row
+2022	not_held	new_finalissima (2022 Finalissima), row int-continental-235: the game holds 2022, the table says not held
 2022	not_in_game	eng-242 eng_conf 'National League' (England)
 2022	not_in_game	eng-427 eng_fa_trophy 'FA Trophy' (England)
-2022	not_in_game	int-continental-234 new '2022-23 UEFA Nations League' (UEFA)
 2022	not_in_game	uefa-169 uefa_seeding 'UEFA access list and seeding' (UEFA)
-2022	subs_used	eng_first (English First Division), row eng-239: game 3, table 5 (5 (three stoppages plus half-time))
-2022	subs_used	eng_prm (English Premier Division), row eng-238: game 3, table 5 (5 (three stoppages plus half-time))
-2022	subs_used	eng_second (English Second Division), row eng-240: game 3, table 5 (5 (three stoppages plus half-time))
-2022	subs_used	eng_third (English Third Division), row eng-241: game 3, table 5 (5 (three stoppages plus half-time))
+2022	subs_used	eng_first (EFL Championship), row eng-239: game 3, table 5 (5 (three stoppages plus half-time))
+2022	subs_used	eng_prm (Premier League), row eng-238: game 3, table 5 (5 (three stoppages plus half-time))
+2022	subs_used	eng_second (EFL League One), row eng-240: game 3, table 5 (5 (three stoppages plus half-time))
+2022	subs_used	eng_third (EFL League Two), row eng-241: game 3, table 5 (5 (three stoppages plus half-time))
 2022	subs_used	world_cup (FIFA World Cup), row int-world-254: game 3, table 5 (5 in normal time, a sixth in extra time; one concussion substitute that does not)

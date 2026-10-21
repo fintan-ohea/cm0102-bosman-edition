@@ -123,12 +123,18 @@ static int text_width(int font, uint32_t text)
 
 /* The text box 0x5e6d80, cdecl: (x1, y1, x2, y2, flags, font, colour, text, cursor). For the text of a
  * widget of screen manager 0 it keeps where one line of text lands, with the alignment rules of the
- * text box (flag 1 left, flag 0x40 right, else centred). Text on more than one line is not kept. */
+ * text box (flag 1 left, flag 0x40 right, else centred). Text on more than one line is not kept.
+ *
+ * Same game (Q152): it measures with clickable_names off too. The measure goes through the original's text
+ * engine, which keeps work memory for the glyphs it meets (docs/research/2026-10-16-hd-text.md), so a measure
+ * in only one state moved the game's memory blocks between clickable_names on and off (a heap trace showed
+ * one block made at another moment; same-save yeovil.sav with the menu of 0.6.0 differed in Friendly
+ * League_453.tmp). Only the underline reads the places, and only with the option on. */
 RT_WRAP(005e6d80, text_box)
 {
     int i = drawn_widget ? widget_index(drawn_widget) : -1;
     uint32_t text = rt_arg(7);
-    if (i >= 0 && text && options_bool(OPT_CLICKABLE_NAMES)) {
+    if (i >= 0 && text) {
         TextPlace *p = &places[i];
         int x1 = (int32_t)rt_arg(0), x2 = (int32_t)rt_arg(2), flags = (int)rt_arg(4);
         int font = (int16_t)rt_arg(5);

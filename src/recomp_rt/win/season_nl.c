@@ -595,6 +595,36 @@ static int entrants(uint32_t self, const SeasonNlEdition *e, Entrant *out)
     return k;
 }
 
+/* Every group needs two nations: a group of one club has no matches, and League_Stage::load_from_file 0x68b720
+ * stops at the box "league_stage.cpp 533" when it reads the 0 bytes of its results (0x68c88d..0x68c898). A league
+ * can hold fewer nations than two a group when the data lacks nations of the table (the non-FIFA members of
+ * CONCACAF, and more of them in an old database: a 2001 start in 2022-23 had a League C group of one). A short
+ * group takes the last nation (the lowest pot) of the largest group of its league that holds more than two, else
+ * of the nearest league (above first). The nation then plays that edition in the group's league; the next
+ * edition's leagues come from these groups (read_results). */
+static void balance_groups(const SeasonNlEdition *e)
+{
+    for (int pass = 0; pass < MAX_GROUPS * GROUP_ROOM; pass++) {
+        int g = 0;
+        while (g < draw_groups_n && draw_size[g] >= 2) g++;
+        if (g == draw_groups_n) return;
+        int l = group_league(e, g), donor = -1;
+        for (int dist = 0; donor < 0 && dist < e->leagues; dist++)
+            for (int side = 0; side < 2 && donor < 0; side++) {
+                int want = side ? l + dist : l - dist;
+                if ((dist == 0 && side) || want < 0 || want >= e->leagues) continue;
+                int best = 2;
+                for (int d = 0; d < draw_groups_n; d++)
+                    if (d != g && group_league(e, d) == want && draw_size[d] > best) best = draw_size[d], donor = d;
+            }
+        if (donor < 0) return;
+        draw_team[g][draw_size[g]++] = draw_team[donor][--draw_size[donor]];
+        if (logging())
+            fprintf(stderr, "recomp: season nl: %s: a nation of group %d moves to group %d (fewer than two nations)\n",
+                    label(e), donor + 1, g + 1);
+    }
+}
+
 static void prepare_draw(uint32_t self, const SeasonNlEdition *e)
 {
     memset(draw_team, 0, sizeof draw_team);
@@ -610,6 +640,7 @@ static void prepare_draw(uint32_t self, const SeasonNlEdition *e)
             if (draw_team[g][i]) draw_team[g][k++] = draw_team[g][i];
         draw_size[g] = k;
     }
+    balance_groups(e);
     for (int g = 0; g < draw_groups_n; g++)
         if (draw_size[g] < 2)
             fprintf(stderr, "recomp: season nl: %s group %d holds %d nations\n", label(e), g + 1, draw_size[g]);

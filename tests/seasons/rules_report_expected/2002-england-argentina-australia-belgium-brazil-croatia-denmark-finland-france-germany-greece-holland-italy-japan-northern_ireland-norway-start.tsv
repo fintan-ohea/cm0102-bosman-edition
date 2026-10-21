@@ -2,13 +2,6 @@
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
 2002	bench	fra_lge_cup (Coupe de la Ligue), row fra-17: game 3, table 5 (5)
 2002	bench	ger_cup (DFB-Pokal), row ger-23: game 6, table 7 (7)
-2002	club_list	Argentine Second Division: 20 of 20 listed clubs that the database holds (20 listed), 5 other clubs, 25 in all; not in it: -; others: Atlético Tucumán, Central Córdoba de Rosario, Independiente Rivadavia de Mendoza, Platense, Racing de Córdoba
-2002	club_list	Brazilian National Third Division: 56 of 79 listed clubs that the database holds (93 listed), 0 other clubs, 56 in all; not in it: Americano Futebol Clube (RJ), Associação Atlética Francana, Associação Atlética Portuguesa (RJ), Associação Desportiva Cabofriense, Botafogo Futebol Clube (SP), Caxias Futebol Clube, Clube Atlético Bragantino, Comercial Esporte Clube, Desportiva Capixaba, Esporte Clube São José, Esporte Clube XV de Novembro, Estrela do Norte Futebol Clube, Goytacaz Futebol Clube, Grêmio Esportivo Brasil, Grêmio de Esportes Maringá, Iraty Sport Club, Ituiutaba Esporte Clube, Macaé Sports, Rio Branco Atlético Clube, Serra Futebol Clube, Tuna Luso Brasileira, Tupi Football Club, Uberaba Sport Club; others: -
-2002	club_list	Croatian First Division: 12 of 12 listed clubs that the database holds (12 listed), 4 other clubs, 16 in all; not in it: -; others: Bojovnik 7, NK Amater, NK Borac, NK TSK
-2002	club_list	Croatian Second Division North: 11 of 11 listed clubs that the database holds (12 listed), 5 other clubs, 16 in all; not in it: -; others: Ivancica, NK Bedem, NK Bjelovar, NK Metalac, NK Mladost Molve
-2002	club_list	Finnish Premier Division: 12 of 14 listed clubs that the database holds (14 listed), 0 other clubs, 12 in all; not in it: FC Jokerit, FC KooTeePee; others: -
-2002	club_list	Northern Irish League First Division: 8 of 8 listed clubs that the database holds (8 listed), 2 other clubs, 10 in all; not in it: -; others: Ards, Institute
-2002	club_list	Northern Irish League Premier Division: 10 of 12 listed clubs that the database holds (12 listed), 0 other clubs, 10 in all; not in it: Ards, Institute; others: -
 2002	clubs	arg_second (Primera B Nacional), row arg-usa-29: game 25, table 20 (20)
 2002	clubs	bel_third (Belgian Third Division), row hol-bel-23: game 16, table 32 (32 (A 16, B 16))
 2002	clubs	bra_champ_cup (Copa dos Campeões), row bra-191: game 3, table 0 (0)
@@ -19,8 +12,7 @@
 2002	clubs	bra_reg_gaucho (Campeonato Gaúcho), row bra-542: game 17, table 18 (18)
 2002	clubs	bra_reg_goias (Campeonato Goiano), row bra-569: game 14, table 12 (12)
 2002	clubs	bra_reg_minas_gerais (Campeonato Mineiro Módulo I), row bra-596: game 12, table 13 (13)
-2002	clubs	bra_reg_north (Campeonato Paraense), row bra-623: game 10, table 14 (14)
-2002	clubs	bra_reg_northeast (Campeonato Cearense), row bra-650: game 16, table 10 (10)
+2002	clubs	bra_reg_north (Campeonato Paraense), row bra-623: game 12, table 14 (14)
 2002	clubs	bra_reg_parana (Campeonato Paranaense), row bra-677: game 12, table 16 (16)
 2002	clubs	bra_reg_santa (Campeonato Catarinense), row bra-488: game 10, table 12 (12)
 2002	clubs	bra_reg_sp (Campeonato Paulista Série A1), row bra-704: game 16, table 21 (21)
@@ -37,6 +29,11 @@
 2002	clubs	gre_prm (Alpha Ethniki), row gre-pol-cro-29: game 14, table 16 (16)
 2002	clubs	gre_second (Beta Ethniki), row gre-pol-cro-56: game 14, table 16 (16)
 2002	clubs	ita_cup (Coppa Italia), row ita-30: game 4, table 48 (48)
+2002	clubs	new_acriano_state_championship (Campeonato Acriano), row bra-947: game 5, table 7 (7)
+2002	clubs	new_maranhense_state_championship (Campeonato Maranhense), row bra-866: game 7, table 13 (13)
+2002	clubs	new_paraibano_state_championship (Campeonato Paraibano), row bra-785: game 7, table 10 (10)
+2002	clubs	new_piauiense_state_championship (Campeonato Piauiense), row bra-920: game 5, table 11 (11)
+2002	clubs	new_sergipano_state_championship (Campeonato Sergipano), row bra-839: game 5, table 14 (14)
 2002	clubs	nir_cup (Irish Cup), row wal-nir-irl-38: game 32, table 77 (77)
 2002	clubs	nir_first (Irish League First Division), row wal-nir-irl-36: game 10, table 8 (8)
 2002	clubs	nir_lge_cup (Irish League Cup), row wal-nir-irl-39: game 5, table 20 (20)
@@ -58,14 +55,9 @@
 2002	no_row	record_utils ('B' International): no table row
 2002	no_row	record_utils (Reserve): no table row
 2002	no_row	record_utils (Under 21 International): no table row
-2002	not_held	asia_cup_winner (Asian Cup Winners' Cup), row club-world-35: the game holds 2002, the table says not held
 2002	not_held	bra_champ_cup (Copa dos Campeões), row bra-191: the game holds 2002, the table says not held
-2002	not_held	conmebol_merc (Copa Mercosur), row club-world-24: the game holds 2002, the table says not held
 2002	not_held	gre_super (Greek Super Cup), row gre-pol-cro-83: the game holds 2002, the table says not held
-2002	not_held	inter_amer_cup (Copa Interamericana), row club-world-31: the game holds 2002, the table says not held
 2002	not_held	nir_charity (Charity Shield), row wal-nir-irl-40: the game holds 2002, the table says not held
-2002	not_held	oceania_club_champ (Oceania Club Championship), row club-world-37: the game holds 2002, the table says not held
-2002	not_held	world_club_champ (FIFA Club World Championship), row club-world-21: the game holds 2003, the table says not held
 2002	not_in_game	arg-usa-191 argentina_rules 'Argentina' (Argentina)
 2002	not_in_game	aus-jap-kor-110 japan_rules 'n/a' (Japan)
 2002	not_in_game	aus-jap-kor-2 australia_rules 'n/a' (Australia)
@@ -74,16 +66,7 @@
 2002	not_in_game	bra-1055 new 'Campeonato Tocantinense' (Brazil)
 2002	not_in_game	bra-2 brazil_rules 'Brazil' (Brazil)
 2002	not_in_game	bra-218 new 'Copa do Nordeste' (Brazil)
-2002	not_in_game	bra-758 new 'Campeonato Potiguar' (Brazil)
-2002	not_in_game	bra-785 new 'Campeonato Paraibano' (Brazil)
-2002	not_in_game	bra-812 new 'Campeonato Alagoano' (Brazil)
-2002	not_in_game	bra-839 new 'Campeonato Sergipano' (Brazil)
-2002	not_in_game	bra-866 new 'Campeonato Maranhense' (Brazil)
-2002	not_in_game	bra-893 new 'Campeonato Amazonense' (Brazil)
-2002	not_in_game	bra-920 new 'Campeonato Piauiense' (Brazil)
-2002	not_in_game	bra-947 new 'Campeonato Acriano' (Brazil)
 2002	not_in_game	bra-974 new 'Campeonato Brasiliense' (Brazil)
-2002	not_in_game	club-world-26 new 'Copa Sudamericana' (CONMEBOL)
 2002	not_in_game	den-swe-12 new 'Danish Super Cup' (Denmark)
 2002	not_in_game	eng-307 eng_fa_trophy 'FA Trophy' (England)
 2002	not_in_game	eng-42 eng_conf 'Football Conference' (England)
@@ -114,8 +97,6 @@
 2002	up	bel_third (Belgian Third Division), row hol-bel-23: game 1 (+0 play-off places), table 2 (2 (group champions))
 2002	up	bra_nat_first (Campeonato Brasileiro Série A), row bra-29: game 4 (+0 play-off places), table na (n/a)
 2002	up	conmebol_liber (Copa Libertadores), row club-world-23: game 2 (+0 play-off places), table na (n/a)
-2002	up	conmebol_merc (Copa Mercosur), row club-world-24: game 1 (+0 play-off places), table na (n/a)
 2002	up	fin_first (Ykkönen), row nor-fin-18: game 2 (+0 play-off places), table 1 (1st (1))
 2002	up	gre_cup (Greek Football Cup), row gre-pol-cro-2: game 2 (+0 play-off places), table na (n/a)
 2002	up	nir_first (Irish League First Division), row wal-nir-irl-36: game 1 (+1 play-off places), table 4 (4 (pos 1,2,3,4))
-2002	up	oceania_club_champ (Oceania Club Championship), row club-world-37: game 2 (+0 play-off places), table na (n/a)

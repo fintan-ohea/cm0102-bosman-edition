@@ -5,8 +5,10 @@
  * Q261): one coloured heading per era, the tiles of its seasons under it in the era colour with a coloured
  * top edge, a status tag on each tile and a star on each season that has a saved game. A Custom database
  * tile follows the seasons (Q254). Below the tiles the strip shows the chosen season, its database, its
- * credit and the start date, and the version choice when more than one database of the season is there
- * (Q252, Q257). A line links to the Update Team's Databases forum at champman0102.co.uk.
+ * credit and the start date. Each season has one database, the one of its tile (Q417, Max's play test of the
+ * 0.6.0 preview): the version choice of Q252 and Q257 is gone. A line still links to the Update Team's
+ * Databases forum at champman0102.co.uk (Q418). At the foot of the strip, the changing rules switch of the
+ * next new game (Q232, Q259; on Setup Game until Max's play test).
  *
  * The screen is a screen of the runtime on the game's own screen stack, as Team views (views.c): the
  * Choose Season item of Setup Game (database.c) pushes it with the push of the original 0x7fe600, flag 0,
@@ -22,14 +24,15 @@
  * seasons_db_prepare (slice 14), which unpacks a zipped database once into Databases. Before the unpack the
  * screen is built once more with a line that says so, and the unpack runs at the next input call. Then the
  * options database and season get the choice, season_set_new_game gets the start year and the screen goes
- * back to Setup Game, which shows the season, its database and the changing rules switch.
+ * back to Setup Game, whose season strip shows the season, its database and the changing rules state.
  *
  * Same game (Q152): the screen keeps its texts in runtime memory (win_static_alloc), not in the game's heap.
  * It reads files only: settings.txt changes through options_set. The push of the node is the original's.
  *
- * Node slots: 0 the chosen tile (1 to 25 for the seasons, 26 for the Custom database), 1 the version, 2 the
- * Custom folder, 3 the season of the Custom folder (start year), 4 the state (0, 1 unpack next, 2 error),
- * 5 the page of versions. Only numbers, so the screen needs no leave function. */
+ * Node slots: 0 the chosen tile (1 to 25 for the seasons, 26 for the Custom database), 2 the Custom folder,
+ * 3 the season of the Custom folder (start year), 4 the state (0, 1 unpack next, 2 error). Slots 1 and 5
+ * held the version and its page until Q417 and stay 0. Only numbers, so the screen needs no leave
+ * function. */
 #include "win.h"
 #include "draw.h"
 #include "options.h"
@@ -75,12 +78,11 @@
 #define BUTTON_GREY 0xae317eu
 
 #define TILE_ID 0x7d40u             /* data: tile index 0 to 25. Ids that the original does not use. */
-#define VERSION_ID 0x7d41u          /* data: version index */
+#define RULES_ID 0x7d41u            /* data: 1 changing rules on, 0 off (the version choice until Q417) */
 #define CHOOSE_ID 0x7d42u
 #define FOLDER_ID 0x7d43u           /* the next Custom folder */
 #define CUSTOM_YEAR_ID 0x7d44u      /* data: 0 an earlier season, 1 a later one */
 #define LINK_ID 0x7d45u
-#define PAGE_ID 0x7d46u             /* the next page of versions */
 #define BACK_ID 0x7d47u             /* Back: the screen goes back to Setup Game */
 #define REBUILD 0xfffffff5u         /* -0xb */
 #define GO_BACK 0xfffffffeu         /* -2: the result of Back (0x762c97) */
@@ -135,8 +137,8 @@ typedef struct {
     int side;                           /* 1: the details are a panel on the right of the grid (widescreen) */
     int det_x1, det_y1, det_x2, det_y2, pad;   /* the details: the strip (classic) or the panel (widescreen) */
     int left_w;                         /* classic: the column of the year in the strip */
-    int button_h;                       /* the version and season buttons of the details */
-    int link_y, link_h;
+    int button_h;                       /* the season buttons of the details */
+    int link_y, link_h;                 /* the forum line; its height is the height of the changing rules row */
     int bottom_y, bottom_h, start_w;    /* Back and Start */
 } Layout;
 
@@ -589,20 +591,7 @@ static void bar(int x1, int y1, int x2, int y2, Rgb colour, const char *name, co
 
 /* ---- The details of the chosen tile ---- */
 
-/* The versions of a season: its own database first, then the versions of seasons_db_scan. */
-typedef struct { const char *name; const char *value; int own; } Version;
-
-static int versions_of(int index, Version *v, int max)
-{
-    const SeasonsEntry *s = &list.season[index];
-    int n = 0;
-    if (s->database && n < max) v[n++] = (Version){s->database, NULL, 1};
-    for (int i = 0; i < s->extra_count && n < max; i++) v[n++] = (Version){s->extra[i].db->name, s->extra[i].value, 0};
-    return n;
-}
-
 static int folder_fault(const char *name);
-static int chosen_version(int sel, int nv);
 
 /* A database name for the player: "Official data 3.9.68" for the data sets. */
 static void db_title(const char *name, char *out, size_t room)
@@ -616,10 +605,8 @@ typedef struct {
     int custom, year, ok;
     char big[32], decade[48], start[40], db[160], credit[160], europe[160];
     Rgb decade_rgb, top_rgb;
-    const char *row_note;           /* a line in place of the choices: unpack, error or a hint */
+    const char *row_note;           /* a line under the details: unpack, error or a hint */
     Rgb row_rgb;
-    int nv, ver, page;
-    Version v[SEASONS_EXTRA_MAX + 1];
 } Details;
 
 static const char *folder_fault_text(int fault)
@@ -657,20 +644,16 @@ static void details_of(int sel, Details *d)
     } else {
         const SeasonsEntry *s = &list.season[sel];
         d->year = s->start_year;
-        d->nv = versions_of(sel, d->v, SEASONS_EXTRA_MAX + 1);
-        d->ver = chosen_version(sel, d->nv);
-        d->page = (int)node_slot(5);
         snprintf(d->big, sizeof d->big, "%s", s->label);
         snprintf(d->decade, sizeof d->decade, "%s", seasons_db_decade_name(s->decade));
         d->decade_rgb = decade_look[s->decade].text;
         d->top_rgb = decade_look[s->decade].bar;
-        db_title(d->nv ? d->v[d->ver].name : "No database", d->db, sizeof d->db);
-        if (d->nv) snprintf(d->credit, sizeof d->credit, "%s", season_screen_credit(d->v[d->ver].name));
-        if (!d->nv || s->status == SEASONS_NO_DATABASE || (s->status == SEASONS_MISSING && d->v[d->ver].own)) d->ok = 0;
-        if (d->nv < 2)
-            d->row_note = s->status == SEASONS_IN_DOWNLOAD ? "The first start unpacks this database into Databases."
-                          : s->status == SEASONS_MISSING   ? "This database is not in this game folder."
-                                                           : "Other versions show here once you add them to Databases.";
+        db_title(s->database ? s->database : "No database", d->db, sizeof d->db);
+        if (s->database) snprintf(d->credit, sizeof d->credit, "%s", season_screen_credit(s->database));
+        if (!s->database || s->status == SEASONS_NO_DATABASE || s->status == SEASONS_MISSING) d->ok = 0;
+        d->row_note = s->status == SEASONS_IN_DOWNLOAD ? "The first start unpacks this database into Databases."
+                      : s->status == SEASONS_MISSING   ? "This database is not in this game folder."
+                                                       : NULL;
         d->row_rgb = pale_rgb;
     }
     snprintf(d->start, sizeof d->start, "Starts July %d", d->year);
@@ -706,19 +689,8 @@ static void custom_choices(const Details *d, int x, int y, int x2)
     if (list.custom_count > 1 && x + nw <= x2) pbutton(x, y, x + nw, y + h, f, "Next folder", FOLDER_ID, 0, 1);
 }
 
-/* One version button: the chosen one is a yellow framed label. */
-static void version_button(const Details *d, int i, int x1, int y1, int x2, int y2, uint32_t font)
-{
-    char t[80];
-    db_title(d->v[i].name, t, sizeof t);
-    if (i == d->ver)
-        widget(1, px(x1), py(y1), px(x2), py(y2), 0x221, rgb565(yellow_rgb), 0xc, font, rgb565(yellow_rgb), t, 0, 0);
-    else
-        pbutton(x1, y1, x2, y2, font, t, VERSION_ID, (uint32_t)i, 1);
-}
-
 /* Classic: the strip below the grid. Two columns: the year, the decade and the start; the database, the
- * credit, Europe and the versions. */
+ * credit and Europe. */
 static void details_strip(const Details *d)
 {
     const Layout *L = lay();
@@ -747,36 +719,14 @@ static void details_strip(const Details *d)
         y = paragraph(rx + ew, y + 2, width - ew, tf, white_rgb, d->europe, 2);
     }
     y += 6;
-    int h = L->button_h;
     if (d->row_note) {
         paragraph(rx, y, width, tf, d->row_rgb, d->row_note, 2);
         return;
     }
-    if (d->custom) {
-        custom_choices(d, rx, y, ex);
-        return;
-    }
-    int vw = text_w(tf, "Version:") + 8;
-    plabel(rx, y, rx + vw, y + h, 1, tf, pale_rgb, "Version:");
-    int x = rx + vw, per = d->nv, page = d->page;
-    /* As many buttons as fit; with more, the last place pages on. */
-    int widths[SEASONS_EXTRA_MAX + 1], total = 0;
-    for (int i = 0; i < d->nv; i++) {
-        char t[80];
-        db_title(d->v[i].name, t, sizeof t);
-        widths[i] = text_w(tf, t) + 18;
-        total += widths[i] + 6;
-    }
-    if (x + total > ex) per = 2;
-    if (page < 0 || page * per >= d->nv) page = 0;
-    for (int i = page * per, k = 0; i < d->nv && k < per; i++, k++) {
-        version_button(d, i, x, y, x + widths[i], y + h, tf);
-        x += widths[i] + 6;
-    }
-    if (per < d->nv) pbutton(x, y, x + text_w(tf, "More versions") + 18, y + h, tf, "More versions", PAGE_ID, 0, 1);
+    if (d->custom) custom_choices(d, rx, y, ex);
 }
 
-/* Widescreen: the panel on the right of the grid, with the versions stacked. */
+/* Widescreen: the panel on the right of the grid. */
 static void details_panel(const Details *d)
 {
     const Layout *L = lay();
@@ -810,24 +760,6 @@ static void details_panel(const Details *d)
             pbutton(x, y, x + nw, y + h, 2, "Next folder", FOLDER_ID, 0, 1);
             y += h + 6;
         }
-    } else {
-        plabel(x, y, ex, y + line_h(1), 1, 1, pale_rgb, "Version");
-        y += line_h(1) + 2;
-        int max = (y2 - p - 120 - y) / (h + 6), page = d->page;
-        if (max < 1) max = 1;
-        int per = d->nv > max ? max - 1 : d->nv;
-        if (per < 1) per = 1;
-        if (page < 0 || page * per >= d->nv) page = 0;
-        for (int i = page * per, k = 0; i < d->nv && k < per; i++, k++) {
-            char t[80];
-            db_title(d->v[i].name, t, sizeof t);
-            version_button(d, i, x, y, ex, y + h, fit_font((uint8_t[]){2, 1}, 2, t, w - 12));
-            y += h + 6;
-        }
-        if (per < d->nv) {
-            pbutton(x, y, ex, y + h, 2, "More versions", PAGE_ID, 0, 1);
-            y += h + 6;
-        }
     }
     if (d->custom) return;
     y += 4;
@@ -836,6 +768,35 @@ static void details_panel(const Details *d)
     plabel(x, y, ex, y + line_h(1), 1, 1, pale_rgb, "Europe");
     y += line_h(1);
     paragraph(x, y, w, 2, white_rgb, d->europe, 4);
+}
+
+/* ---- The changing rules switch (Q232, Q259) ---- */
+static int rules_choice = -1;       /* -1: the option changing_rules */
+
+int season_screen_rules_choice(void) { return rules_choice; }
+int season_screen_rules_on(void) { return rules_choice < 0 ? options_bool(OPT_CHANGING_RULES) : rules_choice; }
+
+/* "Changing rules", On and Off (the chosen one a yellow framed label, as the options box), and what it does. */
+static void rules_row(const Layout *L, int x, int y)
+{
+    int h = L->link_h;
+    uint32_t f = L->text_fonts[0];
+    int on = season_screen_rules_on();
+    const char *name = "Changing rules", *note = on ? "The rules change each July, as they did in real life."
+                                                    : "The rules of the start season stay for the whole game.";
+    int nw = text_w(f, name) + 12, bw = text_w(f, "Off") + 28;
+    plabel(x, y, x + nw, y + h, 1, f, white_rgb, name);
+    x += nw;
+    for (int v = 1; v >= 0; v--) {
+        const char *t = v ? "On" : "Off";
+        if (v == on)
+            widget(1, px(x), py(y), px(x + bw), py(y + h), 0x221, rgb565(yellow_rgb), 0xc, f, rgb565(yellow_rgb), t, 0, 0);
+        else
+            pbutton(x, y, x + bw, y + h, f, t, RULES_ID, (uint32_t)v, 1);
+        x += bw + 6;
+    }
+    x += 8;
+    plabel(x, y, L->right, y + h, 1, fit_font(L->text_fonts, 2, note, L->right - x), pale_rgb, note);
 }
 
 /* ---- Build and input ---- */
@@ -907,6 +868,9 @@ static void season_build(void)
                   "Click a season to see its database.", 2);
     }
 
+    /* The changing rules switch at the foot of the strip, under the database column. */
+    if (sel >= 0) rules_row(L, L->det_x1 + L->pad + 4 + L->left_w + 20, L->det_y2 - L->pad - L->link_h);
+
     const char *more = "More versions of each season are on the Update Team's forum.", *open = "Open champman0102.co.uk";
     uint32_t lf = L->text_fonts[0];
     int link_w = text_w(lf, open) + 24;
@@ -936,9 +900,7 @@ static void season_build(void)
 static void choose_select(int tile_index)
 {
     set_slot(0, (uint32_t)tile_index + 1);
-    set_slot(1, 0);
     set_slot(4, 0);
-    set_slot(5, 0);
 }
 
 /* Why the option database cannot hold the folder name as it is: 0 it can, 1 a space at the start or the end
@@ -950,13 +912,6 @@ static int folder_fault(const char *name)
         if ((unsigned char)name[i] < 0x20 || name[i] == 0x7f) return 2;
     if (!n || name[0] == ' ' || name[n - 1] == ' ') return 1;
     return 0;
-}
-
-/* The version index of the strip, checked against the versions of the tile. */
-static int chosen_version(int sel, int nv)
-{
-    int ver = (int)node_slot(1);
-    return sel >= 0 && sel < SEASONS_COUNT && ver >= 0 && ver < nv ? ver : 0;
 }
 
 /* Starts the choice: the options database and season, and the season of the next new game. Returns 1 when
@@ -979,13 +934,8 @@ static int choose_apply(void)
     } else if (sel >= 0 && sel < SEASONS_COUNT) {
         const SeasonsEntry *s = &list.season[sel];
         year = s->start_year;
-        Version v[SEASONS_EXTRA_MAX + 1];
-        int nv = versions_of(sel, v, SEASONS_EXTRA_MAX + 1);
-        int ver = chosen_version(sel, nv);
-        if (!nv) return 0;
-        if (!v[ver].own) {
-            snprintf(value, sizeof value, "%s", v[ver].value);
-        } else if (year <= 2002) {
+        if (!s->database) return 0;
+        if (year <= 2002) {
             snprintf(value, sizeof value, "3.9.68");
         } else {
             SeasonsPrepare r;
@@ -1050,12 +1000,10 @@ static void season_input(void)
         if (id == TILE_ID && data < TILES) {
             choose_select((int)data);
             r = REBUILD;
-        } else if (id == VERSION_ID) {
-            set_slot(1, data);
-            set_slot(4, 0);
-            r = REBUILD;
-        } else if (id == PAGE_ID) {
-            set_slot(5, node_slot(5) + 1);
+        } else if (id == RULES_ID) {
+            rules_choice = data ? 1 : 0;
+            season_set_new_game(season_start_year(), rules_choice);
+            fprintf(stderr, "recomp: changing rules of the next new game: %s\n", rules_choice ? "on" : "off");
             r = REBUILD;
         } else if (id == FOLDER_ID) {
             set_slot(2, list.custom_count ? (node_slot(2) + 1) % (uint32_t)list.custom_count : 0);
@@ -1074,9 +1022,8 @@ static void season_input(void)
             r = GO_BACK;
         } else if (id == CHOOSE_ID) {
             int sel = (int)node_slot(0) - 1;
-            Version v[SEASONS_EXTRA_MAX + 1];
-            int nv = sel >= 0 && sel < SEASONS_COUNT ? versions_of(sel, v, SEASONS_EXTRA_MAX + 1) : 0;
-            int unpack = nv && list.season[sel].status == SEASONS_IN_DOWNLOAD && v[chosen_version(sel, nv)].own;
+            int unpack = sel >= 0 && sel < SEASONS_COUNT && list.season[sel].database &&
+                         list.season[sel].status == SEASONS_IN_DOWNLOAD;
             if (unpack) {
                 set_slot(4, 1);             /* show the unpack line first; the unpack runs at the next call */
                 r = REBUILD;
@@ -1102,20 +1049,13 @@ static void season_input(void)
 static uint32_t build_fn(void) { return rt_host_fn("season_build", season_build); }
 uint32_t season_screen_build_fn(void) { return build_fn(); }
 
-/* ---- Setup Game: the changing rules switch of the next new game ---- */
-static int rules_choice = -1;       /* -1: the option changing_rules */
-
-int season_screen_rules_choice(void) { return rules_choice; }
-int season_screen_rules_on(void) { return rules_choice < 0 ? options_bool(OPT_CHANGING_RULES) : rules_choice; }
-void season_screen_toggle_rules(void) { rules_choice = !season_screen_rules_on(); }
-
 void season_screen_open(void)
 {
     seasons_db_scan(&list);
     scan_saves();
     error_text[0] = 0;
     /* The tile of the current choice. */
-    int year = season_screen_year(), tile_index = year - SEASONS_FIRST, ver = 0, folder = 0;
+    int year = season_screen_year(), tile_index = year - SEASONS_FIRST, folder = 0;
     const char *db = options_string(OPT_DATABASE);
     if (!strncmp(db, "folder:", 7)) {
         for (int i = 0; i < list.custom_count; i++)
@@ -1124,15 +1064,10 @@ void season_screen_open(void)
                 folder = i;
             }
     }
-    if (tile_index >= 0 && tile_index < SEASONS_COUNT) {
-        const SeasonsEntry *s = &list.season[tile_index];
-        for (int i = 0; i < s->extra_count; i++)
-            if (!strcmp(s->extra[i].value, db)) ver = i + 1;
-    }
     uint32_t p[5] = {build_fn(), rt_host_fn("season_input", season_input), 0, 0, 0};
     call_this(PUSH, SCREENS, 5, p);
     set_slot(0, (uint32_t)tile_index + 1);
-    set_slot(1, (uint32_t)ver);
+    set_slot(1, 0);
     set_slot(2, (uint32_t)folder);
     set_slot(3, (uint32_t)(tile_index == CUSTOM_TILE ? year : 2025));
     set_slot(4, 0);

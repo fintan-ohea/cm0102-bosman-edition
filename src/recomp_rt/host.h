@@ -77,6 +77,11 @@ int host_has_drive(char letter);
 void host_system_name(char *out, size_t room);
 void host_display_notes(char *out, size_t room);
 
+/* The computer's own folder picker (Q419, the Save folder row of the options box): 1 with the chosen folder in
+ * out ("/" between parts, no "/" at the end), 0 when the player cancels, -1 when this computer has no picker
+ * (Linux without zenity or kdialog). It blocks until the player answers. */
+int host_pick_folder(const char *title, char *out, size_t room);
+
 /* Time. */
 void host_gmtime(time_t t, struct tm *out);
 void host_localtime(time_t t, struct tm *out);

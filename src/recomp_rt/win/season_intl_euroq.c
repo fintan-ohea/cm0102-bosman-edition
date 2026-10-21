@@ -88,6 +88,19 @@ void rt_euroq_rules(uint32_t self)
     wr8(g_mem, self + 0x101u, bytes[f][4]);
 }
 
+/* The ctor 0x57ce10 at 0x57d021, when the game year is past the campaign year +0x40: 1 skips the load of the
+ * 2002 campaign (load_2002_campaign 0x580bd0) for another campaign. Only a season game skips it. The base game
+ * (2001/02 start, rules off) keeps the original's load, also in a loaded save of a later year. */
+uint32_t rt_euroq_skip_2002(uint32_t self)
+{
+    int campaign = (int16_t)rd16(g_mem, self + 0x40u);
+    uint32_t skip = season_intl_on() && campaign != 2002;
+    if (logging())
+        fprintf(stderr, "recomp: season intl: euroq campaign %d: the 2002 load %s\n", campaign,
+                skip ? "skipped" : "kept");
+    return skip;
+}
+
 /* The host count that sizes the play-off (0x57f014: best runners-up, 0x57f115: play-off teams, 0x57d4f3:
  * template). Euro 2016 takes the shape of two hosts: 1 best third and 8 in the play-off. */
 uint32_t rt_euroq_hosts(uint32_t self, uint32_t original)

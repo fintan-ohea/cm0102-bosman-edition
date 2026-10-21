@@ -152,7 +152,8 @@ typedef struct {
     uint32_t staff[11][DEPTH_PLAYERS];
     int fit[11][DEPTH_PLAYERS];
     int score[11][DEPTH_PLAYERS];  /* as Pick.score: the best of the row's slots */
-    int out[11][DEPTH_PLAYERS];    /* 1: the player cannot play the next match */
+    int out[11][DEPTH_PLAYERS];    /* not 0: the player cannot play the next match: 1 injured, 2 away with a
+                                      national team, 3 the squad screen's test (a ban, a loan, the rules) */
 } Depth;
 int picker_depth(uint32_t club, uint32_t team_index, const uint16_t *formation, uint32_t viewer, const Pick *xi,
                  const int *row_of, int rows, Depth *out);

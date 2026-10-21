@@ -1,5 +1,5 @@
 /* The score of a player in a slot, without game memory, so that tests/picker can test it (picker.c,
- * best_xi.c, squad_depth.c).
+ * best_xi.c).
  *
  * A value is the sum of the key attributes the viewer sees, times the fit, times 60, divided by their
  * count: the score shown is value / 1200 (Q138 to Q140, Q156). An attribute that the game hides from the

@@ -4,9 +4,6 @@
 2016	bench	ita_c_cup (Coppa Italia Lega Pro), row ita-269: game 9, table 12 (12 (inference: already 12 in Lega Pro by July 2017))
 2016	bench	ita_ser_a (Serie A), row ita-257: game 9, table 12 (12)
 2016	bench	world_club_champ (FIFA Club World Cup), row club-world-287: game 7/9, table 12 (12)
-2016	club_list	French National: 18 of 18 listed clubs that the database holds (18 listed), 2 other clubs, 20 in all; not in it: -; others: AS Chêtaigneraie Vendée Football, Orvault Sport Football
-2016	club_list	Italian Serie A: 18 of 20 listed clubs that the database holds (20 listed), 0 other clubs, 18 in all; not in it: Crotone, Delfino Pescara; others: -
-2016	club_list	Italian Serie B: 20 of 22 listed clubs that the database holds (22 listed), 0 other clubs, 20 in all; not in it: Cittadella, Pisa; others: -
 2016	clubs	african_nations (Africa Cup of Nations), row int-continental-172: game 0/4, table 16 (16)
 2016	clubs	fifa_confed (FIFA Confederations Cup), row int-world-190: game 0/4, table 8 (8)
 2016	clubs	fra_third (Championnat National), row fra-139: game 20, table 18 (18)
@@ -32,6 +29,7 @@
 2016	no_row	record_utils ('B' International): no table row
 2016	no_row	record_utils (Reserve): no table row
 2016	no_row	record_utils (Under 21 International): no table row
+2016	not_held	ger_lge_cup (DFL-Ligapokal), row ger-206: the game holds 2016, the table says not held
 2016	not_held	ita_ser_c1a (Italian Serie C1/A), row ita-259: the game holds 2016, the table says not held
 2016	not_held	ita_ser_c1b (Italian Serie C1/B), row ita-260: the game holds 2016, the table says not held
 2016	not_in_game	eng-182 eng_conf 'National League' (England)
@@ -61,7 +59,7 @@
 2017	bench	ita_ser_a (Serie A), row ita-274: game 9, table 12 (12)
 2017	bench	ita_ser_b (Serie B), row ita-275: game 7, table 12 (12 (inference: Lega B assembly asked for 12 "from next season" in July 2017))
 2017	bench	ita_super (Supercoppa Italiana), row ita-287: game 7, table 12 (12)
-2017	bench	world_club_champ (FIFA Club World Cup), row club-world-306: game 9, table 12 (12)
+2017	bench	world_club_champ (FIFA Club World Cup), row club-world-306: game 7/9, table 12 (12)
 2017	bench	world_cup (FIFA World Cup), row int-world-194: game 7, table 12 (12)
 2017	clubs	european_cup (UEFA Champions League), row uefa-130: game 78, table 79 (79 (32 in the group stage))
 2017	clubs	fra_third (Championnat National), row fra-148: game 20, table 17 (17)
@@ -76,7 +74,7 @@
 2017	clubs	wc_concacaf_cup (FIFA World Cup qualification (CONCACAF)), row int-world-197: game 24, table 6 (6)
 2017	clubs	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-195: game 5, table 54 (54 entrants)
 2017	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-200: game 5, table 2 (2)
-2017	clubs	world_club_champ (FIFA Club World Cup), row club-world-306: game 4, table 7 (7)
+2017	clubs	world_club_champ (FIFA Club World Cup), row club-world-306: game 0, table 7 (7)
 2017	clubs	world_cup (FIFA World Cup), row int-world-194: game 0/4, table 32 (32)
 2017	down	eng_third (EFL League Two), row eng-191: game 1 (+0 play-off places), table 2 (2)
 2017	down	fra_second (Ligue 2), row fra-147: game 3 (+0 play-off places), table 2 (2)
@@ -95,11 +93,9 @@
 2017	not_held	euro_champ_qual (UEFA European Championship qualifying), row int-continental-178: the game holds 2018, the table says not held
 2017	not_held	fifa_confed (FIFA Confederations Cup), row int-world-202: the game holds 2017, the table says not held
 2017	not_held	ger_lge_cup (DFL-Ligapokal), row ger-219: the game holds 2017, the table says not held
-2017	not_held	inter_amer_cup (Copa Interamericana), row club-world-316: the game holds 2017, the table says not held
 2017	not_held	ita_ser_c1a (Italian Serie C1/A), row ita-276: the game holds 2017, the table says not held
 2017	not_held	ita_ser_c1b (Italian Serie C1/B), row ita-277: the game holds 2017, the table says not held
 2017	not_held	olympics (Football at the Summer Olympics), row int-world-203: the game holds 2016, the table says not held
-2017	not_held	world_club_cup (Intercontinental Cup), row club-world-305: the game holds 2017, the table says not held
 2017	not_in_game	eng-192 eng_conf 'National League' (England)
 2017	not_in_game	eng-397 eng_fa_trophy 'FA Trophy' (England)
 2017	not_in_game	fra-149 fra_cfa 'National 2' (France)
@@ -110,14 +106,14 @@
 2017	not_in_game	ita-282 new 'Serie C girone B' (Italy)
 2017	not_in_game	ita-283 new 'Serie C girone C' (Italy)
 2017	not_in_game	uefa-129 uefa_seeding 'UEFA access list and seeding' (UEFA)
-2017	playoffs	fra_first (Ligue 1), row fra-146: game 0 up and 0 down play-off places, table '18th v winner of the Ligue 2 play-off, two legs'
-2017	playoffs	fra_second (Ligue 2), row fra-147: game 0 up and 0 down play-off places, table '4th v 5th, winner v 3rd, winner v Ligue 1 18th; 18th v National 3rd'
-2017	playoffs	fra_third (Championnat National), row fra-148: game 0 up and 0 down play-off places, table '3rd v Ligue 2 18th, two legs'
-2017	playoffs	ger_first (Bundesliga), row ger-209: game 0 up and 0 down play-off places, table '16th v 2. Bundesliga 3rd, two legs, away goals rule, extra time and penalties'
-2017	playoffs	ger_second (2. Bundesliga), row ger-210: game 0 up and 0 down play-off places, table '3rd v Bundesliga 16th; 16th v 3. Liga 3rd; two legs, away goals rule'
-2017	playoffs	ita_ser_b (Serie B), row ita-275: game 0 up and 0 down play-off places, table '3rd to 8th regardless of the points gap: one-leg preliminary round (5v8, 6v7) at'
-2017	playoffs	ita_ser_c1a (Italian Serie C1/A), row ita-276: game 4 up and 4 down play-off places, table 'n/a'
-2017	playoffs	ita_ser_c1b (Italian Serie C1/B), row ita-277: game 4 up and 4 down play-off places, table 'n/a'
+2017	playoffs	fra_first (Ligue 1), row fra-146: game 0 up and 0 down play-off places, table 0 and 1 ('18th v winner of the Ligue 2 play-off, two legs')
+2017	playoffs	fra_second (Ligue 2), row fra-147: game 0 up and 0 down play-off places, table 3 and 1 ('4th v 5th, winner v 3rd, winner v Ligue 1 18th; 18th v National 3rd')
+2017	playoffs	fra_third (Championnat National), row fra-148: game 0 up and 0 down play-off places, table 1 and 0 ('3rd v Ligue 2 18th, two legs')
+2017	playoffs	ger_first (Bundesliga), row ger-209: game 0 up and 0 down play-off places, table 0 and 1 ('16th v 2. Bundesliga 3rd, two legs, away goals rule, extra time and penalties')
+2017	playoffs	ger_second (2. Bundesliga), row ger-210: game 0 up and 0 down play-off places, table 1 and 1 ('3rd v Bundesliga 16th; 16th v 3. Liga 3rd; two legs, away goals rule')
+2017	playoffs	ita_ser_b (Serie B), row ita-275: game 0 up and 0 down play-off places, table 6 and 0 ('3rd to 8th regardless of the points gap: one-leg preliminary round (5v8, 6v7) at')
+2017	playoffs	ita_ser_c1a (Italian Serie C1/A), row ita-276: game 4 up and 4 down play-off places, table 0 and 0 ('n/a')
+2017	playoffs	ita_ser_c1b (Italian Serie C1/B), row ita-277: game 4 up and 4 down play-off places, table 0 and 0 ('n/a')
 2017	subs_used	ita_c1_super (Supercoppa di Lega Pro), row ita-288: game 3, table 5 (5)
 2017	up	fra_third (Championnat National), row fra-148: game 3 (+0 play-off places), table 2 (2)
 2017	up	ita_ser_c1a (Italian Serie C1/A), row ita-276: game 1 (+4 play-off places), table na (n/a)

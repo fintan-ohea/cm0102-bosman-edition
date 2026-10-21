@@ -27,10 +27,17 @@ void season_screen_database_text(char *out, size_t room);
 /* The credit line of a database by its name (Q147, Q269). */
 const char *season_screen_credit(const char *name);
 
-/* The changing rules switch of Setup Game for the next new game. choice is -1 until the player clicks it:
- * then the option changing_rules applies. on gives the value that Setup Game shows. */
+/* The changing rules switch of the next new game, on the Choose Season screen. choice is -1 until the player
+ * clicks it: then the option changing_rules applies. on gives the value that the screen and the season strip
+ * of Setup Game show. */
 int season_screen_rules_choice(void);
 int season_screen_rules_on(void);
-void season_screen_toggle_rules(void);
+
+/* The widget draw wrap (names.c, through views_widget_drawn) calls this after the game draws widget w: the
+ * frame of the season strip of Setup Game (database.c). */
+void setup_widget_drawn(uint32_t w);
+
+/* The build function of the Extras screen of Setup Game (database.c), for the wait state "extras". */
+uint32_t setup_extras_build_fn(void);
 
 #endif

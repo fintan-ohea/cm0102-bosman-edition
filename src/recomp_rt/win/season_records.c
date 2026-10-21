@@ -1188,3 +1188,21 @@ RT_WRAP(0090dae0, virtual_staff_top_up)
                         "virtual players\n", name, (int)rd32(g_mem, club), rd32(g_mem, club + 0x53), rd32(g_mem, club + 0x57), n);
     }
 }
+
+void o_0090d2f0(void);
+
+/* VIRTUAL_STAFF::fill_fixture_squads, thiscall (Fixture *fixture, short slot, char no_check), ret 0xc. It tops up
+ * both clubs with virtual players (0x90dae0 at 0x90d3bd and 0x90d3f4), then, unless no_check, counts the filled
+ * squad slots +0xd7 of both (0x90d429..0x90d469) and below 15 shows the box "virtual_staff.cpp 195" (0x90d4bc).
+ * After the box it goes on: release_fixture 0x90d6b0 (0x90d4d1), then itself again with no_check 1 (0x90d4dc),
+ * so the match is played with the squad it has. The top-up gives no virtual players to the side of a nation with
+ * a reputation above 500 (0x90dd5d..0x90dd73), so an under-21 side of such a nation with few eligible players
+ * stays short: in a 2023 start (October 2023, all nations) United States U21 had 11 on day 243 of 2024, in an
+ * Under 21 International. In a season game the call takes no_check 1 at once: the same match as after the box,
+ * with no modal box that stops the game. The base game keeps the original's check (Q152). */
+RT_WRAP(0090d2f0, virtual_staff_fill_check)
+{
+    if (season_code_on() && (season_start_year() != SEASON_FIRST_YEAR || season_changing_rules()))
+        g_mem[cpu.esp + 0xc] = 1;   /* no_check; the wrap of 0x90dae0 above names a short club (RECOMP_CLUB_LOG) */
+    o_0090d2f0();
+}

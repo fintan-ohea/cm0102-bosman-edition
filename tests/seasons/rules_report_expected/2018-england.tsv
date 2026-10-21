@@ -1,95 +1,57 @@
 # Differences between the rules report and the rules table that the check accepts. Made by
 # tests/seasons/rules_report_check.py --update-expected. Columns: season, kind, text.
-2018	bench	eur_super_cup (European Super Cup), row uefa-144: game 9, table 12 (12)
-2018	bench	world_club_champ (FIFA Club World Championship), row club-world-325: game 7/9, table 12 (12)
-2018	clubs	african_nations (African Cup of Nations), row int-continental-194: game 0/4, table 24 (24)
-2018	clubs	asia_nations (Asian Cup), row int-continental-196: game 0/4, table 24 (24)
-2018	clubs	euro_champ_qual (European Championship Qualifying), row int-continental-189: game 5, table 55 (55)
-2018	clubs	goldcup (Copa America), row int-continental-198: game 0/4, table 12 (12)
-2018	clubs	world_club_champ (FIFA Club World Championship), row club-world-325: game 0/4, table 7 (7)
-2018	down	eng_third (English Third Division), row eng-201: game 1 (+0 play-off places), table 2 (2)
-2018	idle	wc_asia_league (World Cup Asian Qualifying Section), row int-world-211: the game waits for 2020, the table holds it
-2018	name	african_nations (African Cup of Nations), row int-continental-194: game 'African Cup of Nations', table '2019 Africa Cup of Nations'
-2018	name	asia_nations (Asian Cup), row int-continental-196: game 'Asian Cup', table '2019 AFC Asian Cup'
-2018	name	eng_auto_cup (English Vans Trophy), row eng-402: game 'English Vans Trophy', table 'EFL Trophy'
-2018	name	eng_cc_cup (English League Cup), row eng-401: game 'English League Cup', table 'EFL Cup'
-2018	name	eng_charity (English Charity Shield), row eng-404: game 'English Charity Shield', table 'FA Community Shield'
-2018	name	eng_fa_cup (English FA Cup), row eng-400: game 'English FA Cup', table 'FA Cup'
-2018	name	eng_first (English First Division), row eng-199: game 'English First Division', table 'EFL Championship'
-2018	name	eng_prm (English Premier Division), row eng-198: game 'English Premier Division', table 'Premier League'
-2018	name	eng_second (English Second Division), row eng-200: game 'English Second Division', table 'EFL League One'
-2018	name	eng_third (English Third Division), row eng-201: game 'English Third Division', table 'EFL League Two'
-2018	name	eur_super_cup (European Super Cup), row uefa-144: game 'European Super Cup', table 'UEFA Super Cup'
-2018	name	euro_champ_qual (European Championship Qualifying), row int-continental-189: game 'European Championship Qualifying', table 'UEFA Euro 2020 qualifying'
-2018	name	european_cup (European Champions Cup), row uefa-138: game 'European Champions Cup', table 'UEFA Champions League'
-2018	name	goldcup (Copa America), row int-continental-198: game 'Copa America', table '2019 Copa América'
-2018	name	inter_amer_cup (Inter-American Cup), row club-world-335: game 'Inter-American Cup', table 'Copa Interamericana'
-2018	name	uefa_cup (UEFA Cup), row uefa-141: game 'UEFA Cup', table 'UEFA Europa League'
-2018	name	world_club_champ (FIFA Club World Championship), row club-world-325: game 'FIFA Club World Championship', table 'FIFA Club World Cup'
-2018	name	world_club_cup (Intercontinental Cup), row club-world-324: game 'Intercontinental Cup', table 'Intercontinental Cup (Toyota Cup)'
+2018	bench	eur_super_cup (UEFA Super Cup), row uefa-144: game 9, table 12 (12)
+2018	bench	world_club_champ (FIFA Club World Cup), row club-world-325: game 7/9, table 12 (12)
+2018	clubs	african_nations (Africa Cup of Nations), row int-continental-194: game 0/4, table 24 (24)
+2018	clubs	asia_nations (AFC Asian Cup), row int-continental-196: game 0/4, table 24 (24)
+2018	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-189: game 5, table 55 (55)
+2018	clubs	goldcup (Copa América), row int-continental-198: game 0/4, table 12 (12)
+2018	clubs	new_concacaf_gold_cup (2019 CONCACAF Gold Cup), row int-continental-192: game 4, table 16 (16)
+2018	clubs	new_concacaf_nations_league (2019-20 CONCACAF Nations League qualifying), row int-continental-193: game 3, table 34 (34)
+2018	clubs	new_uefa_nations_league (2018-19 UEFA Nations League), row int-continental-190: game 3, table 55 (55)
+2018	clubs	world_club_champ (FIFA Club World Cup), row club-world-325: game 0, table 7 (7)
+2018	down	eng_third (EFL League Two), row eng-201: game 1 (+0 play-off places), table 2 (2)
+2018	idle	wc_asia_league (FIFA World Cup qualification (AFC)), row int-world-211: the game waits for 2020, the table holds it
 2018	no_row	friendly (Friendly): no table row
 2018	no_row	record_utils ('B' International): no table row
 2018	no_row	record_utils (Reserve): no table row
 2018	no_row	record_utils (Under 21 International): no table row
-2018	not_held	inter_amer_cup (Inter-American Cup), row club-world-335: the game holds 2018, the table says not held
-2018	not_held	world_club_cup (Intercontinental Cup), row club-world-324: the game holds 2018, the table says not held
 2018	not_in_game	eng-202 eng_conf 'National League' (England)
 2018	not_in_game	eng-403 eng_fa_trophy 'FA Trophy' (England)
-2018	not_in_game	int-continental-190 new '2018-19 UEFA Nations League' (UEFA)
 2018	not_in_game	uefa-137 uefa_seeding 'UEFA access list and seeding' (UEFA)
-2019	bench	eng_fa_cup (English FA Cup), row eng-406: game 7, table 9 (9)
-2019	bench	eur_super_cup (European Super Cup), row uefa-152: game 9, table 12 (12)
-2019	bench	world_club_champ (FIFA Club World Championship), row club-world-344: game 9, table 12 (12)
-2019	clubs	eng_second (English Second Division), row eng-210: game 24, table 23 (23)
-2019	clubs	euro_champ (European Football Championship), row int-continental-199: game 0/4, table 24 (24)
-2019	clubs	euro_champ_qual (European Championship Qualifying), row int-continental-200: game 5, table 55 (55)
-2019	clubs	goldcup (Copa America), row int-continental-209: game 0/4, table 12 (12)
-2019	clubs	wc_african_cup (World Cup African Qualifying Section), row int-world-222: game 50, table 54 (54 entrants)
-2019	clubs	wc_asia_league (World Cup Asian Qualifying Section), row int-world-223: game 0, table 40 (40)
-2019	clubs	world_club_champ (FIFA Club World Championship), row club-world-344: game 4, table 7 (7)
-2019	down	eng_third (English Third Division), row eng-211: game 1 (+0 play-off places), table 2 (2)
-2019	idle	oceania_nations (Oceania Nations Cup), row int-continental-208: the game waits for 2024, the table holds it
-2019	name	african_nations (African Cup of Nations), row int-continental-205: game 'African Cup of Nations', table 'Africa Cup of Nations'
-2019	name	asia_nations (Asian Cup), row int-continental-207: game 'Asian Cup', table 'AFC Asian Cup'
-2019	name	eng_auto_cup (English Vans Trophy), row eng-408: game 'English Vans Trophy', table 'EFL Trophy'
-2019	name	eng_cc_cup (English League Cup), row eng-407: game 'English League Cup', table 'EFL Cup'
-2019	name	eng_charity (English Charity Shield), row eng-410: game 'English Charity Shield', table 'FA Community Shield'
-2019	name	eng_fa_cup (English FA Cup), row eng-406: game 'English FA Cup', table 'FA Cup'
-2019	name	eng_first (English First Division), row eng-209: game 'English First Division', table 'EFL Championship'
-2019	name	eng_prm (English Premier Division), row eng-208: game 'English Premier Division', table 'Premier League'
-2019	name	eng_second (English Second Division), row eng-210: game 'English Second Division', table 'EFL League One'
-2019	name	eng_third (English Third Division), row eng-211: game 'English Third Division', table 'EFL League Two'
-2019	name	eur_super_cup (European Super Cup), row uefa-152: game 'European Super Cup', table 'UEFA Super Cup'
-2019	name	euro_champ (European Football Championship), row int-continental-199: game 'European Football Championship', table 'UEFA Euro 2020'
-2019	name	euro_champ_qual (European Championship Qualifying), row int-continental-200: game 'European Championship Qualifying', table 'UEFA Euro 2020 qualifying'
-2019	name	european_cup (European Champions Cup), row uefa-146: game 'European Champions Cup', table 'UEFA Champions League'
-2019	name	goldcup (Copa America), row int-continental-209: game 'Copa America', table '2020 Copa América'
-2019	name	inter_amer_cup (Inter-American Cup), row club-world-354: game 'Inter-American Cup', table 'Copa Interamericana'
-2019	name	olympics (Olympic Games), row int-world-227: game 'Olympic Games', table 'Football at the Summer Olympics (men)'
-2019	name	uefa_cup (UEFA Cup), row uefa-149: game 'UEFA Cup', table 'UEFA Europa League'
-2019	name	wc_african_cup (World Cup African Qualifying Section), row int-world-222: game 'World Cup African Qualifying Section', table '2022 FIFA World Cup qualification (CAF)'
-2019	name	wc_asia_league (World Cup Asian Qualifying Section), row int-world-223: game 'World Cup Asian Qualifying Section', table '2022 FIFA World Cup qualification (AFC)'
-2019	name	wc_concacaf_cup (World Cup CONCACAF Qualifying Section), row int-world-221: game 'World Cup CONCACAF Qualifying Section', table 'FIFA World Cup qualification (CONCACAF)'
-2019	name	wc_europe_league (World Cup European Qualifying Section), row int-world-219: game 'World Cup European Qualifying Section', table 'FIFA World Cup qualification (UEFA)'
-2019	name	wc_oceania_league (World Cup Oceania Qualifying Section), row int-world-224: game 'World Cup Oceania Qualifying Section', table 'FIFA World Cup qualification (OFC)'
-2019	name	wc_south_american_league (World Cup South American Qualifying Section), row int-world-220: game 'World Cup South American Qualifying Section', table 'FIFA World Cup qualification (CONMEBOL)'
-2019	name	world_club_champ (FIFA Club World Championship), row club-world-344: game 'FIFA Club World Championship', table 'FIFA Club World Cup'
-2019	name	world_club_cup (Intercontinental Cup), row club-world-343: game 'Intercontinental Cup', table 'Intercontinental Cup (Toyota Cup)'
+2019	bench	eng_fa_cup (FA Cup), row eng-406: game 7, table 9 (9)
+2019	bench	eur_super_cup (UEFA Super Cup), row uefa-152: game 9, table 12 (12)
+2019	bench	new_suruga_bank (Suruga Bank Championship), row club-world-531: game 7, table 9 (9)
+2019	bench	world_club_champ (FIFA Club World Cup), row club-world-344: game 7/9, table 12 (12)
+2019	clubs	eng_second (EFL League One), row eng-210: game 24, table 23 (23)
+2019	clubs	euro_champ (UEFA European Championship), row int-continental-199: game 0/4, table 24 (24)
+2019	clubs	euro_champ_qual (UEFA European Championship qualifying), row int-continental-200: game 5, table 55 (55)
+2019	clubs	goldcup (Copa América), row int-continental-209: game 4, table 12 (12)
+2019	clubs	new_concacaf_nations_league (2019-20 CONCACAF Nations League qualifying), row int-continental-204: game 3, table 41 (41)
+2019	clubs	wc_african_cup (FIFA World Cup qualification (CAF)), row int-world-222: game 50, table 54 (54 entrants)
+2019	clubs	wc_asia_league (FIFA World Cup qualification (AFC)), row int-world-223: game 0, table 40 (40)
+2019	clubs	world_club_champ (FIFA Club World Cup), row club-world-344: game 0, table 7 (7)
+2019	down	eng_third (EFL League Two), row eng-211: game 1 (+0 play-off places), table 2 (2)
+2019	idle	oceania_nations (OFC Nations Cup), row int-continental-208: the game waits for 2024, the table holds it
+2019	name	new_concacaf_gold_cup (2019 CONCACAF Gold Cup), row int-continental-203: game '2019 CONCACAF Gold Cup', table 'CONCACAF Gold Cup'
+2019	name	new_concacaf_nations_league (2019-20 CONCACAF Nations League qualifying), row int-continental-204: game '2019-20 CONCACAF Nations League qualifying', table '2019-20 CONCACAF Nations League'
+2019	name	new_suruga_bank (Suruga Bank Championship), row club-world-531: game 'Suruga Bank Championship', table 'J.League YBC Levain Cup / CONMEBOL Sudamericana Championship Final'
+2019	name	new_uefa_nations_league (2018-19 UEFA Nations League), row int-continental-201: game '2018-19 UEFA Nations League', table 'UEFA Nations League'
 2019	no_row	friendly (Friendly): no table row
 2019	no_row	record_utils ('B' International): no table row
 2019	no_row	record_utils (Reserve): no table row
 2019	no_row	record_utils (Under 21 International): no table row
-2019	not_held	african_nations (African Cup of Nations), row int-continental-205: the game holds 2019, the table says not held
-2019	not_held	asia_nations (Asian Cup), row int-continental-207: the game holds 2019, the table says not held
-2019	not_held	inter_amer_cup (Inter-American Cup), row club-world-354: the game holds 2019, the table says not held
-2019	not_held	olympics (Olympic Games), row int-world-227: the game holds 2020, the table says not held
-2019	not_held	wc_concacaf_cup (World Cup CONCACAF Qualifying Section), row int-world-221: the game holds 2020, the table says not held
-2019	not_held	wc_europe_league (World Cup European Qualifying Section), row int-world-219: the game holds 2020, the table says not held
-2019	not_held	wc_oceania_league (World Cup Oceania Qualifying Section), row int-world-224: the game holds 2020, the table says not held
-2019	not_held	wc_south_american_league (World Cup South American Qualifying Section), row int-world-220: the game holds 2020, the table says not held
-2019	not_held	world_club_cup (Intercontinental Cup), row club-world-343: the game holds 2019, the table says not held
+2019	not_held	african_nations (Africa Cup of Nations), row int-continental-205: the game holds 2019, the table says not held
+2019	not_held	asia_nations (AFC Asian Cup), row int-continental-207: the game holds 2019, the table says not held
+2019	not_held	new_concacaf_gold_cup (2019 CONCACAF Gold Cup), row int-continental-203: the game holds 2019, the table says not held
+2019	not_held	new_uefa_nations_league (2018-19 UEFA Nations League), row int-continental-201: the game holds 2020, the table says not held
+2019	not_held	olympics (Football at the Summer Olympics), row int-world-227: the game holds 2020, the table says not held
+2019	not_held	wc_concacaf_cup (FIFA World Cup qualification (CONCACAF)), row int-world-221: the game holds 2020, the table says not held
+2019	not_held	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-219: the game holds 2020, the table says not held
+2019	not_held	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-224: the game holds 2020, the table says not held
+2019	not_held	wc_south_american_league (FIFA World Cup qualification (CONMEBOL)), row int-world-220: the game holds 2020, the table says not held
 2019	not_in_game	eng-212 eng_conf 'National League' (England)
 2019	not_in_game	eng-409 eng_fa_trophy 'FA Trophy' (England)
 2019	not_in_game	uefa-145 uefa_seeding 'UEFA access list and seeding' (UEFA)
-2019	subs_used	eng_fa_cup (English FA Cup), row eng-406: game 3, table 5 (5 (+1 in extra time))
-2019	subs_used	euro_champ (European Football Championship), row int-continental-199: game 3, table 5 (5 (a sixth in extra time), three stoppages)
+2019	subs_used	eng_fa_cup (FA Cup), row eng-406: game 3, table 5 (5 (+1 in extra time))
+2019	subs_used	euro_champ (UEFA European Championship), row int-continental-199: game 3, table 5 (5 (a sixth in extra time), three stoppages)

@@ -9,8 +9,6 @@
 2002	no_row	record_utils ('B' International): no table row
 2002	no_row	record_utils (Reserve): no table row
 2002	no_row	record_utils (Under 21 International): no table row
-2002	not_held	inter_amer_cup (Copa Interamericana), row club-world-31: the game holds 2002, the table says not held
-2002	not_held	world_club_champ (FIFA Club World Championship), row club-world-21: the game holds 2003, the table says not held
 2002	not_in_game	eng-307 eng_fa_trophy 'FA Trophy' (England)
 2002	not_in_game	eng-42 eng_conf 'Football Conference' (England)
 2002	not_in_game	uefa-9 uefa_seeding 'UEFA access list and seeding' (UEFA)
@@ -25,6 +23,7 @@
 2003	clubs	wc_concacaf_cup (FIFA World Cup qualification (CONCACAF)), row int-world-29: game 24, table 34 (34 entrants)
 2003	clubs	wc_oceania_league (FIFA World Cup qualification (OFC)), row int-world-32: game 5, table 12 (12 entrants)
 2003	down	eng_third (Football League Third Division), row eng-51: game 1 (+0 play-off places), table 2 (2)
+2003	idle	new_concacaf_gold_cup (CONCACAF Gold Cup), row int-continental-27: the game waits for 2005, the table holds it
 2003	name	african_nations (Africa Cup of Nations), row int-continental-29: game 'Africa Cup of Nations', table '2004 African Cup of Nations'
 2003	no_row	friendly (Friendly): no table row
 2003	no_row	record_utils ('B' International): no table row
@@ -33,10 +32,8 @@
 2003	not_held	asia_nations (AFC Asian Cup), row int-continental-31: the game holds 2004, the table says not held
 2003	not_held	fifa_confed (FIFA Confederations Cup), row int-world-34: the game holds 2003, the table says not held
 2003	not_held	goldcup (Copa América), row int-continental-33: the game holds 2004, the table says not held
-2003	not_held	inter_amer_cup (Copa Interamericana), row club-world-50: the game holds 2003, the table says not held
 2003	not_held	olympics (Football at the Summer Olympics), row int-world-35: the game holds 2004, the table says not held
 2003	not_held	wc_europe_league (FIFA World Cup qualification (UEFA)), row int-world-27: the game holds 2004, the table says not held
-2003	not_held	world_club_champ (FIFA Club World Championship), row club-world-40: the game holds 2003, the table says not held
 2003	not_in_game	eng-313 eng_fa_trophy 'FA Trophy' (England)
 2003	not_in_game	eng-52 eng_conf 'Football Conference' (England)
 2003	not_in_game	uefa-17 uefa_seeding 'UEFA access list and seeding' (UEFA)
@@ -53,13 +50,14 @@
 2004	down	eng_third (Football League Two), row eng-61: game 1 (+0 play-off places), table 2 (2)
 2004	idle	oceania_nations (OFC Nations Cup), row int-continental-43: the game waits for 2002, the table holds it
 2004	name	african_nations (African Cup of Nations), row int-continental-40: game 'African Cup of Nations', table 'Africa Cup of Nations'
+2004	name	new_concacaf_gold_cup (2003 CONCACAF Gold Cup), row int-continental-38: game '2003 CONCACAF Gold Cup', table 'CONCACAF Gold Cup'
 2004	no_row	friendly (Friendly): no table row
 2004	no_row	record_utils ('B' International): no table row
 2004	no_row	record_utils (Reserve): no table row
 2004	no_row	record_utils (Under 21 International): no table row
 2004	not_held	african_nations (African Cup of Nations), row int-continental-40: the game holds 2004, the table says not held
 2004	not_held	euro_champ (UEFA European Championship), row int-continental-34: the game holds 2004, the table says not held
-2004	not_held	inter_amer_cup (Copa Interamericana), row club-world-69: the game holds 2004, the table says not held
+2004	not_held	new_concacaf_gold_cup (2003 CONCACAF Gold Cup), row int-continental-38: the game holds 2005, the table says not held
 2004	not_held	world_club_champ (FIFA Club World Championship), row club-world-59: the game holds 2005, the table says not held
 2004	not_in_game	eng-319 eng_fa_trophy 'FA Trophy' (England)
 2004	not_in_game	eng-321 new 'Conference Cup' (England)
