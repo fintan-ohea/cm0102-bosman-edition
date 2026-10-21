@@ -1072,6 +1072,54 @@ static void log_week(void)
     if (season_uefa_cup_kind(ecl) == 'k') log_cup("ECL", ecl);
 }
 
+/* ---- A round that is drawn after the date of its first leg (box Cup.cpp 1278, 2018/19) ----
+ *
+ * Cup::draw_round 0x51c410 waits for a round with an empty slot: it puts the draw date of the round (+0) a day
+ * on, each day (0x51c4e9, date function 0x549ef0), and leaves the date of the first leg (+3, +5). The slots of a
+ * Europa League round fill from the Champions League rounds that feed it (put_losers), and a Champions League round
+ * that ends late fills them late. When the draw then comes, the first leg date is past: Cup::create_tie_fixtures
+ * 0x51cb90 makes no fixture for a leg before today, and Cup::process_fixture 0x51a150 shows the box at 0x51a672
+ * (line 0x4fe) when the first leg is played and find_next_fixture 0x5ac920 (call at 0x51a610) finds no second leg.
+ * Here, each day before the cup's own update, a round with no drawn tie whose draw is due (the next day at the
+ * latest) and whose first leg is less than 4 days away gets its first leg a week from today, on its match day
+ * (cup_set_round_match_date 0x521eb0, as the table is made). The second leg follows by the gap of the round. A round
+ * on time is not touched. */
+static void doy_to_dm(int doy, int year, int *day, int *month)
+{
+    static const int len[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int m = 0;
+    for (; m < 11; m++) {
+        int n = len[m] + (m == 1 && ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0));
+        if (doy < n) break;
+        doy -= n;
+    }
+    *day = doy + 1;
+    *month = m;
+}
+
+static void cup_dates_ahead(uint32_t cup)
+{
+    uint32_t t = rd32(g_mem, cup + 0xa3);
+    int rounds = (int16_t)rd16(g_mem, cup + 0x3c), today = (int16_t)rd16(g_mem, 0xae2c90u);
+    int year = (int16_t)rd16(g_mem, cup + 0x40);
+    if (!readable(t) || rounds < 1 || rounds > MAX_ROUNDS || (int16_t)rd16(g_mem, 0xae2c92u) != year) return;
+    for (int r = 0; r < rounds && !rt_unwinding; r++) {
+        uint32_t rec = t + ROUND_SIZE * (uint32_t)r;
+        int ties = (int16_t)rd16(g_mem, rec + 0x1a), code = (int16_t)rd16(g_mem, rec + 7), undrawn = ties > 0;
+        for (int k = 0; undrawn && k < ties; k++)
+            if (g_mem[tie_at(cup, r, k) + 0x34] != 0) undrawn = 0;
+        if (!undrawn || g_mem[rec + 2] != 0 || g_mem[rec + 5] != 0 || code == 240) continue;
+        int draw = (int16_t)rd16(g_mem, rec), match = (int16_t)rd16(g_mem, rec + 3);
+        if (draw > today + 1 || match >= today + 4) continue;
+        int day, month;
+        doy_to_dm(today + 7, year, &day, &month);
+        uint32_t m[9] = {t, (uint32_t)r, (uint32_t)day, (uint32_t)month, 0, 3, 2, (uint32_t)year, 0};
+        call_cdecl(F_MATCH_DATE, 9, m);
+        fprintf(stderr, "recomp: uefa: %s round %d (code %d) is drawn late: its first leg moves from day %d to day %d of %d\n",
+                season_uefa_cup_kind(cup) == 'e' ? "EL" : "ECL", r, code, match, today + 7, year);
+    }
+}
+
 /* Cup::update_for_date, thiscall (slot 5 of the UEFA Cup, 0x9707a4): the drops before the draws of the day. */
 RT_WRAP(0051f890, cup_update_for_date)
 {
@@ -1082,6 +1130,7 @@ RT_WRAP(0051f890, cup_update_for_date)
         if (kind == 'e') log_week();
         if (kind == 'e') uc_fill_drops(cup);
         else ecl_fill_drops(cup);
+        if (!rt_unwinding) cup_dates_ahead(cup);
         if (rt_unwinding) return;
         cpu = saved;
     }
