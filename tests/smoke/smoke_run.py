@@ -101,6 +101,7 @@ import time
 # with code 3 and names the state the game was in.
 STEPS = [
     "1000 click 400 300",                   # the intro: a click ends the logos and their sounds (INTRO_CLICK)
+    "wait screen:0x823950",                 # the settings screen of a first start (SETTINGS_WAIT)
     "8000 dump {d}/1-settings.bmp",
     "8200 click 522 272",                   # settings: Background Changes Off
     "8500 click 662 524",                   # settings: Ok
@@ -312,6 +313,11 @@ SLEEP_DANGER_RUN = ("sleep-force", {"_env": {"RECOMP_IDLE_SLEEP": "force"}})
 
 SAVE_NAME = "samesave.sav"
 INTRO_CLICK = "1000 click 400 300"
+# The settings screen (build 0x823950) of a first start. Its clicks wait for it: on a slow machine (the
+# Windows build under wine in an emulated container) the screen came after 8 s, the clicks missed it, and
+# Background Changes stayed on, so every later screen had another background picture. A test whose user
+# folder already has game.cfg sees no settings screen and leaves out this wait with the settings clicks.
+SETTINGS_WAIT = "wait screen:0x823950"
 INTRO_WAIT = 20000  # ms
 
 
@@ -658,6 +664,12 @@ def main(argv):
         env = dict(os.environ, HOME=home, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", RECOMP_NO_BOX="1",
                    RECOMP_SCRIPT="; ".join(scaled_steps(mode, shots)))
         env["RECOMP_USER_DIR"] = user
+        # The season tables (names, rules) of the build, as the season checks read them
+        # (rules_report_check.py). Without them the game reads <game folder>/Seasons: a download has it, the
+        # clean files do not, and the news screen of the two showed other names ("Premier Division").
+        table = os.path.join(os.path.dirname(program), "seasons", "rules.tsv")
+        if os.path.exists(table) and "RECOMP_RULES_TABLE" not in env:
+            env["RECOMP_RULES_TABLE"] = table
         r = subprocess.run([program, "--game", game], env=env, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             print(r.stderr[-2000:])
