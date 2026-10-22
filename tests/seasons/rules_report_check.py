@@ -656,6 +656,15 @@ def league_steps(nations, extra):
     return out
 
 
+def rules_table(program, game):
+    """The rules table for RECOMP_RULES_TABLE (the names and club tables lie next to it): the build's
+    seasons/rules.tsv next to the program, else the game folder's Seasons/rules.tsv. A download, the AppImage
+    and a wrapper script (the Windows build under wine) have no seasons folder next to the program; without
+    the fall-back their runs had no table at all."""
+    table = os.path.join(os.path.dirname(os.path.abspath(program)), "seasons", "rules.tsv")
+    return table if os.path.exists(table) else os.path.join(os.path.abspath(game), "Seasons", "rules.tsv")
+
+
 def run(program, game, last, year, database, nations, extra, keep, timeout, options_more=None, env_more=None,
         start_only=False, stop_on_box=False):
     """Plays the season jump. options_more: lines of settings.txt over the defaults (for example
@@ -686,7 +695,7 @@ def run(program, game, last, year, database, nations, extra, keep, timeout, opti
             f.write(f"{k} = {v}\n")
     steps = league_steps(nations, extra)
     report = os.path.join(work, "report.tsv")
-    table = os.path.join(os.path.dirname(os.path.abspath(program)), "seasons", "rules.tsv")
+    table = rules_table(program, game)
     env = dict(os.environ, HOME=home, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", RECOMP_NO_BOX="1",
                RECOMP_USER_DIR=user, RECOMP_FIXED_CLOCK="1", RECOMP_SEASON_JUMP=str(last), RECOMP_SCREEN_LOG="1",
                RECOMP_RULES_REPORT=report, RECOMP_RULES_TABLE=table,

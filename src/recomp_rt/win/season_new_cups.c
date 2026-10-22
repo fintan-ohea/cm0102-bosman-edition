@@ -195,6 +195,10 @@ static uint32_t new_make(const SeasonCompDef *d, uint32_t rec, int year, int loa
     uint32_t size[1] = {ITA_SUPER_SIZE};
     uint32_t obj = rt_callback(F_NEW, 1, size);
     if (rt_unwinding || !readable(obj)) return 0;
+    /* Neither ItaSuper 0x65f670 nor Cup::Cup 0x518640 sets the club list, and operator new does not clear it.
+     * A picker that finds no clubs keeps the list, and put_list (season_super_cups.c) frees it (load sweep). */
+    wr32(g_mem, obj + CUP_TEAM_LIST, 0);
+    wr16(g_mem, obj + CUP_TEAMS, 0);
     uint32_t args[2] = {(uint32_t)year & 0xffffu, rec};
     making = d;
     cpu.ecx = obj;

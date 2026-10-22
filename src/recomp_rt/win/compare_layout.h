@@ -40,4 +40,32 @@ void compare_corner(int i, int tenths, int cx, int cy, int r, int *x, int *y);
 /* "12.3" for 123, "-" for -1. */
 void compare_value_text(int tenths, char *out, size_t size);
 
+/* The width of a text in screen pixels, in the font that the caller draws it in. */
+typedef int (*CompareWidth)(const char *text, void *ctx);
+
+/* Texts that must fit their box (Tousled12, 2026-10-21: long names and lines were cut). */
+
+/* text when it fits in box pixels, else the longest start of it that fits with "." added, without a
+ * space or comma before the ".". */
+void compare_fit(const char *text, int box, CompareWidth width, void *ctx, char *out, size_t size);
+
+/* A player's name for a box: the common name, else "First Second" when it fits, else "F. Second", else
+ * "Second", else compare_fit of it. first, second and common may be NULL or "". */
+void compare_fit_name(const char *first, const char *second, const char *common, int box, CompareWidth width,
+                      void *ctx, char *out, size_t size);
+
+/* The heading "Name ~ Name" of the comparison screen: the two names as the original's heading when they fit
+ * in box pixels. Else a name that fits in half the room (the box less " ~ ") stays and the other gets the
+ * rest by compare_fit_name, or each gets half by compare_fit_name. full1 and full2 are the original's
+ * heading names. */
+void compare_fit_heading(const char *full1, const char *first1, const char *second1, const char *common1,
+                         const char *full2, const char *first2, const char *second2, const char *common2, int box,
+                         CompareWidth width, void *ctx, char *out, size_t size);
+
+/* The line under a player's name: "Club, Positions, age N" on one line when it fits in box pixels, else
+ * the club on line 0 and "Positions, age N" on line 1, each cut by compare_fit. Returns the lines (1 or 2);
+ * line 1 is "" for 1. */
+int compare_info_lines(const char *club, const char *positions, int age, int box, CompareWidth width, void *ctx,
+                       char line[2][96]);
+
 #endif

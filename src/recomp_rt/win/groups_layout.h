@@ -18,7 +18,9 @@ enum {
     /* The five rows that the original adds after the sorted attributes, in its order. */
     CELL_FOOT = 32, CELL_FORM, CELL_MORALE, CELL_CONDITION, CELL_ON_LOAN,
     /* Heading rows. */
-    CELL_HEAD_GOALKEEPING, CELL_HEAD_TECHNICAL, CELL_HEAD_MENTAL, CELL_HEAD_PHYSICAL
+    CELL_HEAD_GOALKEEPING, CELL_HEAD_TECHNICAL, CELL_HEAD_MENTAL, CELL_HEAD_PHYSICAL,
+    /* Goalkeeper attributes of the player data that the original does not show (Max, 2026-10-21). */
+    CELL_ONE_ON_ONES, CELL_CONSISTENCY
 };
 
 typedef struct {
@@ -31,5 +33,8 @@ void groups_layout(int keeper, GroupLayout *out);
 
 /* The text of a heading cell, or NULL for any other cell. */
 const char *groups_heading(int cell);
+
+/* The name of a hidden attribute cell (CELL_ONE_ON_ONES, CELL_CONSISTENCY), or NULL for any other cell. */
+const char *groups_hidden_name(int cell);
 
 #endif

@@ -19,6 +19,8 @@ uint32_t rt_ger_regional_clubs(uint32_t obj, uint32_t original);
 
 /* After the set_up_rules of a league (season_sizes_rules): the places towards a new division. */
 void season_divisions_rules(uint32_t obj);
+/* After League::load: a 3. Liga object gets its cleared stage slot again (season_load.c, load sweep). */
+void season_divisions_loaded(uint32_t obj);
 
 /* Club moves at a new game (season_clubs.c). The count of a database division in a season, or -1 for the
  * class count of season_clubs.c (0 empties the division: its clubs go to no division, Q290). */

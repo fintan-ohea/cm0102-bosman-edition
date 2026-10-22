@@ -60,7 +60,7 @@ NEW_GAME = [s for s in NEW_GAME if "dump" not in s and "box" not in s and "399 3
 # and the date, longer than "Arsenal 2001-07-14" with the clubs of 3.9.65 in Italian: 40 Backspaces.
 SAVE_AS = (["2500 click 45 342", "4500 click 140 334"] + [f"{5000 + 50 * i} key 8" for i in range(40)] +
            ["7500 type Ita65", "9500 click 705 572", "16500 quit"])
-NEW_ITALIAN = [s for s in smoke_run.STEPS if " dump " not in s and s not in SETTINGS]
+NEW_ITALIAN = [s for s in smoke_run.STEPS if " dump " not in s and s not in SETTINGS + [smoke_run.SETTINGS_WAIT]]
 NEW_ITALIAN = NEW_ITALIAN[:NEW_ITALIAN.index("wait first-news") + 1] + SAVE_AS
 LOAD_ITALIAN = [s for s in LOAD if s not in SETTINGS]
 LEAGUES_ITALIAN = ["1000 click 400 300", "wait setup", "2500 click 277 177", "wait leagues", "2000 quit"]

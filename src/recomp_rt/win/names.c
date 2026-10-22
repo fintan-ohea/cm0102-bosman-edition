@@ -142,6 +142,11 @@ RT_WRAP(005e6d80, text_box)
         p->set = 0;
         if (*s && !strchr(s, '\n') && !(flags & 0x80)) {
             int w = text_width(font, text), box = x2 - x1 + 1;
+            /* Test runs only (RECOMP_TEXT_CUT_LOG=1): a text wider than its box, which the text box cuts. */
+            static int cut_log = -1;
+            if (cut_log < 0) cut_log = getenv("RECOMP_TEXT_CUT_LOG") != NULL;
+            if (cut_log && w > box)
+                fprintf(stderr, "recomp: text cut width %d box %d font %d x %d..%d: %s\n", w, box, font, x1, x2, s);
             if (w > 0 && w <= box) {
                 p->x1 = (flags & 1) ? x1 : (flags & 0x40) ? x2 - w + 1 : (box - w) / 2 + x1;
                 p->x2 = p->x1 + w - 1;

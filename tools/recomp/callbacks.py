@@ -80,6 +80,7 @@ CALLBACKS = {
     0x45CBE0: ("5355568b74241085", "can the player play the fixture (squad screen test)"),
     0x5431E0: ("8b44240481ec0002", "shown attribute of a player (staff, index 1 to 31)"),
     0x543280: ("8b4424045685c00f", "is an attribute shown to a manager (manager, staff, index)"),
+    0x544380: ("8b4424040fbe5424", "player_attribute_rating (player data, byte): groups.c, One On Ones"),
     0x528080: ("a1a423ae005633f6", "database_free_all_tables (season_dates.c: a reload for another season)"),
     0x527F60: ("a17c23ae00568b74", "database_grow_comp_history_table (season_history.c: the added history rows)"),
     0x54C5B0: ("83ec10a06924ae00", "date plus days"),

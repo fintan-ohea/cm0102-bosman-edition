@@ -171,5 +171,7 @@ int season_gold_cup_record(uint32_t rec);
 int season_finalissima_round_table(void (*original)(void));        /* 1 for the record of the Gold Cup or the Finalissima */
 /* 1 for the record of an object of slice 28 (season_nl.c): its fixtures are international (0x669ae0). */
 int season_nl_international(uint32_t rec);
+/* 1 while a Nations League object runs the Euro qualifying constructor (season_nl.c, load sweep). */
+int season_nl_in_ctor(void);
 
 #endif

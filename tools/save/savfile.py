@@ -71,7 +71,7 @@ class Sav:
         self.members = []
         for k in range(count):
             o = 12 + k * ENTRY_SIZE
-            off, size = struct.unpack_from("<2i", self.blob, o)
+            off, size = struct.unpack_from("<2I", self.blob, o)   # unsigned: a save may pass 2 GB
             name = self.blob[o + 8:o + ENTRY_SIZE].split(b"\0")[0].decode("latin-1")
             self.members.append(Member(k, off, size, name))
         order = sorted(self.members, key=lambda m: m.offset)
@@ -111,7 +111,7 @@ class Sav:
             else:
                 raw = m.raw
             offset = HEADER_SIZE + len(body)
-            struct.pack_into("<i", header, 12 + m.index * ENTRY_SIZE, offset)
+            struct.pack_into("<I", header, 12 + m.index * ENTRY_SIZE, offset)
             body += raw
         with open(path, "xb") as f:   # never overwrite a file
             f.write(header + body)

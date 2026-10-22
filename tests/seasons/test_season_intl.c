@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 static int failures;
 
@@ -31,6 +32,21 @@ static void game(int on, int year, int rules)
     code_on = on;
     start_year = year;
     changing = rules;
+}
+
+/* The nation names of a database for season_intl_later_held (a list that ends with NULL). */
+static int held_in(const char *name, void *ctx)
+{
+    for (const char *const *n = ctx; *n; n++)
+        if (!strcasecmp(*n, name)) return 1;
+    return 0;
+}
+
+static int rename_row(const char *old)
+{
+    for (int i = 0; i < season_intl_rename_count; i++)
+        if (!strcmp(season_intl_renames[i].old, old)) return i;
+    return -1;
 }
 
 int main(void)
@@ -149,6 +165,30 @@ int main(void)
         int c = strcmp(a->file, b->file);
         CHECK(c < 0 || (c == 0 && a->year < b->year), "table order at %s", b->row);
     }
+
+    /* Nation records (the names of the databases' nation.dat, O188). October 2022: a dead Yugoslavia (continent
+     * Europe) beside Serbia, dead FYR of Macedonia and Swaziland beside North Macedonia and eSwatini. */
+    static const char *const oct2022[] = {"Yugoslavia", "Serbia", "Montenegro", "FYR of Macedonia",
+                                          "North Macedonia", "Swaziland", "eSwatini", "Czech Republic", "Turkey",
+                                          "Kosovo", NULL};
+    CHECK(season_intl_later_held(rename_row("Yugoslavia"), held_in, (void *)oct2022), "October 2022: Yugoslavia dead");
+    CHECK(season_intl_later_held(rename_row("FYR of Macedonia"), held_in, (void *)oct2022), "October 2022: FYR dead");
+    CHECK(season_intl_later_held(rename_row("Swaziland"), held_in, (void *)oct2022),
+          "October 2022: Swaziland dead beside eSwatini (case)");
+    CHECK(!season_intl_later_held(rename_row("Czech Republic"), held_in, (void *)oct2022), "Czech Republic is live");
+    CHECK(!season_intl_later_held(rename_row("Turkey"), held_in, (void *)oct2022), "Turkey is live");
+    /* March 2014: Yugoslavia is the Serbian side beside a new Montenegro; it is renamed, not dead. */
+    static const char *const mar2014[] = {"Yugoslavia", "Montenegro", "FYR of Macedonia", "Swaziland", NULL};
+    CHECK(!season_intl_later_held(rename_row("Yugoslavia"), held_in, (void *)mar2014), "March 2014: Yugoslavia live");
+    CHECK(!season_intl_later_held(rename_row("Serbia and Montenegro"), held_in, (void *)mar2014), "no S&M chain");
+    /* September 2011 ODB: a dead Yugoslavia beside Serbia, two steps down the chain. */
+    static const char *const sep2011[] = {"Yugoslavia", "Serbia", "Montenegro", NULL};
+    CHECK(season_intl_later_held(rename_row("Yugoslavia"), held_in, (void *)sep2011), "September 2011: dead");
+    CHECK(!season_intl_later_held(-1, held_in, (void *)sep2011), "no row");
+    /* Kosovo: UEFA from 2016/17 (no continent in the April 2015, October 2015 and April 2016 databases). */
+    CHECK(season_intl_uefa_from("Kosovo") == 2016, "Kosovo joins UEFA in 2016");
+    CHECK(!season_intl_uefa_from("Gibraltar") && !season_intl_uefa_from("Serbia") && !season_intl_uefa_from(NULL),
+          "no other nation");
 
     if (failures) {
         fprintf(stderr, "season_intl_test: %d failures\n", failures);

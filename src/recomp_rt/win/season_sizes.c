@@ -174,7 +174,12 @@ uint32_t rt_league_clubs(uint32_t obj, uint32_t original)
     /* Matches per club go back to -1 only for a new count, so check_complete counts them again. A class that sets
      * its own value keeps it: ScoPrm::set_up_rules writes 38 (33 and the split) at 0x7f29d5 before create_table
      * runs (0x7f2b68, then 0x7f2ba6), and with -1 check_complete would count (12 - 1) x 3 = 33. */
-    if ((uint32_t)n != original) wr16(g_mem, obj + COMP_MATCHES, 0xffffu);
+    /* A league that goes back to the class count after a season at another count also counts again, when its value
+     * is the one check_complete made for the old count ((old - 1) x meetings +0x3c): else it kept the old season's
+     * matches and was never complete (C2 of 20 back to 18 in 2012/13, slice 20b). ScoPrm's 38 is not that value. */
+    int old = (int16_t)rd16(g_mem, obj + 0x3e), m = (int16_t)rd16(g_mem, obj + COMP_MATCHES);
+    if ((uint32_t)n != original || (old != n && old >= MIN_CLUBS && m == (old - 1) * (int)g_mem[obj + 0x3c]))
+        wr16(g_mem, obj + COMP_MATCHES, 0xffffu);
     return (uint32_t)n;
 }
 

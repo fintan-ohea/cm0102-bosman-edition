@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #define HOSTS 0xb5e134u                 /* HostCountry *: the object has +0 the rows, +4 the count (word);
                                          * find_hosts gets ecx = [0xb5e134] (0x92daa2) */
@@ -47,6 +48,7 @@
 #define NATION_CONTINENT 0x71u          /* continent record; its +0 is the continent id */
 #define CONTINENT_ASIA 0x9cfa0cu        /* key continent ids (sweep section 8) */
 #define CONTINENT_OCEANIA 0x9cfa18u
+#define CONTINENT_EUROPE 0x9cfa10u
 #define KEY_AUSTRALIA 0x9cf224u         /* key nation ids: OceaniaNations 0x799f9c, 0x5fab70 */
 #define KEY_NEW_ZEALAND 0x9cf3f4u
 #define KEY_NEW_CALEDONIA 0x9cf530u     /* left out of the Oceania section at 0x91fc89 */
@@ -837,30 +839,23 @@ RT_WRAP(00549f70, date_make)
 
 /* ---- Nation names ---- */
 
-/* The renamed nations of int-world.tsv ("nation rules" rows, the season of the row). A nation record
- * (nation.dat, 0x122 bytes) holds the long name at +4 (51 bytes), the short name at +0x38 (26), the code at
- * +0x53 (4) and the adjective at +0x57 (26; the continent follows at +0x71), read from the 3.9.68 nation.dat
- * (Yugoslavia, row 209). Every season database keeps the record "Yugoslavia" and adds Serbia, Montenegro and
- * North Macedonia as new records when it has them (the nation.dat of the 49 databases), so a rename applies
- * only when the data holds the old name and no record with the new name. */
-static const struct {
-    int season;
-    const char *old, *name, *short_name, *code, *adjective, *row;
-} nation_renames[] = {
-    {2002, "Yugoslavia", "Serbia and Montenegro", "Serbia & Montenegro", "SCG", "Serbian", "int-world-13"},
-    {2006, "Serbia and Montenegro", "Serbia", "Serbia", "SRB", "Serbian", "int-world-61"},
-    {2016, "Czech Republic", "Czechia", "Czechia", "CZE", "Czech", "int-world-181"},
-    {2017, "Swaziland", "Eswatini", "Eswatini", "SWZ", "Swazi", "int-world-193"},
-    {2018, "FYR of Macedonia", "North Macedonia", "North Macedonia", "MKD", "Macedonian", "int-world-205"},
-    {2022, "Turkey", "T\xfcrkiye", "T\xfcrkiye", "TUR", "Turkish", "int-world-253"},
-};
-#define NATION_RENAMES ((int)(sizeof nation_renames / sizeof nation_renames[0]))
+/* The renamed nations: season_intl_renames (season_intl_rules.c). */
+#define nation_renames season_intl_renames
+#define NATION_RENAMES season_intl_rename_count
 
 static int nation_named(const char *name)
 {
     for (int id = 0; id < nation_count(); id++)
         if (!strcmp(win_str(nation_at(id) + NATION_NAME), name)) return id;
     return -1;
+}
+
+static int held_any_case(const char *name, void *ctx)
+{
+    (void)ctx;
+    for (int id = 0; id < nation_count(); id++)
+        if (!strcasecmp(win_str(nation_at(id) + NATION_NAME), name)) return 1;
+    return 0;
 }
 
 static void put_field(uint32_t at, const char *text, uint32_t room)
@@ -878,15 +873,10 @@ static int nations_rename(int season, int news)
     if (!readable(rd32(g_mem, NATIONS))) return 0;
     for (int i = 0; i < NATION_RENAMES; i++) {
         if (nation_renames[i].season > season) continue;
-        int id = nation_named(nation_renames[i].old), later = 0;
-        /* A database with a record of a later name of the chain (Serbia) keeps the old record as it is. */
-        for (const char *n = nation_renames[i].name; n && !later;) {
-            later = nation_named(n) >= 0;
-            const char *next = NULL;
-            for (int k = 0; k < NATION_RENAMES; k++)
-                if (!strcmp(nation_renames[k].old, n)) next = nation_renames[k].name;
-            n = next;
-        }
+        int id = nation_named(nation_renames[i].old);
+        /* A database with a record of a later name of the chain (Serbia, eSwatini) keeps the old record as it
+         * is: it is a dead record beside the live one (dead_records). */
+        int later = season_intl_later_held(i, held_any_case, NULL);
         if (id < 0 || later) continue;
         uint32_t rec = nation_at(id);
         put_field(rec + NATION_NAME, nation_renames[i].name, 51);
@@ -902,13 +892,69 @@ static int nations_rename(int season, int news)
     return done;
 }
 
+/* A dead record beside the live one loses its continent: the record of an old name of a rename chain when the
+ * data holds a later name (the databases from April 2016 to May 2026 keep "Yugoslavia" with 0 to 2 players and
+ * continent Europe beside Serbia). Every pool that takes the nations of a continent (the original's qualifying
+ * sections, season_wcq26.c's European pool, season_intl.c's fill) then leaves it out, as the original's loader
+ * leaves out a record with no continent (a continent id below 0 is NULL at +0x71, 0x5315a0). Returns the count. */
+static int dead_records(void)
+{
+    int done = 0;
+    for (int i = 0; i < NATION_RENAMES; i++) {
+        int id = nation_named(nation_renames[i].old);
+        if (id < 0 || !season_intl_later_held(i, held_any_case, NULL)) continue;
+        uint32_t at = nation_at(id) + NATION_CONTINENT;
+        if (!rd32(g_mem, at)) continue;
+        wr32(g_mem, at, 0);
+        if (logging())
+            fprintf(stderr, "recomp: season intl: nation %s has no continent (a record of a later name is the live "
+                            "side)\n", nation_renames[i].old);
+        done++;
+    }
+    return done;
+}
+
+/* A UEFA member that the data holds with no continent (season_intl_uefa_from: Kosovo in the April 2015, October
+ * 2015 and April 2016 databases) gets the continent pointer of a European nation from the season it joined, as
+ * Australia moves to Asia. Returns the count. news: 1 to add a sentence. */
+static int uefa_members(int season, int news)
+{
+    uint32_t europe = 0, key = rd32(g_mem, CONTINENT_EUROPE);
+    for (int id = 0; id < nation_count() && !europe; id++) {
+        uint32_t c = rd32(g_mem, nation_at(id) + NATION_CONTINENT);
+        if (readable(c) && rd32(g_mem, c) == key) europe = c;
+    }
+    if (!europe) return 0;
+    int done = 0;
+    for (int id = 0; id < nation_count(); id++) {
+        const char *name = win_str(nation_at(id) + NATION_NAME);
+        int from = season_intl_uefa_from(name);
+        if (!from || from > season || readable(rd32(g_mem, nation_at(id) + NATION_CONTINENT))) continue;
+        wr32(g_mem, nation_at(id) + NATION_CONTINENT, europe);
+        if (logging()) fprintf(stderr, "recomp: season intl: nation %s joins UEFA (%d)\n", name, from);
+        if (news) season_change_news("%s now plays in UEFA.", name);
+        done++;
+    }
+    return done;
+}
+
 void o_0060d810(void);
 
 /* match_nation_key_id, cdecl (name, index): set_key_ids 0x601a40 finds the key nations by their name at every
  * load of the data (the loop at 0x60421a passes the record +4), so a saved game with a renamed nation would
  * lose its key id (for "Yugoslavia" the assert "Unable to find the YUGOSLAVIA index", 0x606182). In a season
- * game a record with a name of the rename table, while no record holds the first old name of its chain, is
- * matched by that first name. The other caller (0x604081) passes names read from a file. */
+ * game a record with a name of the rename table, while no record holds the first old name of its chain or that
+ * record is dead (dead_name: a record of a later name is in the data), is matched by that first name; the dead
+ * record matches no key. So in the databases from 2015 the key nation Yugoslavia is Serbia, not the record
+ * "Yugoslavia" with no players (O188: the original's default World Cup list of a 2022 start holds the key nation
+ * Yugoslavia, 0x92f230 seeds it). The other caller (0x604081) passes names read from a file. */
+static int dead_name(const char *name)
+{
+    for (int i = 0; i < NATION_RENAMES; i++)
+        if (!strcmp(nation_renames[i].old, name)) return season_intl_later_held(i, held_any_case, NULL);
+    return 0;
+}
+
 RT_WRAP(0060d810, match_nation_key)
 {
     uint32_t name = rt_arg(0);
@@ -917,14 +963,18 @@ RT_WRAP(0060d810, match_nation_key)
         return;
     }
     const char *now = win_str(name), *first = NULL;
+    if (dead_name(now)) {
+        rt_ret_cdecl(0);
+        return;
+    }
     for (int step = 0; step < NATION_RENAMES; step++) {
         const char *older = NULL;
         for (int i = 0; i < NATION_RENAMES; i++)
-            if (!strcmp(nation_renames[i].name, first ? first : now)) older = nation_renames[i].old;
+            if (!strcasecmp(nation_renames[i].name, first ? first : now)) older = nation_renames[i].old;
         if (!older) break;
         first = older;
     }
-    if (!first || nation_named(first) >= 0) {
+    if (!first || (nation_named(first) >= 0 && !dead_name(first))) {
         o_0060d810();
         return;
     }
@@ -940,7 +990,8 @@ RT_WRAP(0060d810, match_nation_key)
 /* ---- The rule kind ---- */
 
 /* A new game (season.c, before the original makes it): a season game from 2006/07 starts with Australia in
- * Asia, before the competitions take their entrants. */
+ * Asia, before the competitions take their entrants; the renames, dead records and UEFA members of the start
+ * season too. */
 void season_intl_at_create(void)
 {
     if (!season_intl_on()) return;
@@ -951,6 +1002,8 @@ void season_intl_at_create(void)
         (season_start_year() == AUSTRALIA_TO_ASIA - 1 && !season_changing_rules()))
         australia_to_asia();
     nations_rename(season_start_year(), 0);
+    dead_records();
+    uefa_members(season_start_year(), 0);
 }
 
 /* The host news of a World Cup with more than two hosts (slice 29: 2026 and 2030), in the season of its table
@@ -978,6 +1031,7 @@ static void intl_season(int season)
 {
     if (season_change_is_start()) return;
     nations_rename(season, 1);
+    uefa_members(season, 1);
     host_news(season);
     /* The host rows of the table in a game that started in 2001/02: at its first season change, for the
      * editions from 2002/03 (host_init). The table is sorted as the constructor sorts it. */

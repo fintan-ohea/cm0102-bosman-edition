@@ -93,11 +93,31 @@ int season_intl_host_ids(uint32_t key, int year, int ids[6]);
 /* The inter-confederation ties of the World Cup of a year that this run built (season_intl_qual.c): up to max
  * pairs into teams (two teams each). Gives the pair count. */
 int season_intl_wc_ties(int year, uint32_t *teams, int max);
+void season_intl_qual_reset(void);             /* a load or new game: no ties (load sweep) */
 
 /* The classes of the code sites (cls of the calls above). */
 enum {
     INTL_WORLD_CUP, INTL_EURO, INTL_CONFED, INTL_COPA, INTL_ACN, INTL_ASIAN, INTL_OFC, INTL_OLYMPICS,
     INTL_CLASSES
 };
+
+/* ---- Nation records (season_intl_rules.c; season_intl.c applies them to the data) ---- */
+
+/* The renamed nations of int-world.tsv ("nation rules" rows, the season of the row). */
+typedef struct {
+    int season;
+    const char *old, *name, *short_name, *code, *adjective, *row;
+} SeasonIntlRename;
+extern const SeasonIntlRename season_intl_renames[];
+extern const int season_intl_rename_count;
+
+/* 1 when the data holds a later name of the chain of rename row i (Serbia for Yugoslavia), by held(name, ctx),
+ * which compares names without case (the databases from 2019 write "eSwatini"). The record of the old name is
+ * then a dead record beside the live one. */
+int season_intl_later_held(int i, int (*held)(const char *name, void *ctx), void *ctx);
+
+/* The season from which a nation is a UEFA member, for a nation that a database may hold with no continent
+ * (Kosovo, admitted in May 2016: the April 2015, October 2015 and April 2016 databases), or 0. */
+int season_intl_uefa_from(const char *name);
 
 #endif
