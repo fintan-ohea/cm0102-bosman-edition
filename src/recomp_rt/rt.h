@@ -303,6 +303,9 @@ uint32_t rt_discipline_ban_entry(uint32_t discipline, uint32_t staff);
 /* The rule-set load's Oceania body (win/season_intl.c, tools/recomp/discipline_ban.py at 0x55deb6): 1 when a
  * season game moved a selected Australia to Asia, so its saves hold the body. */
 uint32_t rt_discipline_oceania_body(void);
+/* The ruling body's held ban (win/discipline_ban.c, tools/recomp/discipline_ban.py at 0x7e833c): 1 goes on without
+ * the box ruling_body..cpp 661, 0 when the fix is off. */
+uint32_t rt_ruling_body_held(uint32_t body, uint32_t staff);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);

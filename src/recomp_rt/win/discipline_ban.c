@@ -41,3 +41,15 @@ uint32_t rt_discipline_ban_entry(uint32_t discipline, uint32_t staff)
                     "and %d)\n", staff, nation_key(row, 0x1au), nation_key(row, 0x1eu));
     return 0;
 }
+
+/* RulingBody::find_or_add_discipline_entry 0x7e82e0 at 0x7e833c: the player has a held ban of this body (the box
+ * "ruling_body..cpp 661", tools/recomp/discipline_ban.py). 1 goes on without the box, as the original does after
+ * it (0x7e83a1); 0 when the fix is off (the original's box). */
+uint32_t rt_ruling_body_held(uint32_t body, uint32_t staff)
+{
+    const char *off = getenv("RECOMP_BOX_FIXES");
+    if (off && !strcmp(off, "off")) return 0;
+    fprintf(stderr, "recomp: discipline: staff %u has a held ban of ruling body %d: a new entry\n", staff,
+            g_mem[body + 5u]);
+    return 1;
+}
