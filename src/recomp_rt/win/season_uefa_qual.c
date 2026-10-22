@@ -564,6 +564,9 @@ void o_00518790(void);
 RT_WRAP(00518790, cup_map_fixture_tree)
 {
     uint32_t cup = cpu.ecx;
+    season_cup_fill_entrants(cup);      /* gate fix O151: a domestic cup with empty places (season_cup_entrants.c) */
+    if (rt_unwinding) return;
+    cpu.ecx = cup;
     o_00518790();
     season_cup_groups_mapped(cup);
     if (rt_unwinding || !readable(cup) || rd32(g_mem, cup) != CL_VTABLE) return;
