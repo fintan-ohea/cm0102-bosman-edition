@@ -1,5 +1,5 @@
-"""Two fixes for the error box discipline..cpp 1149 of the original's ban release (src/recomp_rt/win/discipline_ban.c,
-src/recomp_rt/win/season_intl.c).
+"""Fixes for the error boxes discipline..cpp 1149 and ruling_body..cpp 661 of the original's bans
+(src/recomp_rt/win/discipline_ban.c, src/recomp_rt/win/season_intl.c).
 
 Discipline::release_ban 0x556d00 (this in esi, the staff id in ebp) frees a player's four ban slots. For slot 3,
 the international ban, it also removes his entry from the nation index of the Discipline object (this+0xc, count
@@ -18,6 +18,17 @@ The load. The save 0x555dd0 writes every rule set of the 43 that exists (0x555f2
 Australia selected makes the body, and Australia moves to Asia on 1 January 2006 (season_intl.c). A later load left
 the body out and read the rest of discipline.dat out of step: a nation index of 1 entry for 16 world bans, the box
 at the next release, then a double free. rt_discipline_oceania_body makes the load take the body in that game.
+
+The held ban (ruling_body..cpp 661). RulingBody::find_or_add_discipline_entry 0x7e82e0 (this in esi, the staff id
+in ebx) looks for the player's ban slot of this body (Discipline::get_slot_value 0x55cae0 at 0x7e8301). With none
+and the create flag set, it looks in the held-ban list (0x55cb60 at 0x7e832b): a held ban of the same slot and the
+same body is the box at 0x7e833e..0x7e8394 (line 0x295), and then the original goes on at 0x7e83a1 and adds a new
+entry. Discipline::hold_bans_for_loan 0x5563f0 holds the bans of a domestic body whose nation is not the loan club's
+(0x556463..0x55649b), so the original never meets such a body for that player: its domestic cups have the clubs of
+one nation. The All-Ireland cup of 0.6.0 (season_new_cups.c, "new_all_ireland") has the clubs of the Republic of
+Ireland and of Northern Ireland and one ruling body: a player of an Irish club on loan at a Northern Irish club
+(his Irish ban held) met the Irish body in it (14 February 2011 and 2012 in the gate runs). rt_ruling_body_held
+logs the player and goes on at 0x7e83a1 without the box, as the original does after it.
 """
 
 INSNS = {
@@ -25,4 +36,5 @@ INSNS = {
                "{ uint32_t e_ = rt_discipline_ban_entry(esi, ebp); if (e_ == 1u) ecx = (uint32_t)(esp + 0x1cu); "
                "else if (e_) { eax = e_; goto L_556e34; } else goto L_556e63; }"),
     0x55DEB6: ("je 0x55def0", "if (cc_e(F) && !rt_discipline_oceania_body()) goto L_55def0;"),
+    0x7E833C: ("jne 0x7e83a1", "if (!cc_e(F) || rt_ruling_body_held(esi, ebx)) goto L_7e83a1;"),
 }
