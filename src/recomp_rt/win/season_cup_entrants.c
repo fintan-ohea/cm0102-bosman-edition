@@ -9,10 +9,12 @@
  * Before Cup::map_fixture_tree 0x518790 maps the list into ties (its one wrap is in season_uefa_qual.c), each
  * empty place of a domestic cup gets a club of the cup's nation that is not in the list yet: from the divisions
  * at or below the lowest division of the clubs in the list (record +0x69, the level), by level, then by
- * reputation (+0x80). So the cup keeps its count and the class's round table. A domestic cup is one whose record
- * names a nation (+0x5d) and whose entrants are all of that nation; the UEFA cups, whose empty places take clubs
- * later (season_uefa_qual.c put_club), are not. It writes a log line for each cup it fills. The base game
- * (2001/02, changing rules off) and RECOMP_SEASON_CODE=off get none of it (Q152, Q342). */
+ * reputation (+0x80); when none is left there (in the 2003/04 Polish Cup every Lower Division club was in it),
+ * from the nearest division above. So the cup keeps its count and the class's round table. A domestic cup is one
+ * whose entrants are all of one nation (club +0x53); the UEFA cups, whose empty places take clubs later
+ * (season_uefa_qual.c put_club), are not, and a cup with no club yet (it takes its clubs later, for example the FA
+ * Cup) is left. It writes a log line for each cup with empty places. The base game (2001/02, changing rules off)
+ * and RECOMP_SEASON_CODE=off get none of it (Q152, Q342). */
 #include "win.h"
 #include "season.h"
 #include "season_change.h"
@@ -32,7 +34,6 @@
 #define CLUB_NATION 0x53u
 #define CLUB_DIVISION 0x57u
 #define CLUB_REPUTATION 0x80u
-#define RECORD_NATION 0x5du
 #define RECORD_LEVEL 0x69u
 #define MAX_LIST 512
 
@@ -50,10 +51,14 @@ static int level_of(uint32_t club)
     return readable(d) ? (int16_t)rd16(g_mem, d + RECORD_LEVEL) : -1000;
 }
 
-static int better(uint32_t a, uint32_t b)
+/* 1 when club a is a better pick than b for an empty place below division level `lowest`: a club at or below
+ * that level before one above it; at or below, the higher level first; above, the lower level first (the
+ * nearest division); then the higher reputation. */
+static int better(uint32_t a, uint32_t b, int lowest)
 {
-    int la = level_of(a), lb = level_of(b);
-    if (la != lb) return la > lb;
+    int la = level_of(a), lb = level_of(b), ba = la <= lowest, bb = lb <= lowest;
+    if (ba != bb) return ba;
+    if (la != lb) return ba ? la > lb : la < lb;
     return (int16_t)rd16(g_mem, a + CLUB_REPUTATION) > (int16_t)rd16(g_mem, b + CLUB_REPUTATION);
 }
 
@@ -63,19 +68,26 @@ void season_cup_fill_entrants(uint32_t cup)
     uint32_t list = rd32(g_mem, cup + CUP_TEAM_LIST), rec = rd32(g_mem, cup + 4);
     int count = (int16_t)rd16(g_mem, cup + CUP_TEAMS);
     if (!readable(list) || !readable(rec) || count < 2 || count > MAX_LIST) return;
-    int nation = (int32_t)rd32(g_mem, rec + RECORD_NATION), empty = 0, lowest = 1000000;
-    if (nation < 0) return;
+    int nation = -1, empty = 0, lowest = 1000000, other = 0;
     for (int i = 0; i < count; i++) {
         uint32_t club = rd32(g_mem, list + ENTRY * (uint32_t)i);
         if (!readable(club)) {
             empty++;
             continue;
         }
-        if (nation_id(club) != nation) return;           /* not a cup of one nation */
+        if (nation < 0) nation = nation_id(club);
+        if (nation_id(club) != nation) other++;
         int l = level_of(club);
         if (l < lowest) lowest = l;
     }
-    if (!empty || empty == count) return;
+    if (!empty) return;
+    if (empty == count) return;                          /* a cup that takes its clubs later */
+    if (nation < 0 || other) {
+        fprintf(stderr, "recomp: cup entrants: %s (%.40s) %d: %d of %d places empty, not filled (clubs of %d other "
+                "nations)\n", season_change_file(cup), win_str(rec + 4), (int16_t)rd16(g_mem, cup + 0x40), empty, count,
+                other);
+        return;
+    }
     uint32_t table = rd32(g_mem, CLUBS);
     int clubs = (int)rd32(g_mem, CLUB_COUNT) - 2 * (int)rd32(g_mem, CLUB_COUNT_LESS), filled = 0;
     for (int i = 0; i < count && readable(table); i++) {
@@ -84,10 +96,10 @@ void season_cup_fill_entrants(uint32_t cup)
         uint32_t best = 0;
         for (int k = 0; k < clubs && k < 200000; k++) {
             uint32_t c = table + CLUB_SIZE * (uint32_t)k;
-            if (nation_id(c) != nation || !readable(rd32(g_mem, c + CLUB_DIVISION)) || level_of(c) > lowest) continue;
+            if (nation_id(c) != nation || !readable(rd32(g_mem, c + CLUB_DIVISION))) continue;
             int in = 0;
             for (int j = 0; j < count && !in; j++) in = rd32(g_mem, list + ENTRY * (uint32_t)j) == c;
-            if (!in && (!best || better(c, best))) best = c;
+            if (!in && (!best || better(c, best, lowest))) best = c;
         }
         if (!best) break;
         wr32(g_mem, at, best);
