@@ -1,0 +1,145 @@
+/* The fill of a short national side before its match (season games only).
+ *
+ * VIRTUAL_STAFF::fill_fixture_squads 0x90d2f0 tops up both sides of a fixture (0x90dae0 at 0x90d3bd and 0x90d3f4).
+ * The top-up gives no virtual players to the side of a nation with a reputation above 500 (0x90dd5d..0x90dd73),
+ * so a national side with few players stays short. The original then shows virtual_staff.cpp 195 (0x90d4bc) and
+ * plays on with no check (0x90d4dc); in a season game the wrap in season_records.c skips the box. With fewer than
+ * 11 the team pick stops the match at match_eng.cpp 612 or 652 (init_match 0x6b7f20, 0x6b89be): Holland U21 had 10
+ * players in an Under 21 International in August 2024 (2023 start, October 2023 database, after a load).
+ *
+ * season_national_fill fills such a side after the top-up, as the top-up does for clubs: a national side (club id
+ * from clubs - 2 x nations, database_is_national_team 0x53b900) with fewer than FILL_TO filled slots takes the
+ * players of its nation (staff +0x1a, or the second nationality +0x1e, as 0x53d980 reads both) by current ability (player row +0x05), those not injured (status 2 of
+ * Injury::get_player_injury_status 0x62c400, as count_available_players 0x90da0f skips), and for an under-21 side
+ * (id from clubs - nations, 0x5409b0) only those born in the year 21 before the game year or later. */
+
+#include "win.h"
+#include "season.h"
+
+#include <stdio.h>
+#include <string.h>
+
+#define CLUBS 0xae23b4u
+#define CLUB_COUNT 0xae235cu
+#define NATION_COUNT 0xae2350u
+#define STAFF 0xae23bcu
+#define STAFF_COUNT 0xae2364u
+#define STAFF_SIZE 0x6eu
+#define GAME_YEAR 0xae2c92u
+#define INJURIES 0xb63d28u
+#define INJURY_STATUS 0x62c400u     /* thiscall INJURIES (player), 2 = injured */
+#define CLUB_NATION 0x53u
+#define CLUB_SQUAD 0xd7u
+#define SQUAD 50
+#define FILL_TO 15                  /* the squad check of 0x90d2f0 (0x90d469) */
+
+static int readable(uint32_t p) { return p >= 0x10000u && p < 0xfff00000u; }
+
+static int injured(uint32_t player)
+{
+    Cpu saved = cpu;
+    uint32_t a[1] = {player};
+    cpu.ecx = rd32(g_mem, INJURIES);
+    uint32_t r = rt_callback(INJURY_STATUS, 1, a);
+    if (rt_unwinding) return 1;
+    cpu = saved;
+    return (r & 0xff) == 2;
+}
+
+static void fill_side(uint32_t club)
+{
+    if (!readable(club)) return;
+    int id = (int)rd32(g_mem, club), clubs = (int)rd32(g_mem, CLUB_COUNT), nations = (int)rd32(g_mem, NATION_COUNT);
+    if (id < clubs - 2 * nations || id >= clubs) return;
+    int u21 = id >= clubs - nations, n = 0;
+    uint32_t nation = rd32(g_mem, club + CLUB_NATION);
+    if (!readable(nation)) return;
+    for (uint32_t j = 0; j < SQUAD; j++) n += rd32(g_mem, club + CLUB_SQUAD + 4 * j) != 0;
+    if (n >= FILL_TO) return;
+    int before = n, born_from = (int)rd16(g_mem, GAME_YEAR) - 21;
+    uint32_t staff = rd32(g_mem, STAFF), count = rd32(g_mem, STAFF_COUNT);
+    while (n < FILL_TO && !rt_unwinding) {
+        uint32_t best = 0;
+        int best_ca = -1;
+        for (uint32_t i = 0; readable(staff) && i < count; i++) {
+            uint32_t sp = staff + i * STAFF_SIZE, pr = rd32(g_mem, sp + 0x61);
+            if (!readable(pr) || (rd32(g_mem, sp + 0x1a) != nation && rd32(g_mem, sp + 0x1e) != nation)) continue;
+            if (u21 && (int16_t)rd16(g_mem, sp + 0x12) < born_from) continue;
+            int ca = (int16_t)rd16(g_mem, pr + 5);
+            if (ca <= best_ca) continue;
+            int in = 0;
+            for (uint32_t j = 0; j < SQUAD && !in; j++) in = rd32(g_mem, club + CLUB_SQUAD + 4 * j) == sp;
+            if (in || injured(sp)) continue;
+            best = sp, best_ca = ca;
+        }
+        if (!best) break;
+        uint32_t j = 0;
+        while (j < SQUAD && rd32(g_mem, club + CLUB_SQUAD + 4 * j)) j++;
+        if (j == SQUAD) break;
+        wr32(g_mem, club + CLUB_SQUAD + 4 * j, best);
+        n++;
+    }
+    char name[52];
+    memcpy(name, g_mem + club + 4, 51);
+    name[51] = 0;
+    fprintf(stderr, "recomp: national fill: %s had %d squad slots, now %d\n", name, before, n);
+}
+
+/* Before the top-up: a national side whose nation has no squad sizes in NationalTeams (the byte pairs at
+ * [[0xb74318] + 4] + 110 x the nation id + 20 x kind + 0x42 and + 0x43 that 0x7754c0 and 0x775520 read, kinds 0 to 2,
+ * 0x7754fa..0x775516) gets no players from the top-up (0x90dcb7..0x90dcd9 for a senior side): the data keeps
+ * nations with no players of either nationality, such as Netherlands Antilles (2022 start, the 2023-24 CONCACAF
+ * Nations League) and Saint-Martin (2018 start, 2019-20). Such a nation takes the sizes of the other side's nation,
+ * or of the first nation with sizes, so the top-up makes its virtual players as for any other side. */
+#define NATIONAL_TEAMS 0xb74318u
+
+static uint32_t size_at(uint32_t table, uint32_t nation_id, int k)
+{
+    return table + 110u * nation_id + 20u * (uint32_t)(k / 2) + 0x42u + (uint32_t)(k % 2);
+}
+
+static int has_sizes(uint32_t table, uint32_t nation_id)
+{
+    for (int k = 0; k < 6; k++)
+        if (g_mem[size_at(table, nation_id, k)]) return 1;
+    return 0;
+}
+
+static uint32_t nation_id_of(uint32_t club)
+{
+    uint32_t nat = readable(club) ? rd32(g_mem, club + CLUB_NATION) : 0;
+    return readable(nat) ? rd32(g_mem, nat) : 0xffffffffu;
+}
+
+static void give_sizes(uint32_t club, uint32_t other)
+{
+    int id = readable(club) ? (int)rd32(g_mem, club) : -1;
+    int clubs = (int)rd32(g_mem, CLUB_COUNT), nations = (int)rd32(g_mem, NATION_COUNT);
+    if (id < clubs - 2 * nations || id >= clubs) return;
+    uint32_t nt = rd32(g_mem, NATIONAL_TEAMS), table = readable(nt) ? rd32(g_mem, nt + 4) : 0;
+    uint32_t nid = nation_id_of(club), from = nation_id_of(other);
+    if (!readable(table) || nid >= (uint32_t)nations || has_sizes(table, nid)) return;
+    if (from >= (uint32_t)nations || !has_sizes(table, from))
+        for (from = 0; from < (uint32_t)nations && !has_sizes(table, from); from++) {}
+    if (from >= (uint32_t)nations) return;
+    for (int k = 0; k < 6; k++) g_mem[size_at(table, nid, k)] = g_mem[size_at(table, from, k)];
+    char name[52];
+    memcpy(name, g_mem + club + 4, 51);
+    name[51] = 0;
+    fprintf(stderr, "recomp: national fill: %s had no squad sizes, takes those of nation %u\n", name, from);
+}
+
+void season_national_sizes(uint32_t fixture)
+{
+    if (!readable(fixture)) return;
+    uint32_t home = rd32(g_mem, fixture + 0x1c), away = rd32(g_mem, fixture + 0x20);
+    give_sizes(home, away);
+    give_sizes(away, home);
+}
+
+void season_national_fill(uint32_t fixture)
+{
+    if (!readable(fixture)) return;
+    fill_side(rd32(g_mem, fixture + 0x1c));
+    if (!rt_unwinding) fill_side(rd32(g_mem, fixture + 0x20));
+}

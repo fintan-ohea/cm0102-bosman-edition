@@ -1277,11 +1277,17 @@ void o_0090d2f0(void);
  * stays short: in a 2023 start (October 2023, all nations) United States U21 had 11 on day 243 of 2024, in an
  * Under 21 International. In a season game the call takes no_check 1 at once: the same match as after the box,
  * with no modal box that stops the game. The base game keeps the original's check (Q152). */
+void season_national_sizes(uint32_t fixture);   /* season_national_fill.c */
+void season_national_fill(uint32_t fixture);
+
 RT_WRAP(0090d2f0, virtual_staff_fill_check)
 {
-    if (season_code_on() && (season_start_year() != SEASON_FIRST_YEAR || season_changing_rules()))
-        g_mem[cpu.esp + 0xc] = 1;   /* no_check; the wrap of 0x90dae0 above names a short club (RECOMP_CLUB_LOG) */
+    uint32_t fixture = rt_arg(0);
+    int season = season_code_on() && (season_start_year() != SEASON_FIRST_YEAR || season_changing_rules());
+    if (season) g_mem[cpu.esp + 0xc] = 1;   /* no_check; the wrap of 0x90dae0 above names a short club (RECOMP_CLUB_LOG) */
+    if (season) season_national_sizes(fixture);   /* a national side whose nation has no squad sizes */
     o_0090d2f0();
+    if (season && !rt_unwinding) season_national_fill(fixture);   /* a national side that stays short */
 }
 
 void o_006db500(void);
@@ -1306,9 +1312,15 @@ RT_WRAP(006db500, team_pick_log)
     fprintf(stderr, "recomp: club records: team pick of %s (club %08x) gives %d players from %d squad slots", name, club,
             (int8_t)cpu.eax, n);
     uint32_t nt = rd32(g_mem, 0xb74318u), sizes = nt >= 0x10000u ? rd32(g_mem, nt + 4) : 0;
-    uint32_t nat = club >= 0x10000u ? rd32(g_mem, club + 0x53) : 0;
-    if (sizes >= 0x10000u && nat >= 0x10000u && rd32(g_mem, nat) < 0x10000u)
-        fprintf(stderr, ", national squad size %d", g_mem[sizes + 110u * rd32(g_mem, nat) + 0x43]);
+    uint32_t sides[2] = {club, rt_arg(6)};
+    for (int k = 0; k < 2; k++) {                     /* 0x7754c0 (+0x42) and 0x775520 (+0x43), kinds 0 to 2 */
+        uint32_t nat = sides[k] >= 0x10000u ? rd32(g_mem, sides[k] + 0x53) : 0;
+        if (sizes < 0x10000u || nat < 0x10000u || rd32(g_mem, nat) >= 0x10000u) continue;
+        fprintf(stderr, ", %s national squad sizes", k ? "opponent" : "its");
+        for (uint32_t t = 0; t < 3; t++)
+            fprintf(stderr, " %d/%d", g_mem[sizes + 110u * rd32(g_mem, nat) + 20 * t + 0x42],
+                    g_mem[sizes + 110u * rd32(g_mem, nat) + 20 * t + 0x43]);
+    }
     fprintf(stderr, ", record %d %s, home %s, round %d\n", rec >= 0x10000u ? (int)rd32(g_mem, rec) : -1, cname, hname,
             (int16_t)rd16(g_mem, fixture + 0x30));
 }
