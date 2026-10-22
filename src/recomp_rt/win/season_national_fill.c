@@ -8,15 +8,18 @@
  * players in an Under 21 International in August 2024 (2023 start, October 2023 database, after a load).
  *
  * season_national_fill fills such a side after the top-up, as the top-up does for clubs: a national side (club id
- * from clubs - 2 x nations, database_is_national_team 0x53b900) with fewer than FILL_TO filled slots takes the
+ * from clubs - 2 x nations, database_is_national_team 0x53b900) with fewer than FILL_TO players it can field (in
+ * its squad slots, not injured and in no other national squad) takes the
  * players of its nation (staff +0x1a, or the second nationality +0x1e, as 0x53d980 reads both) by current ability (player row +0x05), those not injured (status 2 of
  * Injury::get_player_injury_status 0x62c400, as count_available_players 0x90da0f skips), and for an under-21 side
- * (id from clubs - nations, 0x5409b0) only those born in the year 21 before the game year or later. */
+ * (id from clubs - nations, 0x5409b0) only those born in the year 21 before the game year or later, and none in
+ * the squad of another national side (called_up). */
 
 #include "win.h"
 #include "season.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define CLUBS 0xae23b4u
@@ -28,6 +31,7 @@
 #define GAME_YEAR 0xae2c92u
 #define INJURIES 0xb63d28u
 #define INJURY_STATUS 0x62c400u     /* thiscall INJURIES (player), 2 = injured */
+#define CLUB_SIZE 0x245u
 #define CLUB_NATION 0x53u
 #define CLUB_SQUAD 0xd7u
 #define SQUAD 50
@@ -46,6 +50,35 @@ static int injured(uint32_t player)
     return (r & 0xff) == 2;
 }
 
+static int by_address(const void *a, const void *b)
+{
+    uint32_t x = *(const uint32_t *)a, y = *(const uint32_t *)b;
+    return x < y ? -1 : x > y;
+}
+
+/* The players in the squad of another national side (sorted, for bsearch): the senior side and the under-21 side
+ * of a nation often play on the same days, and a player called up there is on international duty for the other
+ * (NationalTeams::get_international_duty_club 0x7757d0 in the team pick): Belgium U21 had 15 squad slots after the
+ * fill but fielded 9 on 2 September 2024 (2022 start, after the second load). Returns the count; *out is malloced. */
+static int called_up(uint32_t club, uint32_t **out)
+{
+    int clubs = (int)rd32(g_mem, CLUB_COUNT), nations = (int)rd32(g_mem, NATION_COUNT), n = 0;
+    uint32_t base = rd32(g_mem, CLUBS);
+    uint32_t *v = malloc(sizeof *v * (size_t)(2 * nations * SQUAD + 1));
+    if (!v) rt_fatal("national fill: no memory");
+    for (int i = clubs - 2 * nations; i >= 0 && i < clubs; i++) {
+        uint32_t c = base + (uint32_t)i * CLUB_SIZE;
+        if (c == club) continue;
+        for (uint32_t j = 0; j < SQUAD; j++) {
+            uint32_t sp = rd32(g_mem, c + CLUB_SQUAD + 4 * j);
+            if (sp) v[n++] = sp;
+        }
+    }
+    qsort(v, (size_t)n, sizeof *v, by_address);
+    *out = v;
+    return n;
+}
+
 static void fill_side(uint32_t club)
 {
     if (!readable(club)) return;
@@ -54,8 +87,16 @@ static void fill_side(uint32_t club)
     int u21 = id >= clubs - nations, n = 0;
     uint32_t nation = rd32(g_mem, club + CLUB_NATION);
     if (!readable(nation)) return;
-    for (uint32_t j = 0; j < SQUAD; j++) n += rd32(g_mem, club + CLUB_SQUAD + 4 * j) != 0;
-    if (n >= FILL_TO) return;
+    uint32_t *busy = NULL;
+    int nbusy = called_up(club, &busy);
+    for (uint32_t j = 0; j < SQUAD && !rt_unwinding; j++) {     /* the players it can field */
+        uint32_t sp = rd32(g_mem, club + CLUB_SQUAD + 4 * j);
+        n += sp && !bsearch(&sp, busy, (size_t)nbusy, sizeof *busy, by_address) && !injured(sp);
+    }
+    if (n >= FILL_TO || rt_unwinding) {
+        free(busy);
+        return;
+    }
     int before = n, born_from = (int)rd16(g_mem, GAME_YEAR) - 21;
     uint32_t staff = rd32(g_mem, STAFF), count = rd32(g_mem, STAFF_COUNT);
     while (n < FILL_TO && !rt_unwinding) {
@@ -69,7 +110,7 @@ static void fill_side(uint32_t club)
             if (ca <= best_ca) continue;
             int in = 0;
             for (uint32_t j = 0; j < SQUAD && !in; j++) in = rd32(g_mem, club + CLUB_SQUAD + 4 * j) == sp;
-            if (in || injured(sp)) continue;
+            if (in || bsearch(&sp, busy, (size_t)nbusy, sizeof *busy, by_address) || injured(sp)) continue;
             best = sp, best_ca = ca;
         }
         if (!best) break;
@@ -79,10 +120,11 @@ static void fill_side(uint32_t club)
         wr32(g_mem, club + CLUB_SQUAD + 4 * j, best);
         n++;
     }
+    free(busy);
     char name[52];
     memcpy(name, g_mem + club + 4, 51);
     name[51] = 0;
-    fprintf(stderr, "recomp: national fill: %s had %d squad slots, now %d\n", name, before, n);
+    fprintf(stderr, "recomp: national fill: %s had %d players it can field, now %d\n", name, before, n);
 }
 
 /* Before the top-up: a national side whose nation has no squad sizes in NationalTeams (the byte pairs at
