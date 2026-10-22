@@ -300,6 +300,9 @@ uint32_t rt_league_row_read_failed(uint32_t league);
 /* The ban release's nation index (win/discipline_ban.c, tools/recomp/discipline_ban.py at 0x556dcf): the entry
  * of the staff id under any nation, 0 for none, or 1 when the fix is off (the original's box). */
 uint32_t rt_discipline_ban_entry(uint32_t discipline, uint32_t staff);
+/* The rule-set load's Oceania body (win/season_intl.c, tools/recomp/discipline_ban.py at 0x55deb6): 1 when a
+ * season game moved a selected Australia to Asia, so its saves hold the body. */
+uint32_t rt_discipline_oceania_body(void);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);
