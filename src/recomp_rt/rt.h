@@ -323,6 +323,7 @@ uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2_end_clubs(uint32_t obj, uint32_t original);
 uint32_t rt_ita_tier_c2(uint32_t c2a);
+uint32_t rt_ita_tier_last(uint32_t obj);
 uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b);
 uint32_t rt_ita_cup_fill(uint32_t esp, uint32_t count, uint32_t position);
 uint32_t rt_ita_start_c2(uint32_t c2a);
@@ -393,7 +394,6 @@ void rt_wcq26_asia_format(uint32_t self);
 uint32_t rt_wcq26_oceania_stages(uint32_t self, uint32_t original);
 void rt_wcq26_europe_format(uint32_t self);
 uint32_t rt_wcq26_europe_index(uint32_t self, uint32_t original);
-uint32_t rt_wcq26_europe_index_loaded(uint32_t self, uint32_t original);
 /* The African Cup of Nations and the Asian Cup of 24 teams (win/season_intl_cups.c): the team count (16, 12),
  * the group count of the draw (4, 3), the knockout stage index (3, 2) and a new stage array after the step of
  * start_new_season. Each gives the original's value for another edition, another class and the base game. */
@@ -447,6 +447,13 @@ uint32_t rt_staff_reserve_size(void);
 /* Full player search (#57, src/recomp_rt/win/playersearch.c): 1 when the option is on. The replaced jumps
  * at 0x7afc8d, 0x7afc9d and 0x7afcdf in tools/recomp/widescreen.py ask it. */
 uint32_t rt_full_player_search(uint32_t screen);
+/* The limit of the list with the option on (playersearch.c): the sites 0x7afbb3, 0x7afdda, 0x7afe5e, 0x7afe6b
+ * and 0x7af467 in tools/recomp/widescreen.py. */
+void rt_full_player_search_reset(void);
+void rt_full_player_search_skip(void);
+uint32_t rt_full_player_search_slot(uint32_t screen);
+uint32_t rt_full_player_search_replaced(void);
+uint32_t rt_full_player_search_shown(uint32_t passed);
 
 /* Attribute groups (#43, src/recomp_rt/win/groups.c): the cells of the player profile's attribute table
  * and their place. The constants of tools/recomp/attribute_groups.py read these. */

@@ -16,10 +16,12 @@ static const int outfield[GROUP_COLUMNS][GROUP_ROWS + 1] = {
      ATTR_STRENGTH, CELL_FOOT, CELL_FORM, CELL_MORALE, CELL_CONDITION, CELL_ON_LOAN, -1},
 };
 
-/* A goalkeeper: Goalkeeping, then a short Technical group. Crossing, Dribbling, Finishing, Heading,
- * Long Shots, Marking and Tackling are not shown (Q129). */
+/* A goalkeeper: one Goalkeeping group that also holds Set Pieces and Technique (Max, 2026-10-21: no
+ * Technical group). Crossing, Dribbling, Finishing, Heading, Long Shots, Marking and Tackling are not shown
+ * (Q129). One On Ones and Consistency come from the player data, which the original does not show (Max,
+ * 2026-10-21). */
 static const int keeper_first[GROUP_ROWS + 1] = {CELL_HEAD_GOALKEEPING, ATTR_HANDLING, ATTR_REFLEXES,
-    ATTR_PASSING, CELL_HEAD_TECHNICAL, ATTR_SET_PIECES, ATTR_TECHNIQUE, -1};
+    CELL_ONE_ON_ONES, CELL_CONSISTENCY, ATTR_PASSING, ATTR_SET_PIECES, ATTR_TECHNIQUE, -1};
 
 const char *groups_heading(int cell)
 {
@@ -28,6 +30,15 @@ const char *groups_heading(int cell)
     case CELL_HEAD_TECHNICAL: return "Technical";
     case CELL_HEAD_MENTAL: return "Mental";
     case CELL_HEAD_PHYSICAL: return "Physical";
+    default: return NULL;
+    }
+}
+
+const char *groups_hidden_name(int cell)
+{
+    switch (cell) {
+    case CELL_ONE_ON_ONES: return "One On Ones";
+    case CELL_CONSISTENCY: return "Consistency";
     default: return NULL;
     }
 }

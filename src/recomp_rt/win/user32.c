@@ -461,6 +461,19 @@ static struct {
     uint64_t at;
 } key_click;
 
+/* The same rule for a click of RECOMP_SCRIPT (test runs only): its up step waits until the input poll has run
+ * once with the down in the game, or SCRIPT_CLICK_LONGEST ms. Under a slow emulation (the Windows build under
+ * wine in an emulated container) one frame took longer than the 100 ms from the down to the up, the game took
+ * both in one poll and the button did not react. On a normal machine the poll runs within the 100 ms, so the
+ * up keeps its time. */
+#define SCRIPT_CLICK_LONGEST 10000u
+static struct {
+    int on;
+    uint32_t down_at;
+    int polls;
+    uint64_t at;
+} script_click;
+
 static int click_for_key(int x, int y)
 {
     if (key_click.on || (buttons & 1)) return 0;
@@ -852,6 +865,9 @@ static void run_script(void)
             part_start = now;
             continue;
         }
+        if (!strcmp(s->action, "up") && script_click.on && script_click.polls < 1 &&
+            SDL_GetTicks64() - script_click.at < SCRIPT_CLICK_LONGEST)
+            break;
         step_next++;
         fprintf(stderr, "recomp: script %llu %s %d %d %s\n", (unsigned long long)(part_start + s->at), s->action, s->a,
                 s->b, s->text);
@@ -860,7 +876,12 @@ static void run_script(void)
             post_mouse(WM_MOUSEMOVE, s->a, s->b);
             buttons |= 1;
             post_mouse(WM_LBUTTONDOWN, s->a, s->b);
+            script_click.on = 1;
+            script_click.down_at = q_tail;
+            script_click.polls = 0;
+            script_click.at = SDL_GetTicks64();
         } else if (!strcmp(s->action, "up")) {
+            script_click.on = 0;
             buttons &= ~1;
             post_mouse(WM_LBUTTONUP, s->a, s->b);
         } else if (!strcmp(s->action, "rclick")) {
@@ -1043,6 +1064,7 @@ RT_WRAP(0055f620, input_poll)
     options_screen_after_poll(poll_ret, poll_display, cpu.eax & 0xffffu);   /* the options box item */
     names_after_poll();
     if (key_down_in) key_click.polls++;
+    if (script_click.on && (int32_t)(q_head - script_click.down_at) >= 0) script_click.polls++;
     uint32_t widget = cpu.eax & 0xffffu;
     int held = (buttons & 1) && rd32(g_mem, 0xb67a34u) && !rd32(g_mem, 0xb67a3cu);
     idle_rest(widget);

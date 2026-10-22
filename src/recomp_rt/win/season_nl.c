@@ -31,6 +31,7 @@
 #include "season_change.h"
 #include "season_comps.h"
 #include "season_nl.h"
+#include "season_wcq26.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1008,6 +1009,12 @@ static uint32_t build_vtable(const SeasonCompDef *d)
  * the constructor's year, rounded to the Euro cycle from year - 1, is not below it and the 2002 history of
  * 0x57d01a does not run), then the vtable copy, the year, the stage array and the rules of the edition. Load:
  * the constructor reads the object from its file (0x57cf21); the stage bytes follow the saved stage count. */
+/* 1 while nl_make runs the Euro qualifying constructor: its epilogue (0x57d03b) calls rt_euroq_rules while the
+ * object still has the class's vtable, so the loaded places +0xbe and +0xbf of a Nations League would take the
+ * Euro qualifying's (load sweep). */
+static int in_ctor;
+int season_nl_in_ctor(void) { return in_ctor; }
+
 static uint32_t nl_make(const SeasonCompDef *d, uint32_t rec, int year, int loading)
 {
     NlConf *c = conf_of_def(d);
@@ -1018,7 +1025,9 @@ static uint32_t nl_make(const SeasonCompDef *d, uint32_t rec, int year, int load
     uint32_t obj = v ? call_cdecl(GAME_NEW, 1, na) : 0;
     if (rt_unwinding || !readable(obj)) return 0;
     uint32_t ca[2] = {loading ? (uint32_t)year : (uint32_t)e->year, rec};
+    in_ctor = 1;
     obj = call_this(QUAL_CTOR, obj, 2, ca);
+    in_ctor = 0;
     if (rt_unwinding || !readable(obj)) return 0;
     wr32(g_mem, obj, v);
     if (loading) {
@@ -1058,7 +1067,13 @@ void o_00669ae0(void);
 RT_WRAP(0057f600, nl_collect_entrants)
 {
     if (!is_nl(cpu.ecx)) {
+        uint32_t self = cpu.ecx;
         o_0057f600();
+        if (!rt_unwinding) {
+            uint32_t eax = cpu.eax;
+            season_wcq26_log_pool(self, "euro qualifying (original)");      /* O188 test log */
+            cpu.eax = eax;
+        }
         return;
     }
     rt_ret_stdcall(1, 0);

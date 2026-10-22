@@ -30,6 +30,7 @@ uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);   /* push 0x426 of
 uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);     /* ItaSerC2a::create_table count store */
 uint32_t rt_ita_c2_end_clubs(uint32_t obj, uint32_t original);  /* C2/B and C2/C create_table count stores */
 uint32_t rt_ita_tier_c2(uint32_t c2a);                          /* 0x6418d5: the C2a object of the tier block */
+uint32_t rt_ita_tier_last(uint32_t obj);                        /* 0x641936: the last tier call (C2/C or C1/B) */
 uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b);             /* ItaCup: group C counts as C1 */
 uint32_t rt_ita_cup_fill(uint32_t esp, uint32_t count, uint32_t position);  /* ItaCup: an end to its loop */
 uint32_t rt_ita_start_c2(uint32_t c2a);                         /* 0x641986: the C2a object of the start block */

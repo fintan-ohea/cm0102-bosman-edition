@@ -75,21 +75,31 @@ int main(void)
         if (k != ATTR_HANDLING && k != ATTR_REFLEXES) CHECK(occurs(&l, k) == 1);
     CHECK(alphabetical(&l));
 
-    /* 2. Goalkeeper: Goalkeeping, then a short Technical group (Q129). */
+    CHECK(occurs(&l, CELL_ONE_ON_ONES) == 0 && occurs(&l, CELL_CONSISTENCY) == 0);
+
+    /* 2. Goalkeeper: one Goalkeeping group with One On Ones, Consistency, Set Pieces and Technique, and no
+     * Technical heading (Q129, Max 2026-10-21). */
     groups_layout(1, &l);
-    static const int keeper[] = {CELL_HEAD_GOALKEEPING, ATTR_HANDLING, ATTR_REFLEXES, ATTR_PASSING,
-        CELL_HEAD_TECHNICAL, ATTR_SET_PIECES, ATTR_TECHNIQUE, -1};
+    static const int keeper[] = {CELL_HEAD_GOALKEEPING, ATTR_HANDLING, ATTR_REFLEXES, CELL_ONE_ON_ONES,
+        CELL_CONSISTENCY, ATTR_PASSING, ATTR_SET_PIECES, ATTR_TECHNIQUE, -1};
     CHECK(column_is(&l, 0, keeper));
     CHECK(column_is(&l, 1, mental));
     CHECK(column_is(&l, 2, physical));
     static const int hidden[] = {ATTR_CROSSING, ATTR_DRIBBLING, ATTR_FINISHING, ATTR_HEADING, ATTR_LONG_SHOTS,
         ATTR_MARKING, ATTR_TACKLING};
     for (int i = 0; i < 7; i++) CHECK(occurs(&l, hidden[i]) == 0);
+    CHECK(occurs(&l, CELL_HEAD_TECHNICAL) == 0);
 
     /* 3. The heading texts. */
     CHECK(!strcmp(groups_heading(CELL_HEAD_GOALKEEPING), "Goalkeeping"));
     CHECK(!strcmp(groups_heading(CELL_HEAD_TECHNICAL), "Technical"));
     CHECK(groups_heading(ATTR_PACE) == NULL && groups_heading(CELL_BLANK) == NULL);
+    CHECK(groups_heading(CELL_ONE_ON_ONES) == NULL);
+
+    /* 4. The names of the hidden attribute cells. */
+    CHECK(!strcmp(groups_hidden_name(CELL_ONE_ON_ONES), "One On Ones"));
+    CHECK(!strcmp(groups_hidden_name(CELL_CONSISTENCY), "Consistency"));
+    CHECK(groups_hidden_name(ATTR_HANDLING) == NULL && groups_hidden_name(CELL_HEAD_GOALKEEPING) == NULL);
 
     if (failures) printf("%d failures\n", failures);
     else printf("groups: all checks passed\n");

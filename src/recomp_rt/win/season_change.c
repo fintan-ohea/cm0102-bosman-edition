@@ -32,6 +32,8 @@
 #include "season_cups.h"
 #include "season_playoffs.h"
 #include "season_rules.h"
+#include "season_intl.h"
+#include "season_uefa_league.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -413,6 +415,8 @@ void season_change_reset(void)
     rename_count = 0;
     season_comps_reset();               /* slice 26 */
     season_cup_groups_reset();          /* slice 21c: the big stage arrays of the cups with groups */
+    season_intl_qual_reset();           /* load sweep: the World Cup play-off ties of the last game */
+    season_uefa_league_reset();         /* load sweep: the league phase list of a stage being made */
     season_point = 0;
     creating = 0;                               /* also when a longjmp left create_game */
 }

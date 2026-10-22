@@ -14,4 +14,9 @@ int season_wcq26_europe_template(void);
 int season_wcq26_europe_paths(void);
 int season_wcq26_europe_no_asia(void);
 
+/* The test log (RECOMP_SEASON_INTL_LOG=1) of the original's European pool at +0xee (count +0xf2) of a World Cup
+ * qualifying section (0x919e30) or a European Championship qualifying (0x57f600): its size, Kosovo and every
+ * nation in it with no continent or no players' club. what: the name of the line. */
+void season_wcq26_log_pool(uint32_t self, const char *what);
+
 #endif
