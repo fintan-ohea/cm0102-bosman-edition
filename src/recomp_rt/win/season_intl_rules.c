@@ -240,6 +240,7 @@ void season_intl_shift_date(int shift, int *day, int *month0, int *year)
 const SeasonIntlRename season_intl_renames[] = {
     {2002, "Yugoslavia", "Serbia and Montenegro", "Serbia & Montenegro", "SCG", "Serbian", "int-world-13"},
     {2006, "Serbia and Montenegro", "Serbia", "Serbia", "SRB", "Serbian", "int-world-61"},
+    {2011, "Netherlands Antilles", "Cura\xe7" "ao", "Cura\xe7" "ao", "CUW", "Cura\xe7" "aoan", "int-world-325"},
     {2016, "Czech Republic", "Czechia", "Czechia", "CZE", "Czech", "int-world-181"},
     {2017, "Swaziland", "Eswatini", "Eswatini", "SWZ", "Swazi", "int-world-193"},
     {2018, "FYR of Macedonia", "North Macedonia", "North Macedonia", "MKD", "Macedonian", "int-world-205"},

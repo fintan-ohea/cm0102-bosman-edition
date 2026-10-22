@@ -342,6 +342,7 @@ void rt_wcq26_europe_format(uint32_t self)
 static const char *const renamed[][2] = {
     {"Yugoslavia", "Serbia and Montenegro"}, {"Serbia and Montenegro", "Serbia"}, {"Czech Republic", "Czechia"},
     {"Swaziland", "Eswatini"}, {"FYR of Macedonia", "North Macedonia"}, {"Turkey", "T\xfcrkiye"},
+    {"Netherlands Antilles", "Cura\xe7" "ao"},
 };
 
 static int nation_named(uint32_t nations, int count, const char *name)
