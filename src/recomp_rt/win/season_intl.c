@@ -162,6 +162,21 @@ uint32_t rt_intl_oceania_left_out(uint32_t id)
     return australia_in_asia() ? 0xffffffffu : id;
 }
 
+/* The Oceania ruling body RbOceania (slot 35 of the Discipline object's 43 rule sets) at a load. The rule-set load
+ * 0x55d420 makes it only when a selected nation of the key nation table has the continent Oceania
+ * (key_nation_continent_has_selected_nation 0x6699d0 on [0x9cfa18] at 0x55deac, 0x55deb6), and then reads its data;
+ * the save 0x555dd0 writes every rule set that exists (0x555f2e..0x555f4a). A game with changing rules on from
+ * 2005/06 or before makes the body for a selected Australia, which moves to Asia on 1 January 2006 (intl_entry).
+ * A later load then left the body out and read the rest of discipline.dat (the ban array, the nation index) from
+ * the wrong place: the box discipline..cpp 1149 and a damaged heap. 1 when this game moved a selected Australia,
+ * so the load makes the body that its save holds. The base game never moves Australia. */
+uint32_t rt_discipline_oceania_body(void)
+{
+    if (!season_intl_on() || !season_changing_rules() || season_start_year() >= AUSTRALIA_TO_ASIA) return 0;
+    int aus = key_nation(KEY_AUSTRALIA);
+    return aus >= 0 && g_mem[nation_at(aus) + 0x11cu] != 0 && australia_in_asia();
+}
+
 /* ---- The host table ---- */
 
 static int day_of(int month, int day)

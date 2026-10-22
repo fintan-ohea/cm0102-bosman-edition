@@ -175,6 +175,12 @@ from league_load import INSNS as LOAD_INSNS  # noqa: E402
 assert not set(LOAD_INSNS) & (set(INSNS) | set(PATCHES))
 INSNS.update(LOAD_INSNS)
 
+# A fix for the error box discipline..cpp 1149 of a ban release (discipline_ban.py): a lost nation index entry.
+from discipline_ban import INSNS as BAN_INSNS  # noqa: E402
+
+assert not set(BAN_INSNS) & (set(INSNS) | set(PATCHES))
+INSNS.update(BAN_INSNS)
+
 # Saves above 2 GB (0.6.0): unsigned file positions in ftell and the seek of a save part (save_size.py).
 from save_size import INSNS as SAVE_SIZE_INSNS  # noqa: E402
 
