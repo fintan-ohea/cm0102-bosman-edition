@@ -78,8 +78,6 @@
 #define CLUB_SIZE 0x245u
 #define CLUB_NATION 0x53u
 #define GAME_YEAR 0xae2c92u
-#define NATIONAL_TEAMS 0xb74318u        /* NationalTeams: +4 squad sizes, 110 bytes a nation (0x775520) */
-#define SENIOR_SIZE 0x43u
 
 /* Object fields (class doc 2 and 3). */
 #define F_RECORD 0x4u
@@ -199,25 +197,17 @@ int season_nl_nation_of_club(uint32_t club)
     return id < nation_count() ? id : -1;
 }
 
-/* 1 when the national team of the nation can take a squad. Before a match fill_fixture_squads 0x90d2f0 tops up a
- * national team (0x90dae0) to the squad sizes of NationalTeams (0x775520: the byte at [[0xb74318] + 4] + 110 x the
- * nation id + 0x43 for a senior side, 0x775555..0x775576). A nation with size 0 there gets no players and no virtual
- * players (0x90dd3e..0x90dd45): Martinique (reputation 0 in the October 2022 database) had 0 squad slots in its
- * first CONCACAF Nations League match of 2023/24 in a 2022 start, and init_match 0x6b7f20 stopped at
- * match_eng.cpp 652 (fewer than 11 at 0x6b89be). The size is not a fixed value of the nation: init_tables 0x76a840
- * picks each squad and then clears it (0x76abb1), and only a later squad pick for a fixture writes it again
- * (select_squad 0x76c120 passes [edi + 0x43] at 0x76c551). So a nation with no pick since then has size 0. A draw
- * after the first picks of the season (the 2023-24 CONCACAF draw on day 227 of a 2023 start) left out every
- * CONCACAF nation that way, and its finals took a club with no nation, which stopped the squad pick on 1 March
- * 2024 (box "Database.cpp 13126" at 0x53b3da, from 0x76c266). So a nation with a size can play, and a nation
- * with size 0 can play when its reputation is above 0 (Martinique, reputation 0, stays out). */
+/* 1 when the nation has a continent (nation +0x71). The data keeps nations with no continent (-1 or -2), such as
+ * Martinique, Guadeloupe, Bonaire, French Guiana, Sint Maarten and Netherlands Antilles in the October 2022
+ * database; NationalTeams gives them no squad sizes (0x775520 reads 0 for each kind), so the top-up 0x90dae0 gives
+ * their national team no players and init_match 0x6b7f20 stops at match_eng.cpp 612 or 652 (fewer than 11 at
+ * 0x6b89be): Martinique in its first CONCACAF Nations League match of 2023/24 in a 2022 start. The field is a
+ * pointer after the load's id pass and an id before it (the draw at game creation). */
 int season_nl_nation_can_play(int id)
 {
     if (id < 0 || id >= nation_count()) return 0;
-    uint32_t nt = rd32(g_mem, NATIONAL_TEAMS), table = readable(nt) ? rd32(g_mem, nt + 4) : 0;
-    uint32_t nid = rd32(g_mem, nation_at(id));
-    if (readable(table) && nid < 0x10000u && g_mem[table + 110u * nid + SENIOR_SIZE] != 0) return 1;
-    return (int16_t)rd16(g_mem, nation_at(id) + NATION_REPUTATION) > 0;
+    uint32_t c = rd32(g_mem, nation_at(id) + NATION_CONTINENT);
+    return readable(c) || (int32_t)c >= 0;
 }
 
 /* The national team of a nation: national_team 0x53b3d0 gives the club of the nation's row, which in some
@@ -274,10 +264,17 @@ static int nation_by_name(const char *names)
         alt[n++] = p;
         p = slash ? slash + 1 : NULL;
     }
+    /* A nation that can play first: the season databases from 2013 keep the dissolved Netherlands Antilles (no
+     * continent) beside Curaçao, so "Curaçao/Netherlands Antilles" takes Curaçao there and the Antilles only in
+     * the data that has no Curaçao. */
+    int any = -1;
     for (int k = n - 1; k >= 0; k--)
         for (int id = 0; id < nation_count(); id++)
-            if (!strcmp(alt[k], win_str(nation_at(id) + NATION_NAME))) return id;
-    return -1;
+            if (!strcmp(alt[k], win_str(nation_at(id) + NATION_NAME))) {
+                if (season_nl_nation_can_play(id)) return id;
+                if (any < 0) any = id;
+            }
+    return any;
 }
 
 /* ---- Editions ---- */
@@ -542,7 +539,7 @@ static int real_entrants(const SeasonNlEdition *e, Entrant *out)
             continue;
         }
         if (!season_nl_nation_can_play(id)) {
-            if (logging()) fprintf(stderr, "recomp: season nl: %s %s: %s has no national squad size\n", e->confed,
+            if (logging()) fprintf(stderr, "recomp: season nl: %s %s: %s has no continent in the data\n", e->confed,
                                    e->edition, t->nation);
             continue;
         }
