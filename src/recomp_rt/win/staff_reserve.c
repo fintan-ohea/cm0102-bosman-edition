@@ -8,7 +8,11 @@
  *
  * The official data sets keep 23,000, so the base game allocates and plays as before. A custom data set
  * (database = folder:<name>) keeps 23,000 too, unless the estimate of its Select All need from its files is more
- * than 23,000: then it gets RESERVE_CUSTOM rows. The test switch RECOMP_STAFF_RESERVE=<rows> sets any
+ * than 23,000: then it gets RESERVE_CUSTOM rows. The same estimate runs on the folder that an official choice
+ * reads (the game's own Data, or Data-3.9.60 and Data-3.9.65), because players also copy a database into the
+ * game's own Data folder (decision O207: the Update Team's November 2007 database then needs 24,218 and stopped
+ * at the box). There only a valid estimate above 23,000 gives RESERVE_CUSTOM: the 3.9.68 files estimate 22,986,
+ * 3.9.60 and 3.9.65 about 20,700, so the official data keep 23,000 and the base game is unchanged. The test switch RECOMP_STAFF_RESERVE=<rows> sets any
  * size from 23,000 up. RECOMP_SCREEN_LOG=1 prints how many rows a new game used. */
 #include "options.h"
 #include "season_records.h"
@@ -144,6 +148,16 @@ uint32_t rt_staff_reserve_size(void)
         if (need < 0 || need > (long)RESERVE_BASE) r = RESERVE_CUSTOM;
         if (getenv("RECOMP_SCREEN_LOG"))
             fprintf(stderr, "recomp: staff reserve estimate %ld for Select All, reserve %u\n", need, r);
+    } else if (options_enum(OPT_DATABASE) != DATABASE_CUSTOM) {
+        /* The folder of an official choice: the game's own Data, or Data-3.9.60 / Data-3.9.65. */
+        char dir[1200];
+        if (win_data_set_dir()[0]) snprintf(dir, sizeof dir, "%s", win_data_set_dir());
+        else snprintf(dir, sizeof dir, "%s/Data", win_game_dir);
+        long need = staff_reserve_estimate(dir);
+        if (need > (long)RESERVE_BASE) r = RESERVE_CUSTOM;
+        if (getenv("RECOMP_SCREEN_LOG"))
+            fprintf(stderr, "recomp: staff reserve estimate %ld for Select All (the game's data), reserve %u\n",
+                    need, r);
     }
     /* Slice 15b: 0x527240 makes up to 16 non-playing staff for each new club record of this load. */
     r += season_records_reserve_extra();
