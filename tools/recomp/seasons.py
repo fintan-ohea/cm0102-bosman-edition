@@ -162,9 +162,6 @@ PATCHES = {
     0x91A0C2: (0x8, "rt_wcq26_europe_index(esi, 8u)"),              # pool 0x919e30: last group stage +0xff
     0x91A0C9: (0x9, "rt_wcq26_europe_index(esi, 9u)"),              # runners-up stage +0x100
     0x91A0D0: (0xA, "rt_wcq26_europe_index(esi, 0xau)"),            # play-off stage +0x101
-    0x91AA96: (0x8, "rt_wcq26_europe_index(edi, 8u)"),              # load 0x91a9f0: the same three
-    0x91AA9D: (0x9, "rt_wcq26_europe_index(edi, 9u)"),
-    0x91AAA4: (0xA, "rt_wcq26_europe_index(edi, 0xau)"),
     0x918348: (0xB, "rt_wcq26_europe_index(esi, 0xbu)"),            # ctor: stage count 13
     0x91950C: (0xB, "rt_wcq26_europe_index(esi, 0xbu)"),            # start_new_season: stage count 13
     0x91A6CF: (0xA, "rt_wcq26_europe_index(esi, 0xau)"),            # group stages after the draw: 12 groups

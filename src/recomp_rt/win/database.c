@@ -3,10 +3,12 @@
  * The Setup Game screen (build 0x81bab0, input 0x81bd70) fills 9 of the 25 menu items on its stack and calls
  * the menu builder 0x5ed300 (0x81bcc5) with (110, 145, 780, 535, 2 columns, 6 rows, font 3, count 9, items,
  * 0, 0). Menu B (Max chose it from mockups after he played the 0.6.0 preview):
- * - the season strip: one wide button where the sub-heading "Setup Game" was (0x803f80 at 0x81bb5f, which
- *   the wrap leaves out). It shows the season, the database and the changing rules state of the next new
- *   game, and a click opens the Choose Season screen (season_screen.c), which holds the changing rules switch
- *   now. The strip takes the place of the Choose Season item and the "Changing rules" item of 0.6.0 slice 13;
+ * - the top row, where the sub-heading "Setup Game" was (0x803f80 at 0x81bb5f, which the wrap leaves out):
+ *   two buttons in the grid's style (option 2, Max, 2026-10-21). The left one shows the season of the next
+ *   new game large and its database under it; a click opens the Choose Season screen (season_screen.c). The
+ *   right one shows "Changing rules" and On or Off under it; a click turns the switch of the next new game
+ *   over (the option changing_rules keeps the default). They take the place of the Choose Season item and
+ *   the "Changing rules" item of 0.6.0 slice 13;
  * - a grid of 2 columns and 4 rows: items 0 to 5 of the original (Start New Game to Game Settings), then
  *   "Bosman Edition Options" (options_screen.c, since 0.5.0) and "Extras" in place of items 6 to 8;
  * - Extras: a screen of the runtime with the original's items 6 to 8, Hall Of Fame, Game Credits and Web
@@ -21,8 +23,8 @@
  * (season_screen_year), so an old settings file with database = 3.9.60, 3.9.65 or folder:<name> starts that
  * data set, in the season of that data. The test variable RECOMP_START_SEASON (season.c) wins over them.
  *
- * The lines change no game state: a saved game loads with its own season and data set. The strip, the
- * Extras items and their texts are in runtime memory (win_static_alloc), not in the game's heap.
+ * The lines change no game state: a saved game loads with its own season and data set. The top row's items,
+ * the Extras items and their texts are in runtime memory (win_static_alloc), not in the game's heap.
  *
  * The red title of the start screens: the original formats "Championship Manager 2001/02" (0xa80288) into
  * 0xdd70a8 and passes it to the heading 0x803f30 (0x81bb24..0x81bb30 on Setup Game, 0x81d0b8..0x81d0e9 on
@@ -79,13 +81,22 @@ extern const uint32_t rt_site_setup_menu, rt_site_setup_subheading;
 
 #define MENU_Y 145               /* the grid: the original's top, rows of ROW_H pixels (classic numbers) */
 #define ROW_H 80
-#define STRIP_Y1 78              /* the season strip, where the sub-heading was (100, 80)-(790, 125) */
-#define STRIP_Y2 137
+#define TOP_Y1 78                /* the top row, where the sub-heading was (100, 80)-(790, 125) */
+#define TOP_Y2 140
+#define MIDDLE_X 445             /* the edge between the grid's columns (110..780 in two) */
+#define RULES_ID 0x7d3e          /* the changing rules button (the id of the slice 13 item) */
+#define BOX_TEXT 0x803fd0u       /* thiscall on S, 11 args: a text widget with its own rect */
+#define WIDGET_CREATE 0x55f990u  /* thiscall on a Display, 18 args */
+#define DISPLAYS 0xb74c4cu       /* the Display of a player slot, 0x300 bytes apart */
+#define PLAYER_SLOT 0xb77c7au    /* s16: the player slot that has the turn */
+#define WIDGETS_OF_DISPLAY 0xba95eu   /* Display + this: widget 0 */
+#define SETUP_BUILD 0x81bab0u    /* the build function of Setup Game (screen node +0) */
 
-/* Runtime memory for the strip text and the Extras items (made at the first Setup Game build). */
-static uint32_t strip_item, extras_items, measure;
-/* The places of "On" and "Off" in the strip's second line, screen pixels from its start ([1] On, [0] Off). */
-static struct { int set, full, x[2], w[2]; } strip_frame;
+/* Runtime memory for the top row's items and texts and the Extras items (made at the first Setup Game build). */
+static uint32_t top_items, top_text, extras_items;
+/* The values of the right button: the widgets of "On" and "Off", and the button's pixels before them. */
+static struct { int box, on_label, off_label; } rules_px = {-1, -1, -1};
+#define VALUE_BOX 0x0008u        /* RGB565 (0, 0, 64): the box of the value, as the list's dark number boxes */
 #define EXTRAS_TEXT 0x100u      /* the text buffer of the Extras build */
 
 static uint32_t call(uint32_t fn, int n, const uint32_t *args)
@@ -103,6 +114,21 @@ static uint32_t call_this(uint32_t fn, uint32_t self, int n, const uint32_t *arg
     uint32_t r = rt_callback(fn, n, args);
     cpu = saved;
     return r;
+}
+
+/* Test only: RECOMP_SETUP_TEXT names an older Setup Game. "0.5.0" and "0.6.0-preview" have the original's title
+ * and sub-heading; "menu-b" is the season strip of batch S (a96c282), with this build's title. */
+static const char *setup_text(void) { const char *v = getenv("RECOMP_SETUP_TEXT"); return v && *v ? v : NULL; }
+static int setup_legacy(void)
+{
+    const char *v = setup_text();
+    return v && (!strcmp(v, "0.5.0") || !strcmp(v, "0.6.0-preview"));
+}
+static int setup_menu_b(void) { return setup_text() && !strcmp(setup_text(), "menu-b"); }
+
+static uint32_t display(void)
+{
+    return rd32(g_mem, DISPLAYS + (uint32_t)(int32_t)(int16_t)rd16(g_mem, PLAYER_SLOT) * 0x300u);
 }
 
 static void fill_item(uint32_t item, const char *text, uint32_t id)
@@ -124,7 +150,7 @@ RT_WRAP(00803f30, heading)
 {
     static uint32_t title;
     uint32_t at = rt_arg(2);
-    if (at && !strcmp(win_str(at), TITLE_ORIGINAL) && !getenv("RECOMP_SETUP_TEXT")) {
+    if (at && !strcmp(win_str(at), TITLE_ORIGINAL) && !setup_legacy()) {
         if (!title) {
             title = win_static_alloc(sizeof TITLE_BOSMAN);
             win_put_str(title, TITLE_BOSMAN, sizeof TITLE_BOSMAN);
@@ -136,25 +162,30 @@ RT_WRAP(00803f30, heading)
 
 void o_005ed300(void);
 
-/* The sub-heading, thiscall on S (text, unused), ret 8. Setup Game's "Setup Game" makes way for the strip. */
+/* The sub-heading, thiscall on S (text, unused), ret 8. Setup Game's "Setup Game" makes way for the top row. */
 void o_00803f80(void);
 RT_WRAP(00803f80, sub_heading)
 {
-    if (rd32(g_mem, cpu.esp) == rt_site_setup_subheading && !getenv("RECOMP_SETUP_TEXT")) {
+    if (rd32(g_mem, cpu.esp) == rt_site_setup_subheading && !setup_legacy()) {
         rt_ret_stdcall(0xffffffffu, 2);
         return;
     }
     o_00803f80();
 }
 
-/* The first line of the strip: the season and the database (and the Custom note). */
+/* ---- Test only (RECOMP_SETUP_TEXT=menu-b): the season strip of batch S, a96c282, as it was ---- */
+#define STRIP_Y1 78
+#define STRIP_Y2 137
+#define TEXT_WIDTH 0x5e5ad0u     /* cdecl (font, text): the width in screen pixels */
+static uint32_t strip_item, measure;
+static struct { int set, full, x[2], w[2]; } strip_frame;
+
 static void strip_prefix(char *text, size_t room)
 {
     int year = season_start_year();
     char db[DBFOLDER_NAME];
     season_screen_database_text(db, dbfolders_label_room(rt_screen_w));
     snprintf(text, room, "Season %d/%02d \xb7 %s", year, (year + 1) % 100, db);
-    /* Slice 11b: a Custom database in another season whose dates could not be checked keeps its dates. */
     const char *opt = options_string(OPT_DATABASE);
     char path[1100];
     int shift;
@@ -172,16 +203,6 @@ static uint32_t text_width(uint32_t at, const char *s)
     return call(TEXT_WIDTH, 2, (uint32_t[2]){3, at});
 }
 
-/* The strip: a menu of one item, made by the original's menu builder in the highlight style (bit 0 of the
- * highlight bits: style 0x822, yellow text, 0x5ed300), with two lines: the season and its database, then
- * "Changing rules:   On   Off". The runtime draws a yellow frame round the value of the next new game
- * (setup_widget_drawn), as the original's Game Settings box frames the current value (0x82477b).
- *
- * Same game (Q152): the game's widgets and texts are the same with changing rules on and off, so the
- * same-save runs rules-off and off equal normal. Heap traces showed why: a text that changed with the state
- * moved the original's text engine's work memory (docs/research/2026-10-16-hd-text.md), and a frame widget
- * of the game that changed with the state swapped two blocks. The widths below are measured the same way in
- * both states. */
 static void make_strip(void)
 {
     if (!strip_item) strip_item = win_static_alloc(ITEM_SIZE);
@@ -191,7 +212,6 @@ static void make_strip(void)
     snprintf(text, sizeof text, "%s\n" RULES_TEXT "On   Off", first);
     fill_item(strip_item, text, SEASON_ID);
     call(MENU, 11, (uint32_t[11]){110, STRIP_Y1, 780, STRIP_Y2, 1, 1, 3, 1, strip_item, 1, 0});
-
     const char *prefix = RULES_TEXT, *before_off = RULES_TEXT "On   ";
     int full = (int)text_width(measure, RULES_TEXT "On   Off"), on_x = (int)text_width(measure, prefix);
     int off_x = (int)text_width(measure, before_off), on_w = (int)text_width(measure, "On");
@@ -204,10 +224,7 @@ static void make_strip(void)
     strip_frame.set = 1;
 }
 
-/* After the game draws a widget (names.c, through views_widget_drawn): on the strip, the yellow frame round
- * the value of the next new game, drawn by the runtime on the game's draw surface (draw.c), so the screen
- * dumps hold it too. */
-void setup_widget_drawn(uint32_t w)
+static void strip_widget_drawn(uint32_t w)
 {
     if (!strip_frame.set || (int16_t)rd16(g_mem, w + 8) != SEASON_ID || rd32(g_mem, NO_DRAW)) return;
     uint32_t surface = rd32(g_mem, DRAW_SURFACE);
@@ -217,7 +234,7 @@ void setup_widget_drawn(uint32_t w)
     int x1 = (int32_t)rd32(g_mem, w + 0x10), y1 = (int32_t)rd32(g_mem, w + 0x14);
     int x2 = (int32_t)rd32(g_mem, w + 0x18), y2 = (int32_t)rd32(g_mem, w + 0x1c);
     int v = season_code_on() && season_screen_rules_on();
-    int start = x1 + (x2 - x1 + 1 - strip_frame.full) / 2, cy = (y1 + y2) / 2 + 10;   /* the second line */
+    int start = x1 + (x2 - x1 + 1 - strip_frame.full) / 2, cy = (y1 + y2) / 2 + 10;
     int fx1 = start + strip_frame.x[v] - 5, fx2 = start + strip_frame.x[v] + strip_frame.w[v] + 4;
     int fy1 = cy - 11, fy2 = cy + 10;
     uint16_t c = rd16(g_mem, TEXT_YELLOW);
@@ -225,6 +242,122 @@ void setup_widget_drawn(uint32_t w)
     draw_line(&t, fx2, fy1, fx2, fy2, c);
     draw_line(&t, fx2, fy2, fx1, fy2, c);
     draw_line(&t, fx1, fy2, fx1, fy1, c);
+}
+
+/* A text over the top row, a widget of its own rect (classic numbers), centred: 0x803fd0 as the season
+ * screen's labels. */
+static void top_label(int x1, int y1, int x2, int y2, uint32_t font, uint32_t colour, const char *text)
+{
+    win_put_str(top_text, text, ITEM_TEXT_SIZE);
+    call_this(BOX_TEXT, SCREENS, 11,
+              (uint32_t[11]){(uint32_t)x1, (uint32_t)y1, (uint32_t)x2, (uint32_t)y2, 1, 0, 0xc, font, colour,
+                             top_text, 1});
+}
+
+/* A word under "Changing rules": a text widget of the game (flags 1), returns its index. */
+static int word_label(int x1, int y1, int x2, int y2, uint32_t colour, const char *text)
+{
+    win_put_str(top_text, text, ITEM_TEXT_SIZE);
+    uint32_t a[18] = {1, (uint32_t)x1, (uint32_t)y1, (uint32_t)x2, (uint32_t)y2, 0, 0, 1, 0, 0, 0xc, 5, colour,
+                      top_text, 0, 0, 0, 0xffffffffu};
+    return (int16_t)call_this(WIDGET_CREATE, display(), 18, a);
+}
+
+/* The top row: two buttons of the menu builder in the grid's style (2 columns, 1 row, font 3, no highlight),
+ * their texts as labels over them (the game draws widgets in the order they are made). */
+static void make_top_row(void)
+{
+    if (!top_items) top_items = win_static_alloc(2 * ITEM_SIZE);
+    if (!top_text) top_text = win_static_alloc(ITEM_TEXT_SIZE);
+    fill_item(top_items, "", SEASON_ID);
+    fill_item(top_items + ITEM_SIZE, "", RULES_ID);
+    call(MENU, 11, (uint32_t[11]){110, TOP_Y1, 780, TOP_Y2, 2, 1, 3, 2, top_items, 0, 0});
+
+    int year = season_start_year();
+    char season[16], db[DBFOLDER_NAME + 32];
+    snprintf(season, sizeof season, "%d/%02d", year, (year + 1) % 100);
+    season_screen_database_text(db, dbfolders_label_room(rt_screen_w));
+    /* Slice 11b: a Custom database in another season whose dates could not be checked keeps its dates. */
+    const char *opt = options_string(OPT_DATABASE);
+    char path[1100];
+    int shift;
+    if (season_code_on() && year != SEASON_FIRST_YEAR && !strncmp(opt, "folder:", 7) &&
+        dbfolders_path(win_databases_root(), opt + 7, path, sizeof path) && !seasons_db_identify(path) &&
+        !season_dates_custom_check(path, &shift))
+        snprintf(db + strlen(db), sizeof db - strlen(db), " (ages not checked)");
+    uint32_t yellow = rd16(g_mem, TEXT_YELLOW), light = rd16(g_mem, TEXT_LIGHT);
+    int mid = (TOP_Y1 + TOP_Y2) / 2;
+    top_label(112, TOP_Y1 + 4, MIDDLE_X - 2, mid + 6, 5, yellow, season);
+    top_label(112, mid + 6, MIDDLE_X - 2, TOP_Y2 - 4, 1, light, db);
+    top_label(MIDDLE_X + 2, TOP_Y1 + 4, 778, mid, 3, light, "Changing rules");
+    /* A box of one colour, then both values in it, the same in both states; setup_widget_drawn shows the one
+     * of the next new game. */
+    int q = (MIDDLE_X + 780) / 2, bx1 = q - 60, bx2 = q + 60;
+    uint32_t box[18] = {1, (uint32_t)bx1, (uint32_t)mid + 1, (uint32_t)bx2, (uint32_t)TOP_Y2 - 5, 0, 0, 0x10, VALUE_BOX,
+                        VALUE_BOX, 0xc, 1, 0, top_text, 0, 0, 0, 0xffffffffu};
+    win_put_str(top_text, "", ITEM_TEXT_SIZE);
+    rules_px.box = (int16_t)call_this(WIDGET_CREATE, display(), 18, box);
+    rules_px.on_label = word_label(bx1, mid, q, TOP_Y2 - 4, yellow, "On");
+    rules_px.off_label = word_label(q, mid, bx2, TOP_Y2 - 4, yellow, "Off");
+}
+
+/* After the game draws a widget (names.c, through views_widget_drawn). The right button of the top row: the
+ * game draws a box of one colour and in it "On" and "Off", the same in both states, and the runtime shows only
+ * the value of the next new game: when "Off" is drawn it fills the box with its colour again and paints the
+ * pixels of the right word in the middle of the box, in one yellow. It draws on the game's draw surface, so
+ * the screen dumps hold it too.
+ *
+ * Same game (Q152), from heap traces with changing rules on and off: a text that changed with the state moved
+ * the original's text engine's glyph memory ("On" and "Off" differ), and the screen's colours count too: the
+ * fade 0x5e30e0 makes a brightness table for each colour it meets on the screen. So the game's widgets are the
+ * same in both states, and the box and the one yellow give the same set of colours in both. */
+void setup_widget_drawn(uint32_t w)
+{
+    if (setup_menu_b()) {
+        strip_widget_drawn(w);
+        return;
+    }
+    uint32_t node = rd32(g_mem, TOP_NODE);
+    if (rd32(g_mem, NO_DRAW) || !node || rd32(g_mem, node) != SETUP_BUILD) return;   /* Setup Game on top only */
+    uint32_t surface = rd32(g_mem, DRAW_SURFACE), first = display() + WIDGETS_OF_DISPLAY;
+    if (!surface || w < first || (w - first) % WIDGET_SIZE) return;
+    if ((int)((w - first) / WIDGET_SIZE) != rules_px.off_label || rules_px.box < 0) return;
+    uint8_t *px = g_mem + rd32(g_mem, surface + 0x14);
+    int pitch = (int)rd32(g_mem, surface + 0x10), sw = (int)rd32(g_mem, surface + 8), sh = (int)rd32(g_mem, surface + 0xc);
+    uint32_t b = first + (uint32_t)rules_px.box * WIDGET_SIZE;
+    uint32_t lw = first + (uint32_t)(season_code_on() && season_screen_rules_on() ? rules_px.on_label
+                                                                                 : rules_px.off_label) * WIDGET_SIZE;
+    int x1 = (int32_t)rd32(g_mem, b + 0x10), y1 = (int32_t)rd32(g_mem, b + 0x14);
+    int x2 = (int32_t)rd32(g_mem, b + 0x18), y2 = (int32_t)rd32(g_mem, b + 0x1c);
+    if (x1 < 0 || y1 < 0 || x2 >= sw || y2 >= sh || x2 <= x1 || y2 <= y1) return;
+    uint16_t fill = rd16(g_mem, b + 0x72), yellow = rd16(g_mem, TEXT_YELLOW);
+    int wx1 = (int32_t)rd32(g_mem, lw + 0x10), wx2 = (int32_t)rd32(g_mem, lw + 0x18);
+    if (wx1 < x1) wx1 = x1;
+    if (wx2 > x2) wx2 = x2;
+    /* The word's pixels in the box: those that are not the box's colour. */
+    int bw = x2 - x1 + 1, bh = y2 - y1 + 1, left = bw, right = -1;
+    uint8_t *mask = calloc((size_t)bw * (size_t)bh, 1);
+    if (!mask) return;
+    for (int y = y1; y <= y2; y++)
+        for (int x = wx1; x <= wx2; x++) {
+            uint16_t c;
+            memcpy(&c, px + y * pitch + x * 2, 2);
+            if (c != fill) {
+                mask[(y - y1) * bw + (x - x1)] = 1;
+                if (x - x1 < left) left = x - x1;
+                if (x - x1 > right) right = x - x1;
+            }
+        }
+    for (int y = y1; y <= y2; y++)
+        for (int x = x1; x <= x2; x++) memcpy(px + y * pitch + x * 2, &fill, 2);
+    if (right >= left) {
+        int shift = (bw - 1) / 2 - (left + right) / 2;
+        for (int y = 0; y < bh; y++)
+            for (int x = left; x <= right; x++)
+                if (mask[y * bw + x] && x + shift >= 0 && x + shift < bw)
+                    memcpy(px + (y1 + y) * pitch + (x1 + x + shift) * 2, &yellow, 2);
+    }
+    free(mask);
 }
 
 /* The menu builder, cdecl (x1, y1, x2, y2, columns, rows, font, count, items, highlight bits, sort). */
@@ -271,7 +404,8 @@ RT_WRAP(005ed300, menu_build)
             g_mem[extras_items + i] = g_mem[item + FIRST_EXTRA * ITEM_SIZE + i];
         fill_item(item + 6 * ITEM_SIZE, "Bosman Edition Options", OPTIONS_ID);
         fill_item(item + 7 * ITEM_SIZE, "Extras", EXTRAS_ID);
-        make_strip();
+        if (setup_menu_b()) make_strip();
+        else make_top_row();
         wr32(g_mem, cpu.esp + 4 + 4 * 3, MENU_Y + 4 * ROW_H);   /* y2 */
         wr32(g_mem, cpu.esp + 4 + 4 * 5, 4);                     /* rows */
         wr32(g_mem, cpu.esp + 4 + 4 * 7, 8);                     /* count */
@@ -347,6 +481,17 @@ RT_WRAP(0081bd70, setup_input)
     }
     if (id == SEASON_ID) {
         if (season_code_on()) season_screen_open();     /* RECOMP_SEASON_CODE=off: the item does nothing */
+        rt_ret_cdecl((uint32_t)-4);
+        return;
+    }
+    if (id == RULES_ID) {
+        if (!season_code_on()) {                        /* RECOMP_SEASON_CODE=off: changing rules stay off */
+            rt_ret_cdecl(0);
+            return;
+        }
+        season_screen_set_rules(!season_screen_rules_on());
+        season_set_new_game(season_start_year(), season_screen_rules_choice());
+        fprintf(stderr, "recomp: changing rules of the next new game: %s\n", season_screen_rules_on() ? "on" : "off");
         rt_ret_cdecl((uint32_t)-4);
         return;
     }

@@ -54,6 +54,11 @@ extern char win_cwd[1024];             /* current folder, as a Windows path */
 /* Handles of files (files.c). */
 int win_is_file_handle(uint32_t h);
 int win_close_file(uint32_t h);
+/* A save of the game (season.c): between the two calls, a write that would take a file past 4 GB makes the save
+ * fail. win_save_end gives 0 for a good save, 1 when the save failed and the earlier save stays, 2 when the save
+ * failed after the game deleted the earlier save of the name. */
+void win_save_begin(void);
+int win_save_end(void);
 /* Memory files (season_records.c, 0.6.0 slice 15b): a read-only open of the host path gives these bytes in place
  * of the file on disk. The caller keeps the buffer until win_memory_files_clear. */
 void win_memory_file(const char *host_path, const uint8_t *data, size_t size);
@@ -120,6 +125,8 @@ int options_screen_widget_before(void);        /* at each widget create: 1 for t
 void options_screen_widget_after(void);        /* after that create: adds the Bosman Edition Options item */
 uint32_t win_press_count(void);                /* user32.c: the count of mouse presses so far */
 void win_sharp_picture_changed(void);          /* user32.c: applies the option sharp_picture at once */
+void win_picture_way(char *out, size_t n);    /* user32.c: how the picture is scaled now, for the display report */
+int win_short_screen(void);                    /* user32.c: widescreen on a screen less than 800 pixels high */
 /* The Assistant's picks (picker.c). picker_compute picks without writing; picker_pick stores the pick as
  * the club's selection. kind 1: best team, 2: most match-fit, 3: under-21. Both return the players picked. */
 #define PICK_SLOTS 20

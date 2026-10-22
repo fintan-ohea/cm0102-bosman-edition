@@ -288,9 +288,9 @@ a { color: inherit; }
   <div class="inner">
     <h2 class="bar" id="release-title">What's in the <em>download</em></h2>
     <div class="downloads" data-in>
-      <a class="dl" data-link="mac" href="https://github.com/maxevans60/cm0102-bosman-edition/releases"><svg aria-hidden="true"><use href="#apple"/></svg><span>Download for Mac<small data-note="mac">Coming soon</small></span></a>
-      <a class="dl" data-link="win" href="https://github.com/maxevans60/cm0102-bosman-edition/releases"><svg aria-hidden="true"><use href="#win"/></svg><span>Download for Windows<small data-note="win">Coming soon</small></span></a>
-      <a class="dl" data-link="linux" href="https://github.com/maxevans60/cm0102-bosman-edition/releases"><svg aria-hidden="true"><use href="#linux"/></svg><span>Download for Linux<small data-note="linux">Coming soon</small></span></a>
+      <a class="dl" data-link="mac" href="https://github.com/maxevans60/cm0102-bosman-edition/releases"><svg aria-hidden="true"><use href="#apple"/></svg><span>Download for Mac<small data-note="mac">All releases</small></span></a>
+      <a class="dl" data-link="win" href="https://github.com/maxevans60/cm0102-bosman-edition/releases"><svg aria-hidden="true"><use href="#win"/></svg><span>Download for Windows<small data-note="win">All releases</small></span></a>
+      <a class="dl" data-link="linux" href="https://github.com/maxevans60/cm0102-bosman-edition/releases"><svg aria-hidden="true"><use href="#linux"/></svg><span>Download for Linux<small data-note="linux">All releases</small></span></a>
     </div>
     <div class="release">
       <div class="panel" data-in>
@@ -647,26 +647,33 @@ document.documentElement.classList.add('js');
       }).join('');
     }).catch(function () {});
 
-  // Point the download buttons at the newest release, pre-releases included.
+  // Point each download button at the newest release that has a file for it, pre-releases included. A
+  // patch release can carry one platform only (0.5.1 had the Mac file alone), so each platform looks
+  // back through the recent releases until it finds its own file.
   var ua = navigator.platform || navigator.userAgent;
   var isMac = /Mac/.test(ua), isWin = /Win/.test(ua), isLinux = /Linux/.test(ua) && !/Android/.test(navigator.userAgent);
-  fetch('https://api.github.com/repos/maxevans60/cm0102-bosman-edition/releases?per_page=5')
+  fetch('https://api.github.com/repos/maxevans60/cm0102-bosman-edition/releases?per_page=10')
     .then(function (r) { return r.ok ? r.json() : []; })
     .then(function (list) {
-      var rel = (list || []).filter(function (x) { return !x.draft; })[0];
-      if (!rel) return;
-      var ver = rel.tag_name.replace(/^v/, '');
-      document.querySelectorAll('[data-version]').forEach(function (v) { v.textContent = ver; });
-      var find = function (re) { return (rel.assets || []).filter(function (a) { return re.test(a.name); })[0]; };
+      var rels = (list || []).filter(function (x) { return !x.draft; });
+      if (!rels.length) return;
+      document.querySelectorAll('[data-version]').forEach(function (v) { v.textContent = rels[0].tag_name.replace(/^v/, ''); });
+      var find = function (re) {
+        for (var i = 0; i < rels.length; i++) {
+          var a = (rels[i].assets || []).filter(function (x) { return re.test(x.name); })[0];
+          if (a) return { file: a, ver: rels[i].tag_name.replace(/^v/, '') };
+        }
+        return null;
+      };
       var files = { mac: find(/\.dmg$/i), win: find(/setup\.exe$/i), linux: find(/\.appimage$/i) };
       ['mac', 'win', 'linux'].forEach(function (k) {
         var f = files[k]; if (!f) return;
-        document.querySelectorAll('[data-link="' + k + '"]').forEach(function (a) { a.href = f.browser_download_url; });
-        var n = document.querySelector('[data-note="' + k + '"]'); if (n) n.textContent = 'Version ' + ver + ', ' + Math.round(f.size / 1048576) + ' MB';
+        document.querySelectorAll('[data-link="' + k + '"]').forEach(function (a) { a.href = f.file.browser_download_url; });
+        var n = document.querySelector('[data-note="' + k + '"]'); if (n) n.textContent = 'Version ' + f.ver + ', ' + Math.round(f.file.size / 1048576) + ' MB';
       });
       var mine = isMac ? files.mac : isWin ? files.win : isLinux ? files.linux : null;
       if (mine) document.querySelectorAll('[data-dl-label]').forEach(function (b) {
-        b.href = mine.browser_download_url; b.textContent = 'Download for ' + (isMac ? 'Mac' : isWin ? 'Windows' : 'Linux');
+        b.href = mine.file.browser_download_url; b.textContent = 'Download for ' + (isMac ? 'Mac' : isWin ? 'Windows' : 'Linux');
       });
     }).catch(function () {});
 })();

@@ -4,7 +4,8 @@
  * each input poll it counts the poll, notes the screen node and the date of the first news screen, and
  * prints the screen log when RECOMP_SCREEN_LOG is set) and the wrap of the message box (it counts open
  * boxes). Both only record. They do not change what the game does. The wrap also skips the box "CD Not
- * Required" (cd_box).
+ * Required" (cd_box) and the box "Database..cpp 7784" of a .lng file that does not fit the database
+ * (lng_count_box).
  *
  * A state of a screen counts only after an input poll 0x55f620 has run on that screen after the wait
  * started. The screen is then built and drawn and takes input (main loop 0x7fc7e0: build, draw, pump,
@@ -185,23 +186,40 @@ void waits_poll(void)
 }
 
 void o_005e8290(void);
-extern const uint32_t rt_site_cd_box_new, rt_site_cd_box_load;
+extern const uint32_t rt_site_cd_box_new, rt_site_cd_box_load, rt_site_lng_count_box;
 
 /* The box "CD Not Required" at the end of a new game (call 0x82a98b) and of a load (call 0x82e400). The
- * build uses no CD, so the box never shows. Both callers drop the return value of the box. The title is
- * checked too, so that another box at these calls still shows. */
+ * build uses no CD, so the box never shows. Both callers drop the return value of the box. Each call
+ * shows only this box: its title is langlib_sprintf 0x66f4e0 of the text 0xa81384 just before the call
+ * (0x82a95a, 0x82e3d1), so the return address alone finds it. The title is in the language of the game,
+ * "CD Non Richiesto" in Italian, so a check of the English title missed the other languages. */
 static int cd_box(void)
 {
-    uint32_t back = rd32(g_mem, cpu.esp), title = rt_arg(0);
-    return (back == rt_site_cd_box_new || back == rt_site_cd_box_load) && title &&
-           !strcmp((const char *)(g_mem + title), "CD Not Required");
+    uint32_t back = rd32(g_mem, cpu.esp);
+    return back == rt_site_cd_box_new || back == rt_site_cd_box_load;
 }
+
+/* The box "Database..cpp 7784" (call 0x5358b7 in database_load_language_names 0x5339a0). In a language
+ * other than English, the function reads the names of CM3_TEMP\<lang>.lng and first compares the counts
+ * in its header with the database (0x533e6a..0x533ec5). The .lng files of the game are those of 3.9.68,
+ * so every other database, and a save that holds 3.9.68 .lng copies, gave the box at each new game and
+ * load. On a difference the function closes the file, shows the box, sets 0xb67a34 to 0 and returns
+ * with no names loaded, so the names stay English. The skip keeps all of that except the box. The same
+ * call also shows "Database..cpp 7752" when the .lng file does not open (0x533c74, jump 0x533caa to
+ * 0x535897). That box still shows: the skip tests the line number, the last argument of 0x90d130 (0x1e68
+ * pushed at 0x535890, 0x1e48 at 0x533ca4), which is still on the stack at the call (argument 8). */
+static int lng_count_box(void) { return rd32(g_mem, cpu.esp) == rt_site_lng_count_box && rt_arg(8) == 0x1e68; }
 
 /* The message box of the game: its own loop draws it and waits for Ok. */
 RT_WRAP(005e8290, message_box)
 {
     if (cd_box()) {
         fprintf(stderr, "recomp: skipped the box CD Not Required\n");
+        rt_ret_cdecl(0);
+        return;
+    }
+    if (lng_count_box()) {
+        fprintf(stderr, "recomp: skipped the box Database..cpp 7784 (the .lng counts differ from the database)\n");
         rt_ret_cdecl(0);
         return;
     }

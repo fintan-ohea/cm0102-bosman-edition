@@ -138,6 +138,18 @@ _FPS = "if (%s) { if (rt_full_player_search(ebp)) goto L_7afcee; goto L_7afe6b; 
 INSNS[0x7AFC8D] = ("je 0x7afe6b", _FPS % "cc_e(F)")
 INSNS[0x7AFC9D] = ("jne 0x7afe6b", _FPS % "!cc_e(F)")
 INSNS[0x7AFCDF] = ("je 0x7afcf3", "if (cc_e(F)) { if (rt_full_player_search(ebp)) ebx = 1; goto L_7afcf3; }")
+# The limit (forum report of 2026-10-21, playersearch.c). The screen counts the players it shows in 16 bits, and
+# known players and scout lists still join after the extra ones stop, so a full list went above 32767 and the
+# screen said "1 player found (N filtered out)". The builder's reset of the list (0x7afbb3) resets the record of
+# extra rows, a known player that comes when the list is full takes the row of the last extra player (0x7afdda
+# reads the row, 0x7afe5e keeps the count), a player that does not join clears the pending extra (0x7afe6b),
+# and 0x7af160 passes at most 32767 players to the screen list (ebx at 0x7af467). Each one acts only with the
+# option on: with it off the slot is the count, nothing is replaced and ebx stays.
+INSNS[0x7AFBB3] = ("mov dword ptr [ebp + 0x1f6], esi", "W32(ebp + 0x1f6u, esi); rt_full_player_search_reset();")
+INSNS[0x7AFDDA] = ("mov eax, dword ptr [ebp + 0x1f6]", "eax = rt_full_player_search_slot(ebp);")
+INSNS[0x7AFE5E] = ("mov eax, dword ptr [ebp + 0x1f6]", "eax = R32(ebp + 0x1f6u) - rt_full_player_search_replaced();")
+INSNS[0x7AFE6B] = ("mov ebx, dword ptr [esp + 0x14]", "rt_full_player_search_skip(); ebx = R32(esp + 0x14u);")
+INSNS[0x7AF467] = ("mov eax, dword ptr [esp + 0x22c]", "ebx = rt_full_player_search_shown(ebx); eax = R32(esp + 0x22cu);")
 
 # The season core (0.6.0 slice 11): whole instructions of the year sites (seasons.py).
 assert not set(SEASON_INSNS) & set(INSNS) and not set(SEASON_PATCHES) & set(SEASON_INSNS)
@@ -162,3 +174,15 @@ from league_load import INSNS as LOAD_INSNS  # noqa: E402
 
 assert not set(LOAD_INSNS) & (set(INSNS) | set(PATCHES))
 INSNS.update(LOAD_INSNS)
+
+# A fix for the error box discipline..cpp 1149 of a ban release (discipline_ban.py): a lost nation index entry.
+from discipline_ban import INSNS as BAN_INSNS  # noqa: E402
+
+assert not set(BAN_INSNS) & (set(INSNS) | set(PATCHES))
+INSNS.update(BAN_INSNS)
+
+# Saves above 2 GB (0.6.0): unsigned file positions in ftell and the seek of a save part (save_size.py).
+from save_size import INSNS as SAVE_SIZE_INSNS  # noqa: E402
+
+assert not set(SAVE_SIZE_INSNS) & (set(INSNS) | set(PATCHES))
+INSNS.update(SAVE_SIZE_INSNS)

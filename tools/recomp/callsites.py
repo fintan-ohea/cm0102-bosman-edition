@@ -49,6 +49,10 @@ CALL_SITES = {
     # 0x828110 and of a load 0x82a9c0. Both callers drop the return value (0x82a990, 0x82e405).
     "cd_box_new": (0x82A98B, 0x5E8290),
     "cd_box_load": (0x82E400, 0x5E8290),
+    # No box Database..cpp 7784: the error box of database_load_language_names 0x5339a0 when the counts in
+    # the header of CM3_TEMP\<lang>.lng differ from the database (checks 0x533e6a..0x533ec5, the only
+    # jumps to 0x53585d). The caller drops the return value (0x5358bc).
+    "lng_count_box": (0x5358B7, 0x5E8290),
     # Foreign player colour (#47): the name of each row, the cell button of the squad list 0x456900 and the
     # widget create of the tactics screen 0x899ea0 (docs/research/2026-10-16-foreign-and-tactics-positions.md).
     "squad_name": (0x45BA84, 0x8040A0),

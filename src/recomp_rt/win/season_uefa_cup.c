@@ -33,6 +33,7 @@
 #include "season_cups.h"
 #include "season_uefa_league.h"
 #include "season_playoffs.h"
+#include "season_load.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1022,6 +1023,7 @@ RT_WRAP(0051fc00, cup_load)
         cpu.ecx = saved_ecx;
     }
     o_0051fc00();
+    if (!rt_unwinding && cpu.eax) season_load_clear_stages(obj);  /* load sweep: the slots after +0x30 */
 }
 
 /* Cup::record_season_history 0x519a90 (slot 12): a UEFA Cup with groups records its season from the knockout

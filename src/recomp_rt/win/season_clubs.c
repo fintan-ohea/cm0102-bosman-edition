@@ -521,6 +521,29 @@ static void move_clubs(int season)
             left++;
         }
     }
+    /* A shell: a club with no nation (+0x53 NULL) and fewer than 15 squad slots (+0xd7, 50 slots) in a division
+     * of a nation leaves it. VIRTUAL_STAFF::top_up 0x90dae0 gives a club with no nation no virtual players
+     * (0x90db33..0x90db38), and fill_fixture_squads 0x90d2f0 stops at virtual_staff.cpp 195 (0x90d4bc) when a club
+     * of a fixture has fewer than 15 filled slots after the top-up (0x90d45f..0x90d465). The fill below never
+     * takes such a club (it takes clubs of the division's nation only), so its place goes to a real club. A club
+     * with a nation and few players gets virtual players and stays. */
+    int shells = 0;
+    for (int i = 0; i < count; i++) {
+        Club *c = &club[i];
+        if (c->kept || c->national || c->nation || !c->div) continue;
+        if (c->div < comps || c->div >= comps + (uint32_t)ncomps * COMP_SIZE) continue;
+        Division *d = &div[(c->div - comps) / COMP_SIZE];
+        if (d->spare || !d->nation) continue;
+        int slots = 0;
+        for (uint32_t j = 0; j < 50; j++) slots += rd32(g_mem, c->at + 0xd7u + 4 * j) != 0;
+        if (slots >= 15) continue;
+        c->div = 0;
+        shells++;
+        if (log) fprintf(stderr, "recomp: club moves: %s has no nation and %d squad slots: it leaves %s\n",
+                         win_str(c->at + CLUB_NAME), slots, d->name);
+    }
+    if (shells) fprintf(stderr, "recomp: club moves: %d clubs with no nation and no squad leave their division\n",
+                        shells);
     /* The divisions to cut or fill: those of the nations with a list or with a division of another count, from
      * the highest rank down. */
     int norder = 0;

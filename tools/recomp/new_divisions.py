@@ -27,14 +27,21 @@ PATCHES.update({
     0x64B67B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
     0x64F82B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
     0x653A9B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
+    # The two-group Serie C2 of 2011/12 to 2013/14 with the extra division flag (Q529): C2/B's table (0x657f5b, the
+    # object in edi from 0x657f59) holds up to 20 too.
+    0x657F5B: (0x426, "rt_ita_table_bytes(edi, 0x426u)"),
 })
 
 INSNS = {
     0x653AA2: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2a_clubs(edi, 0x12u));"),
     # C2/B and C2/C end in the era; with the flag their objects exist and keep one club (create_fixtures needs one).
+    # In the two-group Serie C2 (2011/12 to 2013/14, Q529) C2/B takes the clubs of its division and C2/C ends.
     0x657F62: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2_end_clubs(edi, 0x12u));"),
     0x65C0F2: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2_end_clubs(edi, 0x12u));"),
     0x6418D5: ("mov ecx, dword ptr [eax + edx*4]", "ecx = rt_ita_tier_c2(R32(eax + edx * 4u));"),
+    # The last tier call of both blocks (C2/C after 0x641913, or C1/B): in a two-group C2 season (Q529) the ended
+    # C2/C gives C2/B again (rt_ita_tier_last).
+    0x641936: ("mov ecx, dword ptr [edx + eax*4]", "ecx = rt_ita_tier_last(R32(edx + eax * 4u));"),
     # ItaCup::select_entrants 0x63faf0 takes the lower places from the clubs whose last division was C1/A or C1/B
     # (0x63fc6f..0x63fc7f by positions 3 to 5; 0x63fcef..0x63fcff from position 5 up, with no end, 0x63fd22..0x63fd30).
     # In the Serie C era group C (C2/A) counts too, so the 32 places fill and the second loop ends: the compare with

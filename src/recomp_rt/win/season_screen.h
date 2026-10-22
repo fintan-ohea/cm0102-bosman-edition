@@ -28,13 +28,14 @@ void season_screen_database_text(char *out, size_t room);
 const char *season_screen_credit(const char *name);
 
 /* The changing rules switch of the next new game, on the Choose Season screen. choice is -1 until the player
- * clicks it: then the option changing_rules applies. on gives the value that the screen and the season strip
+ * clicks it: then the option changing_rules applies. on gives the value that the screen and the top row
  * of Setup Game show. */
 int season_screen_rules_choice(void);
 int season_screen_rules_on(void);
+void season_screen_set_rules(int on);           /* the right button of Setup Game's top row (database.c) */
 
 /* The widget draw wrap (names.c, through views_widget_drawn) calls this after the game draws widget w: the
- * frame of the season strip of Setup Game (database.c). */
+ * value of the changing rules button of Setup Game (database.c). */
 void setup_widget_drawn(uint32_t w);
 
 /* The build function of the Extras screen of Setup Game (database.c), for the wait state "extras". */

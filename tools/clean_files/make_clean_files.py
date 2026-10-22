@@ -18,15 +18,22 @@ With --check, the tool compares OUT_DIR with the manifest and changes nothing.
 
 With --data-3960, the tool makes only the 3.9.60 data set (2001/02 data): the database files of the
 free release (group "CM3 Data" of data1.cab) that the 3.9.68 patch replaces, that is the *.dat files
-of PATCH_FILES. DATA_DIR must not exist. The clean files and their manifest do not change. The
-folder holds no other file, because the game reads every other Data file from the clean files. Its
+of PATCH_FILES, and the ten .lng files of the same group (the translated names of clubs, nations,
+cities, comps and stadiums). DATA_DIR must not exist. The clean files and their manifest do not change.
+The folder holds no other file, because the game reads every other Data file from the clean files. Its
 manifest is tools/clean_files/manifest-3960.tsv. The runtime reads it with RECOMP_DATA_DIR=DATA_DIR.
 
 With --data-3965, the tool makes only the 3.9.65 data set (2001/02 data, December update): the same
-20 database files from the official 3.9.65 patch (cm0102v3965.exe, archived at
+20 database files and the ten .lng files from the official 3.9.65 patch (cm0102v3965.exe, archived at
 web.archive.org/web/20030430004731id_/http://www3.sigames.com/download/official/CM%2001-02/cm0102v3965.exe).
 Its update.dat holds 47 sizes, then the files. Entries 14 to 33 are the database files in the order of
-DATA_SET_FILES. Entry 45 has a size but no bytes in update.dat. Its manifest is
+DATA_SET_FILES. Entries 34 to 43 are the .lng files in the order of UPDATE_3965_LNG. Entry 45 has a size
+but no bytes in update.dat.
+
+Why the .lng files: in a language other than English, database_load_language_names 0x5339a0 compares the
+counts in the header of <lang>.lng with the database. The 3.9.68 .lng files fit only the 3.9.68 database
+(6,682 cities, 8,917 stadiums). The 3.9.60 files hold 5,418 cities and 7,099 stadiums, the 3.9.65 files
+5,464 and 7,161, the counts of their own databases. Its manifest is
 tools/clean_files/manifest-3965.tsv. docs/research/2026-10-15-data-set-inventory.md has the facts.
 
 A download holds each extra data set in the game folder as DATA_SET_FOLDERS names it. The option
@@ -177,6 +184,7 @@ def apply_patch(work, out):
 # The database files: the *.dat files that the patch replaces. The 3.9.60 data set is these files
 # from the free release.
 DATA_SET_FILES = [name for folder, name in PATCH_FILES if folder == "Data" and name.endswith(".dat")]
+LNG_FILES = [name for folder, name in PATCH_FILES if folder == "Data" and name.endswith(".lng")]
 DEFAULT_MANIFEST_3960 = os.path.join(HERE, "manifest-3960.tsv")
 DEFAULT_MANIFEST_3965 = os.path.join(HERE, "manifest-3965.tsv")
 # The folder of each extra data set in the game folder of a download (src/recomp_rt/win/files.c).
@@ -187,6 +195,10 @@ PATCH_3965_SHA256 = "3e6c1a248eaf7602abfa2e397fb0571a00ec8ac27ca03d8b91db840c2fc
 UPDATE_3965_COUNT = 47
 UPDATE_3965_FIRST_DATA = 14
 UPDATE_3965_EMPTY = 45      # a size with no bytes in update.dat
+UPDATE_3965_FIRST_LNG = 34
+# The language of entries 34 to 43, found by the names they share with the 3.9.68 .lng files.
+UPDATE_3965_LNG = ["eng.lng", "esp.lng", "fra.lng", "ita.lng", "nor.lng", "por.lng", "swe.lng", "hol.lng",
+                   "ger.lng", "dan.lng"]
 
 
 def make_data_3960(out, manifest):
@@ -205,12 +217,12 @@ def make_data_3960(out, manifest):
                 found[name.lower()] = os.path.join(d, name)
         stage = os.path.join(work, "out")
         os.mkdir(stage)
-        for name in DATA_SET_FILES:
+        for name in DATA_SET_FILES + LNG_FILES:
             if name.lower() not in found:
                 fail(f"group CM3 Data of data1.cab has no {name}")
             os.replace(found[name.lower()], os.path.join(stage, name))
         os.replace(stage, out)
-    title = "3.9.60 data set: the database files of CM0102.iso. Made by make_clean_files.py --data-3960."
+    title = "3.9.60 data set: the database and .lng files of CM0102.iso. Made by make_clean_files.py --data-3960."
     return finish_data_set(out, manifest, title)
 
 
@@ -242,8 +254,12 @@ def make_data_3965(patch, out, manifest):
             for i, name in enumerate(DATA_SET_FILES):
                 with open(os.path.join(stage, name), "wb") as g:
                     g.write(f.read(sizes[UPDATE_3965_FIRST_DATA + i]))
+            f.seek(UPDATE_3965_COUNT * 4 + sum(sizes[:UPDATE_3965_FIRST_LNG]))
+            for i, name in enumerate(UPDATE_3965_LNG):
+                with open(os.path.join(stage, name), "wb") as g:
+                    g.write(f.read(sizes[UPDATE_3965_FIRST_LNG + i]))
         os.replace(stage, out)
-    title = "3.9.65 data set: the database files of cm0102v3965.exe. Made by make_clean_files.py --data-3965."
+    title = "3.9.65 data set: the database and .lng files of cm0102v3965.exe. Made by make_clean_files.py --data-3965."
     return finish_data_set(out, manifest, title)
 
 

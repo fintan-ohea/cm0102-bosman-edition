@@ -41,6 +41,7 @@
  * runs there, and the wraps test season_game(). RECOMP_CUPS=off turns this kind off too (a test switch of
  * slice 21). */
 #include "win.h"
+#include "season_records.h"
 #include "season.h"
 #include "season_change.h"
 #include "season_cups.h"
@@ -332,6 +333,7 @@ static void log_fixture_years(const char *when)
 void o_005aa680(void);
 RT_WRAP(005aa680, cup_breaks_add_fixture)
 {
+    season_records_fixture_log(rt_arg(0), rd32(g_mem, cpu.esp));     /* test log of slice 15b's fix */
     if (logging() && season_code_on()) {
         uint32_t f = rt_arg(0);
         int year = f >= 0x10000u && f < 0xfff00000u ? (int16_t)rd16(g_mem, f + 0x28) : 0;

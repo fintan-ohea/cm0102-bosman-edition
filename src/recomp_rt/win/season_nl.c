@@ -31,6 +31,7 @@
 #include "season_change.h"
 #include "season_comps.h"
 #include "season_nl.h"
+#include "season_wcq26.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -196,6 +197,19 @@ int season_nl_nation_of_club(uint32_t club)
     return id < nation_count() ? id : -1;
 }
 
+/* 1 when the nation has a continent (nation +0x71). The data keeps nations with no continent (-1 or -2), such as
+ * Martinique, Guadeloupe, Bonaire, French Guiana, Sint Maarten and Netherlands Antilles in the October 2022
+ * database; NationalTeams gives them no squad sizes (0x775520 reads 0 for each kind), so the top-up 0x90dae0 gives
+ * their national team no players and init_match 0x6b7f20 stops at match_eng.cpp 612 or 652 (fewer than 11 at
+ * 0x6b89be): Martinique in its first CONCACAF Nations League match of 2023/24 in a 2022 start. The field is a
+ * pointer after the load's id pass and an id before it (the draw at game creation). */
+int season_nl_nation_can_play(int id)
+{
+    if (id < 0 || id >= nation_count()) return 0;
+    uint32_t c = rd32(g_mem, nation_at(id) + NATION_CONTINENT);
+    return readable(c) || (int32_t)c >= 0;
+}
+
 /* The national team of a nation: national_team 0x53b3d0 gives the club of the nation's row, which in some
  * season databases is an empty club with no nation (docs/research/2026-10-18-international.md, "Finals that
  * start before their qualifying ends"). Then the national team rows (from clubs - 2 * nations, 0x53b4c2) are
@@ -232,11 +246,35 @@ static int name_matches(const char *names, const char *data)
     return 0;
 }
 
+/* The nation of a table name "Old/New": the latest name first. A database can hold the old record and a record
+ * with the new name (December 2025: nation 66 "FYR of Macedonia", with no clubs and no players, and nation 229
+ * "North Macedonia"), and a first match by id took the old record: its national team had no squad, and the first
+ * 2026-27 match stopped at virtual_staff.cpp 195 (VIRTUAL_STAFF::fill_fixture_squads 0x90d2f0, box at 0x90d4c1:
+ * fewer than 15 filled squad slots of +0xd7 after the virtual players). A database with the old name only (and
+ * slice 27's rename, season_intl.c) still finds it by the earlier name. */
 static int nation_by_name(const char *names)
 {
-    for (int id = 0; id < nation_count(); id++)
-        if (name_matches(names, win_str(nation_at(id) + NATION_NAME))) return id;
-    return -1;
+    char buf[128], *alt[8];
+    int n = 0;
+    snprintf(buf, sizeof buf, "%s", names);
+    season_change_latin1(buf);
+    for (char *p = buf; p && *p && n < 8;) {
+        char *slash = strchr(p, '/');
+        if (slash) *slash = 0;
+        alt[n++] = p;
+        p = slash ? slash + 1 : NULL;
+    }
+    /* A nation that can play first: the season databases from 2013 keep the dissolved Netherlands Antilles (no
+     * continent) beside Curaçao, so "Curaçao/Netherlands Antilles" takes Curaçao there and the Antilles only in
+     * the data that has no Curaçao. */
+    int any = -1;
+    for (int k = n - 1; k >= 0; k--)
+        for (int id = 0; id < nation_count(); id++)
+            if (!strcmp(alt[k], win_str(nation_at(id) + NATION_NAME))) {
+                if (season_nl_nation_can_play(id)) return id;
+                if (any < 0) any = id;
+            }
+    return any;
 }
 
 /* ---- Editions ---- */
@@ -500,6 +538,11 @@ static int real_entrants(const SeasonNlEdition *e, Entrant *out)
                                    e->edition, t->nation);
             continue;
         }
+        if (!season_nl_nation_can_play(id)) {
+            if (logging()) fprintf(stderr, "recomp: season nl: %s %s: %s has no continent in the data\n", e->confed,
+                                   e->edition, t->nation);
+            continue;
+        }
         out[n++] = (Entrant){id, t->league, t->group, 0};
     }
     return n;
@@ -576,7 +619,7 @@ static int entrants(uint32_t self, const SeasonNlEdition *e, Entrant *out)
     int next[NL_MAX_NATIONS], k = 0;
     if (!season_nl_next_leagues(&from, e, rows, n, next)) return real_entrants(e, out);
     for (int i = 0; i < n; i++) {
-        if (left_out(e, rows[i].nation)) continue;
+        if (left_out(e, rows[i].nation) || !season_nl_nation_can_play(rows[i].nation)) continue;
         out[k++] = (Entrant){rows[i].nation, next[i], 0, 0};
         if (logging() && next[i] != rows[i].league)
             fprintf(stderr, strcmp(e->confed, "UEFA") ? "recomp: season nl: %s: %s moves from league %c to %c\n"
@@ -966,6 +1009,12 @@ static uint32_t build_vtable(const SeasonCompDef *d)
  * the constructor's year, rounded to the Euro cycle from year - 1, is not below it and the 2002 history of
  * 0x57d01a does not run), then the vtable copy, the year, the stage array and the rules of the edition. Load:
  * the constructor reads the object from its file (0x57cf21); the stage bytes follow the saved stage count. */
+/* 1 while nl_make runs the Euro qualifying constructor: its epilogue (0x57d03b) calls rt_euroq_rules while the
+ * object still has the class's vtable, so the loaded places +0xbe and +0xbf of a Nations League would take the
+ * Euro qualifying's (load sweep). */
+static int in_ctor;
+int season_nl_in_ctor(void) { return in_ctor; }
+
 static uint32_t nl_make(const SeasonCompDef *d, uint32_t rec, int year, int loading)
 {
     NlConf *c = conf_of_def(d);
@@ -976,7 +1025,9 @@ static uint32_t nl_make(const SeasonCompDef *d, uint32_t rec, int year, int load
     uint32_t obj = v ? call_cdecl(GAME_NEW, 1, na) : 0;
     if (rt_unwinding || !readable(obj)) return 0;
     uint32_t ca[2] = {loading ? (uint32_t)year : (uint32_t)e->year, rec};
+    in_ctor = 1;
     obj = call_this(QUAL_CTOR, obj, 2, ca);
+    in_ctor = 0;
     if (rt_unwinding || !readable(obj)) return 0;
     wr32(g_mem, obj, v);
     if (loading) {
@@ -1016,7 +1067,13 @@ void o_00669ae0(void);
 RT_WRAP(0057f600, nl_collect_entrants)
 {
     if (!is_nl(cpu.ecx)) {
+        uint32_t self = cpu.ecx;
         o_0057f600();
+        if (!rt_unwinding) {
+            uint32_t eax = cpu.eax;
+            season_wcq26_log_pool(self, "euro qualifying (original)");      /* O188 test log */
+            cpu.eax = eax;
+        }
         return;
     }
     rt_ret_stdcall(1, 0);

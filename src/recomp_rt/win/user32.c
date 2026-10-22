@@ -85,50 +85,139 @@ static void post_mouse(uint32_t msg, int x, int y)
     post(msg, (uint32_t)buttons, mouse_lparam());
 }
 
-/* The scaling of the picture to the window. SDL_RenderSetLogicalSize keeps its shape, with bars at
- * the sides or at the top and bottom. With the option sharp_picture, each pixel of the game is drawn
- * as a block of whole pixels (SDL_RenderSetIntegerScale) when winscale_whole (winscale.h) says so.
- * Otherwise the picture fills the window and each pixel takes the nearest whole pixels. Without the
- * option, the scaling stays as in 0.1.0 (SDL's default filter). */
-#ifdef _WIN32
-#define WINDOWS_SCALE 1
-#else
-#define WINDOWS_SCALE 0
-#endif
+/* The scaling of the picture to the window (winscale.h). SDL_RenderSetLogicalSize keeps the shape, with
+ * bars at the sides or at the top and bottom only where the shape of the window differs, and maps the
+ * mouse back to the picture. The picture fills the window at any size, up or down. With the option
+ * sharp_picture, a fit above 1 goes through the work texture: the picture is drawn into it with nearest
+ * pixels at a whole number of times its size (work_k), and the work texture goes to the window with
+ * linear filtering. Otherwise the picture goes to the window with linear filtering. */
+static SDL_Texture *work;
+static int work_k = 1, work_failed_k;             /* work_failed_k: a size that SDL could not make */
+
 static void update_scaling(void)
 {
-    if (!renderer || !options_bool(OPT_SHARP_PICTURE)) return;
-    int ow = 0, oh = 0;
-    if (SDL_GetRendererOutputSize(renderer, &ow, &oh) || ow <= 0 || oh <= 0) return;
-    SDL_bool on = winscale_whole(ow, oh, (int)rt_screen_w, (int)rt_screen_h, WINDOWS_SCALE) ? SDL_TRUE : SDL_FALSE;
-    if (SDL_RenderGetIntegerScale(renderer) != on) {
-        SDL_RenderSetIntegerScale(renderer, on);
+    if (!renderer || !texture) return;
+    SDL_RenderSetIntegerScale(renderer, SDL_FALSE);
+    int ow = 0, oh = 0, k = 1;
+    SDL_RendererInfo ri;
+    if (SDL_GetRendererInfo(renderer, &ri)) ri.max_texture_width = ri.max_texture_height = 0;
+    if (options_bool(OPT_SHARP_PICTURE) && !SDL_GetRendererOutputSize(renderer, &ow, &oh))
+        k = winscale_work(ow, oh, (int)rt_screen_w, (int)rt_screen_h, ri.max_texture_width, ri.max_texture_height);
+    if (k != work_k || (k > 1 && !work)) {
+        if (work) SDL_DestroyTexture(work);
+        work = NULL;
+        if (k > 1 && k != work_failed_k) {
+            work = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
+                                     (int)rt_screen_w * k, (int)rt_screen_h * k);
+            if (!work) {
+                fprintf(stderr, "recomp: work texture %dx: %s\n", k, SDL_GetError());
+                work_failed_k = k;
+            }
+            else SDL_SetTextureScaleMode(work, SDL_ScaleModeLinear);
+        }
+        work_k = work ? k : 1;
+        if (k == 1) work_failed_k = 0;
         win_screen_dirty = 1;
     }
+    SDL_SetTextureScaleMode(texture, work ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
 }
 
-/* The option sharp_picture changed in the options box (options_screen.c): the texture filter and the
- * whole-pixel scale as at window create, at once. Off gives back the filter that the texture had. */
-static SDL_ScaleMode default_scale_mode = SDL_ScaleModeNearest;
+/* The way the picture is scaled now, for the display report. */
+void win_picture_way(char *out, size_t n)
+{
+    if (work) snprintf(out, n, "sharp: %d times with nearest pixels, then linear", work_k);
+    else snprintf(out, n, "linear");
+}
+
+/* The option sharp_picture changed in the options box (options_screen.c): at once. */
 void win_sharp_picture_changed(void)
 {
-    if (!renderer || !texture) return;
-    if (options_bool(OPT_SHARP_PICTURE)) {
-        SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
-        update_scaling();
-    } else {
-        SDL_SetTextureScaleMode(texture, default_scale_mode);
-        SDL_RenderSetIntegerScale(renderer, SDL_FALSE);
-    }
+    update_scaling();
     win_screen_dirty = 1;
 }
 
-/* Full screen on and off: the desktop size, with the picture scaled as in a window. */
+/* The usable part of the window's screen, less the window's borders. 0 when SDL does not know it. When the
+ * title bar size is unknown (SDL gives it on Windows and Linux), 32 rows are kept for it. */
+static int usable_area(SDL_Rect *r, int *left, int *top, int *right, int *bottom)
+{
+    int d = SDL_GetWindowDisplayIndex(window);
+    if (d < 0 || SDL_GetDisplayUsableBounds(d, r)) return 0;
+    *top = *left = *bottom = *right = 0;
+    if (SDL_GetWindowBordersSize(window, top, left, bottom, right) || *top + *bottom == 0) *top = 32;
+    return 1;
+}
+
+/* The size of a new window, which is also the smallest size (winfit.h): the picture's size, in real pixels
+ * on Windows (with display scaling at 125 % or 150 % the window then shows it at scale 1), in points on a
+ * Mac and on Linux. Never larger than the usable part of the screen, with the same shape. */
+static void picture_window_size(int *out_w, int *out_h)
+{
+    int w = (int)rt_screen_w, h = (int)rt_screen_h;
+#ifdef _WIN32
+    int pw = 0, ph = 0, lw = 0, lh = 0;
+    SDL_GetWindowSizeInPixels(window, &pw, &ph);
+    SDL_GetWindowSize(window, &lw, &lh);
+    if (pw > lw && lw > 0 && lh > 0) {
+        w = winfit_points(w, pw, lw);
+        h = winfit_points(h, ph, lh);
+    }
+#endif
+    *out_w = w;
+    *out_h = h;
+    SDL_Rect r;
+    int left, top, right, bottom;
+    if (usable_area(&r, &left, &top, &right, &bottom))
+        winfit_size(w, h, r.w - left - right, r.h - top - bottom, out_w, out_h);
+}
+
+/* The smallest window (Max, 2026-10-21): the size of a new window. A smaller window, for example a
+ * remembered one, grows to it. Set again when the window moves to another screen. */
+static void set_smallest_window(void)
+{
+    int w, h;
+    picture_window_size(&w, &h);
+    int cw = 0, ch = 0;
+    SDL_GetWindowMinimumSize(window, &cw, &ch);
+    if (cw == w && ch == h) return;
+    SDL_SetWindowMinimumSize(window, w, h);
+    fprintf(stderr, "recomp: smallest window %dx%d\n", w, h);
+}
+
+/* 1 when the window's screen lists an 800x600 mode. */
+static int screen_has_800x600(SDL_DisplayMode *mode)
+{
+    int d = SDL_GetWindowDisplayIndex(window);
+    for (int i = 0, n = d < 0 ? 0 : SDL_GetNumDisplayModes(d); i < n; i++) {
+        SDL_DisplayMode m;
+        if (SDL_GetDisplayMode(d, i, &m) || m.w != 800 || m.h != 600) continue;
+        if (getenv("RECOMP_NO_MODE_CHANGE")) return 0;    /* for tests: do not change the screen of the person */
+        *mode = m;
+        return 1;
+    }
+    return 0;
+}
+
+/* Full screen on: in classic mode a change of the screen to 800x600 when the screen lists that mode, as
+ * the original does; the monitor or the graphics chip then scales it. Otherwise the desktop size, with the
+ * picture filled as in a window. Returns the SDL result. */
+static int full_screen_on(void)
+{
+    SDL_DisplayMode m;
+    if (winscale_mode_change((int)rt_screen_w, (int)rt_screen_h, screen_has_800x600(&m))) {
+        if (!SDL_SetWindowDisplayMode(window, &m) && !SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN)) {
+            fprintf(stderr, "recomp: full screen 800x600 mode\n");
+            return 0;
+        }
+        fprintf(stderr, "recomp: full screen 800x600 mode: %s\n", SDL_GetError());
+    }
+    return SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+}
+
 static void toggle_full_screen(void)
 {
     if (!window) return;
     int full = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
-    if (SDL_SetWindowFullscreen(window, full ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP))
+    if (full ? SDL_SetWindowFullscreen(window, 0) : full_screen_on())
         fprintf(stderr, "recomp: full screen: %s\n", SDL_GetError());
     update_scaling();
     win_screen_dirty = 1;
@@ -183,40 +272,65 @@ static int window_on_screen(int x, int y, int w, int h)
     return 0;
 }
 
-/* A new window (not a remembered one) that does not fit in the usable part of its screen, for example
- * a 1280x800 window on a small laptop screen, gets smaller with the same shape and goes to the middle (winfit.h). The
- * window opens hidden and shows after this. When the title bar size is unknown (SDL gives it on Windows
- * and Linux), 32 rows are kept for it. On Windows with display scaling (125 %, 150 %), the window first
- * gets the picture's size in real pixels, so that the picture shows at scale 1 with no bars, as at 100 %. */
-static void fit_new_window(int w, int h)
+/* A new window (not a remembered one) gets the size of picture_window_size: for example a 1280x800 window
+ * on a small laptop screen gets smaller with the same shape and goes to the middle. The window opens
+ * hidden and shows after this. */
+static void fit_new_window(int made_w, int made_h)
 {
-    int made_w = w, made_h = h;
-#ifdef _WIN32
-    int pw = 0, ph = 0, lw = 0, lh = 0;
-    SDL_GetWindowSizeInPixels(window, &pw, &ph);
-    SDL_GetWindowSize(window, &lw, &lh);
-    if (pw > lw && lw > 0 && lh > 0) {
-        w = winfit_points(w, pw, lw);
-        h = winfit_points(h, ph, lh);
-    }
-#endif
-    SDL_Rect r;
-    int d = SDL_GetWindowDisplayIndex(window);
-    if (d < 0 || SDL_GetDisplayUsableBounds(d, &r)) {
-        if (w != made_w || h != made_h) SDL_SetWindowSize(window, w, h);
-        SDL_ShowWindow(window);
-        return;
-    }
-    int top = 0, left = 0, bottom = 0, right = 0;
-    if (SDL_GetWindowBordersSize(window, &top, &left, &bottom, &right) || top + bottom == 0) top = 32;
     int fw, fh;
-    winfit_size(w, h, r.w - left - right, r.h - top - bottom, &fw, &fh);
+    picture_window_size(&fw, &fh);
     if (fw != made_w || fh != made_h) {
         SDL_SetWindowSize(window, fw, fh);
-        SDL_SetWindowPosition(window, r.x + left + (r.w - left - right - fw) / 2, r.y + top + (r.h - top - bottom - fh) / 2);
-        fprintf(stderr, "recomp: window fitted to %dx%d in %dx%d\n", fw, fh, r.w, r.h);
+        SDL_Rect r;
+        int left, top, right, bottom;
+        if (usable_area(&r, &left, &top, &right, &bottom))
+            SDL_SetWindowPosition(window, r.x + left + (r.w - left - right - fw) / 2,
+                                  r.y + top + (r.h - top - bottom - fh) / 2);
+        fprintf(stderr, "recomp: window fitted to %dx%d\n", fw, fh);
     }
     SDL_ShowWindow(window);
+}
+
+/* The widescreen hint (Max, 2026-10-21): on a screen less than 800 real pixels high, widescreen shows
+ * smaller than its own size and classic suits the screen better. The height is that of the desktop mode
+ * of the window's screen (real pixels on Windows, points on a Mac). RECOMP_TEST_SCREEN_H gives a height
+ * for tests. */
+int win_short_screen(void)
+{
+    const char *test = getenv("RECOMP_TEST_SCREEN_H");
+    const char *driver = SDL_GetCurrentVideoDriver();
+    if (!test && driver && !strcmp(driver, "dummy")) return 0;   /* the test runs: no screen, no hint */
+    int h = test ? atoi(test) : 0;
+    SDL_DisplayMode m;
+    int d = window ? SDL_GetWindowDisplayIndex(window) : -1;
+    if (!test && d >= 0 && !SDL_GetDesktopDisplayMode(d, &m)) h = m.h;
+    return winscale_short_screen((int)rt_screen_w, h);
+}
+
+/* The hint box shows once: hints.txt in the user folder, beside window.txt, keeps that it showed. It is
+ * not an option, so it is not in settings.txt. */
+static void short_screen_hint(void)
+{
+    if (!win_short_screen()) return;
+    char path[1100];
+    snprintf(path, sizeof path, "%s/hints.txt", win_user_dir);
+    FILE *f = host_fopen(path, "r");
+    char line[64] = "";
+    if (f) {
+        if (!fgets(line, sizeof line, f)) line[0] = 0;
+        fclose(f);
+    }
+    if (!strncmp(line, "short_screen_hint = shown", 25)) return;
+    fprintf(stderr, "recomp: short screen hint\n");
+    f = host_fopen(path, "w");
+    if (f) {
+        fprintf(f, "short_screen_hint = shown\n");
+        fclose(f);
+    }
+    if (!getenv("RECOMP_NO_BOX"))
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Screen size",
+                                 "Your screen is less than 800 pixels high. Classic mode fits it better. "
+                                 "Choose it in Game Options, Display mode, then start the game again.", window);
 }
 
 /* The window. CM0102_VERSION comes from the CMake project version. */
@@ -244,9 +358,9 @@ void win_video_init(void)
                               SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | (remembered ? 0 : SDL_WINDOW_HIDDEN));
     if (!window) rt_fatal("SDL_CreateWindow: %s", SDL_GetError());
     if (!remembered) fit_new_window(w, h);
+    set_smallest_window();
     note_windowed();
-    if (full && SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP))
-        fprintf(stderr, "recomp: full screen: %s\n", SDL_GetError());
+    if (full && full_screen_on()) fprintf(stderr, "recomp: full screen: %s\n", SDL_GetError());
     fprintf(stderr, "recomp: window opened %d %d %d %d %d\n", win_x, win_y, win_w, win_h, full);
     renderer = SDL_CreateRenderer(window, -1, 0);
     if (!renderer) renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
@@ -255,24 +369,41 @@ void win_video_init(void)
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING,
                                 (int)rt_screen_w, (int)rt_screen_h);
     if (!texture) rt_fatal("SDL_CreateTexture: %s", SDL_GetError());
-    SDL_GetTextureScaleMode(texture, &default_scale_mode);
-    if (options_bool(OPT_SHARP_PICTURE)) SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
     update_scaling();
     SDL_StartTextInput();
     opened_at = SDL_GetTicks64();
     display_report_event("window opened");
     char report[1100];
     display_report_write("at start", report, sizeof report, NULL);
+    short_screen_hint();
+}
+
+/* The frame into the window's back buffer, without the present. */
+static int draw_frame(void)
+{
+    uint32_t px = win_primary_pixels();
+    if (!renderer || !px) return 0;
+    SDL_UpdateTexture(texture, NULL, g_mem + px, (int)rt_screen_w * 2);
+    if (work && !SDL_SetRenderTarget(renderer, work)) {
+        /* The target has the size of the work texture and scale 1; SDL gives back the window's view after. */
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderSetScale(renderer, (float)work_k, (float)work_k);
+        names_draw(renderer);
+        SDL_SetRenderTarget(renderer, NULL);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, work, NULL, NULL);
+    } else {
+        if (work) SDL_SetTextureScaleMode(texture, SDL_ScaleModeLinear);   /* the target failed: no uneven letters */
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        names_draw(renderer);
+    }
+    return 1;
 }
 
 static void present_now(void)
 {
-    uint32_t px = win_primary_pixels();
-    if (!renderer || !px) return;
-    SDL_UpdateTexture(texture, NULL, g_mem + px, (int)rt_screen_w * 2);
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
-    names_draw(renderer);
+    if (!draw_frame()) return;
     SDL_RenderPresent(renderer);
     win_screen_dirty = 0;
     last_present = SDL_GetTicks64();
@@ -299,22 +430,22 @@ void win_dump_screen(const char *path)
     SDL_FreeSurface(s);
 }
 
-/* The window as shown, after the scaling, to a BMP file. */
+/* The window as shown, after the scaling, to a BMP file. The read comes before the present: after it, the
+ * back buffer can be empty (Metal on a Mac). */
 static void shot_window(const char *path)
 {
     int w = 0, h = 0;
-    if (!renderer || SDL_GetRendererOutputSize(renderer, &w, &h)) return;
+    if (!renderer || SDL_GetRendererOutputSize(renderer, &w, &h) || !draw_frame()) return;
     SDL_Surface *s = SDL_CreateRGBSurfaceWithFormat(0, w, h, 24, SDL_PIXELFORMAT_RGB24);
     if (!s) return;
     /* The read covers the whole output, with the bars: the logical size is off for it. */
-    SDL_bool whole = SDL_RenderGetIntegerScale(renderer);
     SDL_RenderSetLogicalSize(renderer, 0, 0);
     int bad = SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGB24, s->pixels, s->pitch);
     SDL_RenderSetLogicalSize(renderer, (int)rt_screen_w, (int)rt_screen_h);
-    SDL_RenderSetIntegerScale(renderer, whole);
     if (bad || SDL_SaveBMP(s, path)) fprintf(stderr, "recomp: cannot save %s: %s\n", path, SDL_GetError());
     else fprintf(stderr, "recomp: window (%dx%d) saved to %s\n", w, h, path);
     SDL_FreeSurface(s);
+    present_now();
 }
 
 /* A click of the left button for a key (click_for_key). The key posts a move to the place and a
@@ -329,6 +460,19 @@ static struct {
     int polls;                            /* input polls since the down went into the game */
     uint64_t at;
 } key_click;
+
+/* The same rule for a click of RECOMP_SCRIPT (test runs only): its up step waits until the input poll has run
+ * once with the down in the game, or SCRIPT_CLICK_LONGEST ms. Under a slow emulation (the Windows build under
+ * wine in an emulated container) one frame took longer than the 100 ms from the down to the up, the game took
+ * both in one poll and the button did not react. On a normal machine the poll runs within the 100 ms, so the
+ * up keeps its time. */
+#define SCRIPT_CLICK_LONGEST 10000u
+static struct {
+    int on;
+    uint32_t down_at;
+    int polls;
+    uint64_t at;
+} script_click;
 
 static int click_for_key(int x, int y)
 {
@@ -566,6 +710,22 @@ static SDL_Keycode swallow_key = SDLK_UNKNOWN;    /* a key that did the work of 
 static void handle_event(SDL_Event *e)
 {
     switch (e->type) {
+    case SDL_RENDER_TARGETS_RESET:            /* Direct3D after a lost device, for example Alt+Tab from the 800x600 mode */
+        win_screen_dirty = 1;
+        break;
+    case SDL_RENDER_DEVICE_RESET:             /* every texture is gone: make them again */
+        fprintf(stderr, "recomp: render device reset\n");
+        if (work) SDL_DestroyTexture(work);
+        work = NULL;
+        work_k = 1;
+        work_failed_k = 0;
+        SDL_DestroyTexture(texture);
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565, SDL_TEXTUREACCESS_STREAMING,
+                                    (int)rt_screen_w, (int)rt_screen_h);
+        if (!texture) rt_fatal("SDL_CreateTexture: %s", SDL_GetError());
+        update_scaling();
+        win_screen_dirty = 1;
+        break;
     case SDL_QUIT:
         win_save_window();
         if (rt_on_fatal) rt_on_fatal();
@@ -634,7 +794,11 @@ static void handle_event(SDL_Event *e)
         }
         if (e->window.event == SDL_WINDOWEVENT_MAXIMIZED) display_report_event("maximised");
         if (e->window.event == SDL_WINDOWEVENT_RESTORED) display_report_event("restored");
-        if (e->window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED) display_report_event("moved to another screen");
+        if (e->window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED) {
+            set_smallest_window();
+            update_scaling();
+            display_report_event("moved to another screen");
+        }
         if (e->window.event == SDL_WINDOWEVENT_MOVED) note_windowed();
         if (e->window.event == SDL_WINDOWEVENT_FOCUS_LOST) win_sound_focus(0);
         if (e->window.event == SDL_WINDOWEVENT_FOCUS_GAINED) win_sound_focus(1);
@@ -701,6 +865,9 @@ static void run_script(void)
             part_start = now;
             continue;
         }
+        if (!strcmp(s->action, "up") && script_click.on && script_click.polls < 1 &&
+            SDL_GetTicks64() - script_click.at < SCRIPT_CLICK_LONGEST)
+            break;
         step_next++;
         fprintf(stderr, "recomp: script %llu %s %d %d %s\n", (unsigned long long)(part_start + s->at), s->action, s->a,
                 s->b, s->text);
@@ -709,7 +876,12 @@ static void run_script(void)
             post_mouse(WM_MOUSEMOVE, s->a, s->b);
             buttons |= 1;
             post_mouse(WM_LBUTTONDOWN, s->a, s->b);
+            script_click.on = 1;
+            script_click.down_at = q_tail;
+            script_click.polls = 0;
+            script_click.at = SDL_GetTicks64();
         } else if (!strcmp(s->action, "up")) {
+            script_click.on = 0;
             buttons &= ~1;
             post_mouse(WM_LBUTTONUP, s->a, s->b);
         } else if (!strcmp(s->action, "rclick")) {
@@ -729,7 +901,7 @@ static void run_script(void)
             update_scaling();
             present_now();
         } else if (!strcmp(s->action, "dump")) { present_now(); win_dump_screen(s->text); }
-        else if (!strcmp(s->action, "shot")) { present_now(); shot_window(s->text); }
+        else if (!strcmp(s->action, "shot")) shot_window(s->text);
         else if (!strcmp(s->action, "report")) display_report_key();
         else if (!strcmp(s->action, "quit")) {
             win_save_window();
@@ -892,6 +1064,7 @@ RT_WRAP(0055f620, input_poll)
     options_screen_after_poll(poll_ret, poll_display, cpu.eax & 0xffffu);   /* the options box item */
     names_after_poll();
     if (key_down_in) key_click.polls++;
+    if (script_click.on && (int32_t)(q_head - script_click.down_at) >= 0) script_click.polls++;
     uint32_t widget = cpu.eax & 0xffffu;
     int held = (buttons & 1) && rd32(g_mem, 0xb67a34u) && !rd32(g_mem, 0xb67a3cu);
     idle_rest(widget);

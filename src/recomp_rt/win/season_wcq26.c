@@ -298,6 +298,17 @@ uint32_t rt_wcq26_oceania_stages(uint32_t self, uint32_t original)
 
 static int europe_on(uint32_t self) { return is(self, VT_EUROPE) && season_wcq26(self); }
 
+/* 1 when the object holds the 12-group shape (13 stages: groups -1 to 10, the runners-up table, the paths; the
+ * sites 0x918348 and 0x91950c set it at the ctor and at start_new_season). A campaign that a save made in the
+ * old shape (10 groups and the runners-up table, 11 stages: a save of a build before slice 29, the gate 2023 leg
+ * loaded in July 2024) keeps the original's code, else its runners-up table 0x91a240 read stage 9 (that table) and
+ * stage 10 (none) as groups and passed clubs with no nation to slot +0x68 0x91b510 (box Database.cpp 13126 on day
+ * 243 of 2024). The wraps test this; the sites that make the shape test europe_on. */
+static int europe_shape(uint32_t self)
+{
+    return europe_on(self) && (int)rd32(g_mem, self + F_STAGE_COUNT) == EU_GROUPS + 1;
+}
+
 /* 0x919f90 (build_entry_pool 0x919e30, after the pool size +0xf2, this in esi): in the gate the shape of no
  * exempt nation (+0xf6 0), so every switch on +0xf6 takes its first branch. */
 void rt_wcq26_europe_format(uint32_t self)
@@ -331,6 +342,7 @@ void rt_wcq26_europe_format(uint32_t self)
 static const char *const renamed[][2] = {
     {"Yugoslavia", "Serbia and Montenegro"}, {"Serbia and Montenegro", "Serbia"}, {"Czech Republic", "Czechia"},
     {"Swaziland", "Eswatini"}, {"FYR of Macedonia", "North Macedonia"}, {"Turkey", "T\xfcrkiye"},
+    {"Netherlands Antilles", "Cura\xe7" "ao"},
 };
 
 static int nation_named(uint32_t nations, int count, const char *name)
@@ -356,19 +368,19 @@ static int superseded(uint32_t nations, int count, const char *name)
 
 void o_00919e30(void);
 
-RT_WRAP(00919e30, wcq26_europe_pool)
+/* The European nations of a campaign's pool, in nation order (out may be NULL to count): every European nation
+ * whose national team names it, less Russia, less an old record that a later one replaces, less the hosts of the
+ * World Cup of the campaign. It reads only the nation, club and host tables, which a load restores in full, so the
+ * group sizes of the draw and of a loaded game agree (europe_group_size): the pool size +0xf2 is not in the save
+ * (League::load 0x687b10 succeeds at a load, and the ctor then skips build_entry_pool, 0x918328..0x918339), so
+ * the group builders 0x9190db and 0x919722 of a loaded game read 0 there. log: 1 for the lines of the pool. */
+static int europe_nations(uint32_t self, uint32_t *out, int max, int log)
 {
-    uint32_t self = cpu.ecx;
-    o_00919e30();
-    if (rt_unwinding || !europe_on(self)) return;
     uint32_t nations = rd32(g_mem, NATIONS);
     int count = (int)rd32(g_mem, NATION_COUNT), hosts[6], n_hosts, n = 0, russia = 0;
-    if (!readable(nations) || count <= 0 || count > 1000) return;
+    if (!readable(nations) || count <= 0 || count > 1000) return 0;
     n_hosts = season_intl_host_ids(rd32(g_mem, KEY_WORLD_CUP), year_of(self) + 2, hosts);
-
-    uint32_t pool = game_malloc(4u * POOL_MAX);
-    if (rt_unwinding || !pool) return;
-    for (int id = 0; id < count && n < POOL_MAX; id++) {
+    for (int id = 0; id < count && n < max; id++) {
         uint32_t nation = nations + (uint32_t)id * NATION_SIZE, c = rd32(g_mem, nation + 0x71u);
         if (!readable(c) || rd32(g_mem, c) != rd32(g_mem, 0x9cfa10u)) continue;
         if (!strcmp(win_str(nation + 4u), "Russia")) {
@@ -376,7 +388,7 @@ RT_WRAP(00919e30, wcq26_europe_pool)
             continue;
         }
         if (superseded(nations, count, win_str(nation + 4u))) {
-            if (logging())
+            if (log)
                 fprintf(stderr, "recomp: season intl: wc qualifying %d: Europe leaves out %s (a later record of it "
                                 "is in the data)\n", year_of(self) + 2, win_str(nation + 4u));
             continue;
@@ -386,10 +398,53 @@ RT_WRAP(00919e30, wcq26_europe_pool)
         if (host) continue;
         uint32_t args[1] = {nation};
         uint32_t team = call_cdecl(NATIONAL_TEAM, 1, args);
-        if (rt_unwinding) return;
+        if (rt_unwinding) return n;
         if (!readable(team) || rd32(g_mem, team + 0x53u) != nation) continue;
-        wr32(g_mem, pool + 4u * (uint32_t)n++, team);
+        if (out) out[n] = team;
+        n++;
     }
+    if (log)
+        fprintf(stderr, "recomp: season intl: wc qualifying %d: Europe pool of %d nations (%s, %d hosts out)\n",
+                year_of(self) + 2, n, russia ? "Russia out" : "no Russia in the data", n_hosts);
+    return n;
+}
+
+void season_wcq26_log_pool(uint32_t self, const char *what)
+{
+    if (!logging() || !season_intl_on() || !readable(self)) return;
+    uint32_t pool = rd32(g_mem, self + EU_POOL);
+    int n = (int)rd32(g_mem, self + EU_POOL_SIZE), kosovo = 0;
+    char odd[400] = "";
+    size_t len = 0;
+    for (int k = 0; readable(pool) && k < n && k < 64; k++) {
+        uint32_t team = rd32(g_mem, pool + 4u * (uint32_t)k), nation = readable(team) ? rd32(g_mem, team + 0x53u) : 0;
+        const char *name = readable(nation) ? win_str(nation + 4u) : "(none)";
+        kosovo |= !strcmp(name, "Kosovo");
+        if ((!readable(nation) || !readable(rd32(g_mem, nation + 0x71u)) || !strcmp(name, "Yugoslavia")) &&
+            len < sizeof odd - 60)
+            len += (size_t)snprintf(odd + len, sizeof odd - len, " %s%s", name,
+                                    readable(nation) && readable(rd32(g_mem, nation + 0x71u)) ? "" : " (no continent)");
+    }
+    fprintf(stderr, "recomp: season intl: %s %d: Europe pool of %d nations, Kosovo %s;%s\n", what,
+            (int16_t)rd16(g_mem, self + F_YEAR), n, kosovo ? "in" : "out", len ? odd : " no odd nation");
+}
+
+RT_WRAP(00919e30, wcq26_europe_pool)
+{
+    uint32_t self = cpu.ecx;
+    o_00919e30();
+    if (!rt_unwinding && !europe_on(self) && is(self, VT_EUROPE)) {
+        uint32_t eax = cpu.eax;
+        season_wcq26_log_pool(self, "wc qualifying (original)");
+        cpu.eax = eax;
+    }
+    if (rt_unwinding || !europe_on(self)) return;
+    uint32_t teams[POOL_MAX];
+    int n = europe_nations(self, teams, POOL_MAX, logging());
+    if (rt_unwinding) return;
+    uint32_t pool = game_malloc(4u * POOL_MAX);
+    if (rt_unwinding || !pool) return;
+    for (int k = 0; k < n; k++) wr32(g_mem, pool + 4u * (uint32_t)k, teams[k]);
     uint32_t qa[4] = {pool, (uint32_t)n, 4, CLUB_COMPARE};
     call_cdecl(GAME_QSORT, 4, qa);
     if (rt_unwinding) return;
@@ -402,12 +457,9 @@ RT_WRAP(00919e30, wcq26_europe_pool)
     wr8(g_mem, self + EU_RUNNERS_UP, EU_GROUPS - 1);
     wr8(g_mem, self + EU_PLAYOFF, EU_GROUPS);
     cpu.eax = 1;
-    if (logging())
-        fprintf(stderr, "recomp: season intl: wc qualifying %d: Europe pool of %d nations (%s, %d hosts out)\n",
-                year_of(self) + 2, n, russia ? "Russia out" : "no Russia in the data", n_hosts);
 }
 
-/* 0x91a0c2, 0x91a0c9, 0x91a0d0 (pool, esi) and 0x91aa96, 0x91aa9d, 0x91aaa4 (load 0x91a9f0, edi): the last group
+/* 0x91a0c2, 0x91a0c9, 0x91a0d0 (pool, esi; at a load see the ctor wrap below): the last group
  * stage +0xff, the runners-up stage +0x100 and the play-off stage +0x101 (8, 9, 10: ten groups). +2 in the gate:
  * twelve groups. 0x918348, 0x91950c: the stage count (0xb), 0x91a6cf: the group count of the draw (0xa). */
 uint32_t rt_wcq26_europe_index(uint32_t self, uint32_t original)
@@ -415,11 +467,31 @@ uint32_t rt_wcq26_europe_index(uint32_t self, uint32_t original)
     return europe_on(self) ? original + 2u : original;
 }
 
-/* The size of group g (0 = A): the last (pool - 48) groups of 5, the others of 4 (the real 2026 groups G to L of
- * 5, A to F of 4; the pool of 50 gives K and L of 5). */
+void o_00918200(void);
+
+/* The ctor 0x918200 (thiscall (year, record), ret 8), at a load: League::load 0x687b10 (0x918321) reads the
+ * three at load_extra_data 0x91a9f0 (vtable +0x20, called at 0x687ccd; 8, 9, 10 at 0x91aa96..0x91aaa4) before it
+ * reads the stage count +0x2c (0x688e19), so they cannot depend on the shape there. After the ctor the stage
+ * count is the save's: an object of the 12-group shape gets 10, 11, 12. Else a loaded 2030 campaign drew its
+ * pool into 10 groups (0x918ec0) and the group builder 0x919722 read groups 11 and 12 past the grid: an empty
+ * slot to the group draw news (0x9198f0, 0x684298) and box Database.cpp 13126 at 0x53b4ac on day 84 of 2028.
+ * An old-shape campaign (11 stages) keeps the original's 8, 9, 10. */
+RT_WRAP(00918200, wcq26_europe_ctor)
+{
+    uint32_t self = cpu.ecx;
+    o_00918200();
+    if (rt_unwinding || !europe_shape(self)) return;
+    wr8(g_mem, self + EU_LAST_GROUP, EU_GROUPS - 2);
+    wr8(g_mem, self + EU_RUNNERS_UP, EU_GROUPS - 1);
+    wr8(g_mem, self + EU_PLAYOFF, EU_GROUPS);
+}
+
+/* The size of group g (0 = A): the last (nations - 48) groups of 5, the others of 4 (the real 2026 groups G to L
+ * of 5, A to F of 4; 50 nations give K and L of 5). The count is europe_nations, not the pool size +0xf2, which a
+ * load does not restore. */
 static int europe_group_size(uint32_t self, int g)
 {
-    int pool = (int)rd32(g_mem, self + EU_POOL_SIZE), five = pool - 4 * EU_GROUPS;
+    int pool = europe_nations(self, NULL, POOL_MAX, 0), five = pool - 4 * EU_GROUPS;
     if (five < 0) five = 0;
     if (five > EU_GROUPS) five = EU_GROUPS;
     return g >= EU_GROUPS - five ? 5 : 4;
@@ -432,7 +504,7 @@ void o_00918dd0(void);
 RT_WRAP(00918dd0, wcq26_europe_group_size)
 {
     uint32_t self = cpu.ecx;
-    if (!europe_on(self)) {
+    if (!europe_shape(self)) {
         o_00918dd0();
         return;
     }
@@ -457,7 +529,7 @@ void o_00918ec0(void);
 RT_WRAP(00918ec0, wcq26_europe_draw)
 {
     uint32_t self = cpu.ecx;
-    if (!europe_on(self)) {
+    if (!europe_shape(self)) {
         o_00918ec0();
         return;
     }
@@ -513,7 +585,7 @@ static const SeasonNlDate europe_sf = {26, 3, 2}, europe_final = {31, 3, 2};
 int season_wcq26_europe_template(void)
 {
     uint32_t self = cpu.ecx, sp = cpu.esp;
-    if (!europe_on(self)) return 0;
+    if (!europe_shape(self)) return 0;
     int st = (int8_t)rd8(g_mem, sp + 4u);
     int group = st <= (int8_t)rd8(g_mem, self + EU_LAST_GROUP), playoff = st == (int8_t)rd8(g_mem, self + EU_PLAYOFF);
     if (!group && !playoff) return 0;
@@ -546,7 +618,7 @@ int season_wcq26_europe_template(void)
 int season_wcq26_europe_paths(void)
 {
     uint32_t self = cpu.ecx;
-    if (!europe_on(self)) return 0;
+    if (!europe_shape(self)) return 0;
     int groups = (int8_t)rd8(g_mem, self + EU_LAST_GROUP) + 2, nations = (int)rd32(g_mem, NATION_COUNT);
     if (groups > 16 || nations <= 0 || nations > 4096) {
         rt_ret_stdcall(0, 0);
@@ -664,7 +736,7 @@ int season_wcq26_europe_paths(void)
 /* get_asia_play_off_team 0x91def0 (from Asia stage 12): no European team in the gate (stage 12 is not played). */
 int season_wcq26_europe_no_asia(void)
 {
-    if (!europe_on(cpu.ecx)) return 0;
+    if (!europe_shape(cpu.ecx)) return 0;
     rt_ret_stdcall(0, 0);
     return 1;
 }
@@ -1061,3 +1133,4 @@ RT_WRAP(00917320, wcq26_concacaf_semis)
     cpu.ecx = self;
     o_00917320();
 }
+

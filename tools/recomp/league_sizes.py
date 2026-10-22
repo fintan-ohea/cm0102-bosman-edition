@@ -167,4 +167,11 @@ for _cls, _file, _rules, _stores in CLASSES:
         INSNS[_at] = (f"mov word ptr [{_reg} + 0x3e], {_imm(_n)}",
                       f"W16({_reg} + 0x3eu, rt_league_clubs({_reg}, {_n:#x}u));")
 INSNS.update(DATES)
+# FraCfa::FraCfa 0x5b91c0 fills a stack array of 72 (0x48) with every club of [0x9cf5cc] and [0x9cf5d0] and up to
+# 34 clubs of A Lower Division in the CFA zone (`cmp word ptr [esp + 0x10], 0x22`), then makes four groups of 18 of
+# an array it never clears. With those two divisions at 36 (18 and 18, 2024/25 on) two rows held stack values and
+# the CFA fixtures named no club (virtual_staff.cpp 195). In a season game the cap is 72 less their clubs.
+INSNS[0x5B92E8] = ("cmp word ptr [esp + 0x10], 0x22",
+                   "t0 = R16(esp + 0x10u); t1 = rt_fra_cfa_lower_cap(0x22u) & 0xffffu; t2 = ((t0 - t1 - 0) & 0xffffu); "
+                   "SETF(K_SUB | SZ2, t0, t1, t2, 0);")
 INSNS.update(CUP_INSNS)

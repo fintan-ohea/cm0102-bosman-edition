@@ -297,6 +297,12 @@ extern uint32_t rt_season_year;
 /* The league load's row arrays (win/league_load.c, tools/recomp/league_load.py at 0x68c898): 0 when the read
  * of a row's result array failed only because the array has 0 bytes (a league of one club), else 1. */
 uint32_t rt_league_row_read_failed(uint32_t league);
+/* The ban release's nation index (win/discipline_ban.c, tools/recomp/discipline_ban.py at 0x556dcf): the entry
+ * of the staff id under any nation, 0 for none, or 1 when the fix is off (the original's box). */
+uint32_t rt_discipline_ban_entry(uint32_t discipline, uint32_t staff);
+/* The rule-set load's Oceania body (win/season_intl.c, tools/recomp/discipline_ban.py at 0x55deb6): 1 when a
+ * season game moved a selected Australia to Asia, so its saves hold the body. */
+uint32_t rt_discipline_oceania_body(void);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);
@@ -316,12 +322,14 @@ uint32_t rt_league_dates(uint32_t obj, uint32_t original);
 uint32_t rt_cup_room(uint32_t original, uint32_t entrants, uint32_t key_a, uint32_t key_b, uint32_t key_c);
 uint32_t rt_cup_add(uint32_t original, uint32_t base, uint32_t entrants, uint32_t key_a, uint32_t key_b);
 uint32_t rt_fra_lge_first(uint32_t original, uint32_t edx);   /* FraLgeCup first loop limit (0x5bd244) */
+uint32_t rt_fra_cfa_lower_cap(uint32_t original);              /* FraCfa lower club cap (0x5b92e8) */
 uint32_t rt_ita_cup_first_position(uint32_t original);   /* ItaCup second loop start (0x63fb16) */
 /* Italy's Serie C of three groups (0.6.0 slice 20b, win/season_divisions_ita.c, tools/recomp/new_divisions.py). */
 uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2_end_clubs(uint32_t obj, uint32_t original);
 uint32_t rt_ita_tier_c2(uint32_t c2a);
+uint32_t rt_ita_tier_last(uint32_t obj);
 uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b);
 uint32_t rt_ita_cup_fill(uint32_t esp, uint32_t count, uint32_t position);
 uint32_t rt_ita_start_c2(uint32_t c2a);
@@ -445,6 +453,13 @@ uint32_t rt_staff_reserve_size(void);
 /* Full player search (#57, src/recomp_rt/win/playersearch.c): 1 when the option is on. The replaced jumps
  * at 0x7afc8d, 0x7afc9d and 0x7afcdf in tools/recomp/widescreen.py ask it. */
 uint32_t rt_full_player_search(uint32_t screen);
+/* The limit of the list with the option on (playersearch.c): the sites 0x7afbb3, 0x7afdda, 0x7afe5e, 0x7afe6b
+ * and 0x7af467 in tools/recomp/widescreen.py. */
+void rt_full_player_search_reset(void);
+void rt_full_player_search_skip(void);
+uint32_t rt_full_player_search_slot(uint32_t screen);
+uint32_t rt_full_player_search_replaced(void);
+uint32_t rt_full_player_search_shown(uint32_t passed);
 
 /* Attribute groups (#43, src/recomp_rt/win/groups.c): the cells of the player profile's attribute table
  * and their place. The constants of tools/recomp/attribute_groups.py read these. */

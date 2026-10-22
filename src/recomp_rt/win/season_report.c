@@ -21,9 +21,9 @@
  *     +2 (league_round_set_date 0x68a160 at 0x68a1a5, 0x68a1ac). These are the dates that the Schedule and
  *     Fixtures tabs of the competition screen show. An object waiting for an edition in 2999 or later (slices 21b,
  *     26) is left out;
- *   - empty: a league (kind league) that has drawn its fixtures (+0x45 1, Comp::Comp 0x48c5bb) while the rules
- *     table gives its season clubs, with no club in its table (+0x3e 0) or an empty row (table +0xb1, rows of
- *     0x3b bytes, the club at +0, 0x6826d0).
+ *   - empty: a league (kind league, not the Club World Championship in a form of slice 26) that has drawn its
+ *     fixtures (+0x45 1, Comp::Comp 0x48c5bb) while the rules table gives its season clubs, with no club in its
+ *     table (+0x3e 0) or an empty row (table +0xb1, rows of 0x3b bytes, the club at +0, 0x6826d0).
  * It only reads memory.
  * RECOMP_SEASON_JUMP=<year>: the game plays on with no match engine, and the program ends with code 0 after
  * the end report of the season that starts in that year. The test steps put the manager on holiday
@@ -76,6 +76,7 @@
 #include "season_uefa.h"
 #include "season_comps.h"
 #include "../host.h"
+#include "../rt_host.h"
 
 #include <SDL.h>
 #include <stdio.h>
@@ -181,6 +182,10 @@ static void sweep_comp(FILE *f, int season, const char *phase, const char *file,
         else if (g_mem[st + 0x43] == 2) sweep_rounds_of(f, season, phase, file, obj, st, 0);  /* a League_Stage */
     }
     if (!c || c->kind != SEASON_KIND_LEAGUE || rd32(g_mem, obj + 0x45) != 1) return;
+    /* The Club World Championship in Form K (one knockout stage) or Form G (8 stages) of slice 26: its parent
+     * League holds no club by design, club count +0x3e 0 and one zeroed row (season_kind_club_world.c, part b).
+     * Only the original form has 3 stage slots (+0x2c). */
+    if (rd32(g_mem, obj) == 0x97119cu && (int32_t)rd32(g_mem, obj + 0x2c) != 3) return;
     const SeasonRule *r = season_rules_find(season, file, 0);
     if (!r || r->clubs <= 0) return;
     int n = (int16_t)rd16(g_mem, obj + 0x3e);
@@ -318,6 +323,16 @@ static void write_season(int season, const char *phase)
     fflush(report);
     fprintf(stderr, "recomp: rules report: season %d/%02d %s on %02d.%02d.%04d\n", season, (season + 1) % 100, phase,
             d, m, y);
+    /* The game's heap at each report (the arena from RT_HEAP_BASE): the top, the free bytes below it,
+     * and the bytes in use. A text line only. */
+    uint32_t top = rt_heap_top() - RT_HEAP_BASE, freed = rt_heap_free_bytes();
+    fprintf(stderr, "recomp: heap at season %d/%02d %s: top %u MB of %u MB, free below the top %u MB, in use %u MB\n",
+            season, (season + 1) % 100, phase, top >> 20, rt_heap_arena_bytes() >> 20, freed >> 20,
+            (top - freed) >> 20);
+    uint32_t sb, sn, spans;
+    rt_heap_free_parts(&sb, &sn, &spans);
+    fprintf(stderr, "recomp: heap free parts: small blocks %u MB in %u blocks, large spans %u MB in %u spans\n", sb >> 20,
+            sn, (freed - sb) >> 20, spans);
 }
 
 void season_report_init(void)

@@ -21,6 +21,10 @@
  *   table gives the value of each axis and is the legend.
  * - Only shown values: the profile's attribute getters (1 to 20). An attribute that the game masks for the
  *   viewer shows "-" and does not count (Q111).
+ * - Every text fits its box (forum report of Tousled12, 2026-10-21): a name that is too long shortens to
+ *   "F. Second" or the second name, the line under it splits into the club and "Positions, age N" on two
+ *   lines (both sides), the legend's names and the screen's heading shorten (compare_layout.c). The test
+ *   variable RECOMP_TEXT_CUT_LOG=1 (names.c) logs any text that is still wider than its box.
  *
  * The polygon, its grid and the frames go on the game's draw surface after the game draws their widgets
  * (compare_widget_drawn, from views_widget_drawn), so the screen dumps hold them too. The code only reads
@@ -100,7 +104,10 @@ typedef struct {
     int keeper;
     uint8_t attr[32];               /* shown values, 0 = hidden */
     uint8_t hidden[32];             /* 1: the game hides the attribute from the viewer (for the log) */
-    char name[64], line[96];
+    char name[64];                  /* the full name, for the squad list */
+    char first[64], second[64], common[64], club[0x80], pos[64];
+    int age;
+    char box_name[64], line[2][96]; /* the name and the lines under it, made to fit their boxes (fit_texts) */
 } Player;
 
 /* What the hook needs of the comparison built last. */
@@ -186,11 +193,23 @@ static void panel_at(int x1, int y1, int x2, int y2)
     call_this(AREA_CREATE, display(), 11, a);
 }
 
-static int width_of(const char *text)
+static int width_in(uint32_t font, const char *text)
 {
     win_put_str(buf, text, VIEWS_TEXT_SIZE);
-    uint32_t a[2] = {FONT, buf};
+    uint32_t a[2] = {font, buf};
     return (int32_t)call(TEXT_WIDTH, 2, a);
+}
+
+static int width_of(const char *text) { return width_in(FONT, text); }
+
+/* The width callback of compare_layout.c's fit functions: ctx points to the font. */
+static int width_cb(const char *text, void *ctx) { return width_in(*(const uint32_t *)ctx, text); }
+
+/* text in the font that text_at gives it, made to fit in box pixels (compare_fit). */
+static void fit(const char *text, int box, char *out, size_t size)
+{
+    uint32_t font = FONT;
+    compare_fit(text, box, width_cb, &font, out, size);
 }
 
 static void attribute_name(int k, char *out, size_t size)
@@ -247,16 +266,37 @@ static void load(Player *p, uint32_t staff)
         p->hidden[k] = (uint8_t)!picker_attribute_known(viewer, staff, k);
     }
     full_name(staff, p->name, sizeof p->name);
-    char club[0x80] = "";
+    uint32_t first = rd32(g_mem, staff + 0x4), second = rd32(g_mem, staff + 0x8), common = rd32(g_mem, staff + 0xc);
+    snprintf(p->first, sizeof p->first, "%s", first ? win_str(first) : "");
+    snprintf(p->second, sizeof p->second, "%s", second ? win_str(second) : "");
+    snprintf(p->common, sizeof p->common, "%s", common ? win_str(common) : "");
     uint32_t c = rd32(g_mem, staff + CLUB);
     if (c) {
         wr8(g_mem, buf, 0);
         uint32_t a[6] = {c, 0, buf, VIEWS_TEXT_SIZE, 1, 1};
         call(CLUB_NAME, 6, a);
-        snprintf(club, sizeof club, "%s", win_str(buf));
+        snprintf(p->club, sizeof p->club, "%s", win_str(buf));
     }
-    snprintf(p->line, sizeof p->line, "%s%s%s, age %d", club, *club ? ", " : "", pos,
-             (int16_t)rd16(g_mem, staff + AGE));
+    snprintf(p->pos, sizeof p->pos, "%s", pos);
+    p->age = (int16_t)rd16(g_mem, staff + AGE);
+}
+
+/* The name box and the line under it for a side panel of w pixels (Tousled12, 2026-10-21): the name
+ * shortens and the line splits into club and positions when they do not fit. The name box of the Compare
+ * tab is a drop-down button, whose arrow takes ARROW_PX of its right end. Returns the lines (1 or 2). */
+#define ARROW_PX 16
+static int fit_texts(Player *p, int w, int dropdown)
+{
+    uint32_t font = FONT;
+    int box = w - 8 - (dropdown ? 2 * ARROW_PX : 0);   /* centred text: room for the arrow on both ends */
+    if (p->data) compare_fit_name(p->first, p->second, p->common, box, width_cb, &font, p->box_name,
+                                  sizeof p->box_name);
+    else snprintf(p->box_name, sizeof p->box_name, "%s", p->name);
+    if (!p->data) {
+        p->line[0][0] = p->line[1][0] = 0;
+        return 1;
+    }
+    return compare_info_lines(p->club, p->pos, p->age, w - 8, width_cb, &font, p->line);
 }
 
 /* The squad drop-down of the Compare tab on the name box x1..y2 (screen pixels): a button with the
@@ -346,6 +386,7 @@ typedef struct {
 
 typedef struct {
     int keepers;                    /* both players are goalkeepers: the polygon has the goalkeeper axes */
+    int lines;                      /* the lines under the name boxes, 1 or 2, the same on both sides */
     Layout l[2];
     int value_w;                    /* screen pixels */
 } Sides;
@@ -373,11 +414,13 @@ static void side(const Sides *s, const Player *me, const Player *other, int i, i
     panel_at(x1, y1, x2, y2);
     uint32_t colour = i == 0 ? BLUE : ORANGE;
     (void)across;
-    if (club) chooser(x1 + 4, y1 + 4, x2 - 4, y1 + 4 + ROW_PX, colour, me->name, club, id, page);
-    else text_at(x1 + 4, y1 + 4, x2 - 4, y1 + 4 + ROW_PX, 0x30, colour, rd16(g_mem, PALE), 0xc, me->name, PROFILE_ID,
-                 me->staff);
-    text_at(x1 + 4, y1 + 6 + ROW_PX, x2 - 4, y1 + 6 + 2 * ROW_PX, 0, 0, rd16(g_mem, LIST_TEXT), 0xc, me->line, 0, 0);
-    int top = y1 + 10 + 2 * ROW_PX, col_w = l->name_w + s->value_w;
+    if (club) chooser(x1 + 4, y1 + 4, x2 - 4, y1 + 4 + ROW_PX, colour, me->box_name, club, id, page);
+    else text_at(x1 + 4, y1 + 4, x2 - 4, y1 + 4 + ROW_PX, 0x30, colour, rd16(g_mem, PALE), 0xc, me->box_name,
+                 PROFILE_ID, me->staff);
+    for (int n = 0; n < s->lines; n++)
+        text_at(x1 + 4, y1 + 6 + (n + 1) * ROW_PX, x2 - 4, y1 + 6 + (n + 2) * ROW_PX, 0, 0, rd16(g_mem, LIST_TEXT), 0xc,
+                me->line[n], 0, 0);
+    int top = y1 + 10 + (s->lines + 1) * ROW_PX, col_w = l->name_w + s->value_w;
     for (int c = 0; c < l->columns; c++) {
         int x = x1 + 4 + c * (col_w + GAP_PX), y = top;
         for (int g = 0; g < l->k; g++) {
@@ -446,10 +489,14 @@ static void middle(const Sides *s, const Player *p, int x1, int y1, int x2, int 
     }
     int table_w = tl + 2 * value_w, tx = (x1 + x2 - table_w) / 2;
     if (tx < x1 + 4) tx = x1 + 4;
+    /* The legend's names shorten when the value columns are narrow (classic mode, "Van Bronckhorst"). */
+    char f1[64], f2[64];
+    fit(n1, value_w - ROW_PX, f1, sizeof f1);
+    fit(n2, value_w - ROW_PX, f2, sizeof f2);
     for (int c = 0; c < 2; c++) {
         int vx = tx + tl + c * value_w;
         text_at(vx + 4, ty + 3, vx + ROW_PX - 4, ty + ROW_PX - 4, 0x30, c ? ORANGE : BLUE, 0, 0xc, "", 0, 0);
-        text_at(vx + ROW_PX, ty, vx + value_w - 1, ty + ROW_PX - 1, 0, 0, c ? ORANGE : BLUE, 1, c ? n2 : n1, 0, 0);
+        text_at(vx + ROW_PX, ty, vx + value_w - 1, ty + ROW_PX - 1, 0, 0, c ? ORANGE : BLUE, 1, c ? f2 : f1, 0, 0);
     }
     for (int i = 0; i < COMPARE_AXES; i++) {
         int y = ty + (i + 1) * ROW_PX;
@@ -517,7 +564,6 @@ void compare_build(uint32_t text, uint32_t staff1, uint32_t staff2, int x1, int 
     s.keepers = p[0].keeper && p[1].keeper;
     s.value_w = width_of("20") + 14;
     int X1 = sx(x1), Y1 = sy(y1), X2 = sx(x2 + 1) - 1, Y2 = sy(y2 + 1) - 1;
-    int fit = (Y2 - Y1 - 14 - 2 * ROW_PX) / ROW_PX, w = 0;
     for (int i = 0; i < 2; i++) {
         Layout *l = &s.l[i];
         l->n = compare_rows(p[i].keeper, l->rows, COMPARE_ROWS);
@@ -531,10 +577,28 @@ void compare_build(uint32_t text, uint32_t staff1, uint32_t staff2, int x1, int 
             if (nw > l->name_w) l->name_w = nw;
         }
         l->name_w += 8;
-        l->columns = l->n <= fit ? 1 : 2;
-        l->second = l->columns == 2 ? two_columns(l->g, l->k) : 0;
-        int lw = side_width(l, s.value_w);
-        if (lw > w) w = lw;                 /* both side panels as wide as the wider list */
+    }
+    /* The panels with one line under the names; when a line does not fit, two lines on both sides and the
+     * lists again for the row that they take. Two lines never make a panel narrower. */
+    int w = 0;
+    s.lines = 1;
+    for (int pass = 0; pass < 2; pass++) {
+        int fit_rows = (Y2 - Y1 - 14 - (s.lines + 1) * ROW_PX) / ROW_PX;
+        w = 0;
+        for (int i = 0; i < 2; i++) {
+            Layout *l = &s.l[i];
+            l->columns = l->n <= fit_rows ? 1 : 2;
+            l->second = l->columns == 2 ? two_columns(l->g, l->k) : 0;
+            int lw = side_width(l, s.value_w);
+            if (lw > w) w = lw;             /* both side panels as wide as the wider list */
+        }
+        int lines = 1;
+        for (int i = 0; i < 2; i++) {
+            int n = fit_texts(&p[i], w, club != 0);
+            if (n > lines) lines = n;
+        }
+        if (lines == s.lines) break;
+        s.lines = lines;
     }
 
     side(&s, &p[0], &p[1], 0, X1, Y1, X1 + w, Y2, club, CHOOSE1_ID, page1);
@@ -564,6 +628,27 @@ void compare_build(uint32_t text, uint32_t staff1, uint32_t staff2, int x1, int 
         }
         fprintf(stderr, "\n");
     }
+}
+
+/* The heading "Name ~ Name" of the comparison screen in the heading's font 7 (0x803f30), made to fit the
+ * heading box x1..x2 of 800x600 numbers (Tousled12, 2026-10-21): the original's names when they fit, else
+ * shorter names (compare_fit_heading). full1 and full2 are the original's heading names (0x53dba0). */
+#define HEADING_FONT 7u
+void compare_heading(uint32_t text, uint32_t staff1, uint32_t staff2, const char *full1, const char *full2, int x1,
+                     int x2, char *out, size_t size)
+{
+    buf = text;
+    char part[2][3][64];
+    uint32_t staff[2] = {staff1, staff2};
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 3; j++) {
+            uint32_t at = rd32(g_mem, staff[i] + 4 + 4 * (uint32_t)j);
+            snprintf(part[i][j], sizeof part[i][j], "%s", at ? win_str(at) : "");
+        }
+    uint32_t font = HEADING_FONT;
+    int box = sx(x2 + 1) - sx(x1);         /* the text box's own test: a text fits up to the full box */
+    compare_fit_heading(full1, part[0][0], part[0][1], part[0][2], full2, part[1][0], part[1][1], part[1][2], box,
+                        width_cb, &font, out, size);
 }
 
 /* A click on a drop-down item of the Compare tab. A player: returns the side (1 or 2) with the staff

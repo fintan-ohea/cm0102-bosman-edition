@@ -62,6 +62,10 @@ _Avoid_: larger text, 4K mode
 The game drawn at 800x600, as the original draws it.
 _Avoid_: 4:3 mode, original mode
 
+**Sharp bilinear**:
+The scaling of `sharp_picture = on` from 0.6.0. The game draws its picture with nearest pixels at a whole number of times its size, then scales that to the window with linear filtering. Letters keep an even shape at every window size.
+_Avoid_: whole pixels, integer scaling
+
 **Display report**:
 The file display-report.txt in the save folder, from 0.6.0. It lists the system, the screens and their scale, the window and how the game scales its picture, and the last 10 window changes. The game writes it at start and at quit. Ctrl+Shift+D (Cmd+Shift+D on a Mac) writes it again and copies it to the clipboard. Players add it to reports of picture and window problems.
 _Avoid_: diagnostics, debug log, system info
@@ -156,9 +160,9 @@ _Avoid_: modern game, new-season game
 The screen from the start screen with one tile per season under era headings. The player picks the season, and so its database, there, and sets changing rules for the new game. Each season has one database (Q417).
 _Avoid_: season picker, year select
 
-**Season strip**:
-The wide button at the top of Setup Game that shows the season, the database and the changing rules state of the next new game. A click opens the Choose Season screen.
-_Avoid_: season bar, season button, Choose Season item
+**Season button**:
+The left button of the top row of Setup Game: the season of the next new game and its database. A click opens the Choose Season screen. The right button of the row shows changing rules On or Off, and a click switches it (Q422).
+_Avoid_: season strip, season bar, Choose Season item
 
 **Extras screen**:
 The screen from the Extras button of Setup Game with the original's Hall Of Fame, Game Credits and Web Sites.

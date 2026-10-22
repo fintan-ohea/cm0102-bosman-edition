@@ -9,6 +9,7 @@ int season_change_is_creating(void);    /* season_change.c: 1 while create_game 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 /* The source file of each class of the code sites (enum of season_intl.h). */
 static const char *const class_files[INTL_CLASSES] = {
@@ -227,4 +228,43 @@ void season_intl_shift_date(int shift, int *day, int *month0, int *year)
     *day = d;
     *month0 = m - 1;
     *year = y;
+}
+
+/* ---- Nation records ---- */
+
+/* The renamed nations. A nation record (nation.dat, 0x122 bytes) holds the long name at +4 (51 bytes), the short
+ * name at +0x38 (26), the code at +0x53 (4) and the adjective at +0x57 (26; the continent follows at +0x71), read
+ * from the 3.9.68 nation.dat (Yugoslavia, row 209). Every season database keeps the record "Yugoslavia" and adds
+ * Serbia, Montenegro and North Macedonia as new records when it has them (the nation.dat of the 49 databases),
+ * so a rename applies only when the data holds the old name and no record with a later name. */
+const SeasonIntlRename season_intl_renames[] = {
+    {2002, "Yugoslavia", "Serbia and Montenegro", "Serbia & Montenegro", "SCG", "Serbian", "int-world-13"},
+    {2006, "Serbia and Montenegro", "Serbia", "Serbia", "SRB", "Serbian", "int-world-61"},
+    {2011, "Netherlands Antilles", "Cura\xe7" "ao", "Cura\xe7" "ao", "CUW", "Cura\xe7" "aoan", "int-world-325"},
+    {2016, "Czech Republic", "Czechia", "Czechia", "CZE", "Czech", "int-world-181"},
+    {2017, "Swaziland", "Eswatini", "Eswatini", "SWZ", "Swazi", "int-world-193"},
+    {2018, "FYR of Macedonia", "North Macedonia", "North Macedonia", "MKD", "Macedonian", "int-world-205"},
+    {2022, "Turkey", "T\xfcrkiye", "T\xfcrkiye", "TUR", "Turkish", "int-world-253"},
+};
+const int season_intl_rename_count = (int)(sizeof season_intl_renames / sizeof season_intl_renames[0]);
+
+int season_intl_later_held(int i, int (*held)(const char *name, void *ctx), void *ctx)
+{
+    if (i < 0 || i >= season_intl_rename_count) return 0;
+    const char *n = season_intl_renames[i].name;
+    for (int step = 0; n && step <= season_intl_rename_count; step++) {
+        if (held(n, ctx)) return 1;
+        const char *next = NULL;
+        for (int k = 0; k < season_intl_rename_count; k++)
+            if (!strcasecmp(season_intl_renames[k].old, n)) next = season_intl_renames[k].name;
+        n = next;
+    }
+    return 0;
+}
+
+int season_intl_uefa_from(const char *name)
+{
+    /* UEFA Congress of 3 May 2016 (docs/research/rules-0.6.0/uefa-access.tsv, the 2016/17 rows: "Kosovo (55):
+     * admitted May 2016"); the 2018-19 Nations League has Kosovo in League D (nations-league-tiers.tsv). */
+    return name && !strcasecmp(name, "Kosovo") ? 2016 : 0;
 }

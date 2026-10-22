@@ -167,7 +167,7 @@ static uint32_t strongest(uint32_t continent, const uint32_t *teams, int n)
     for (int id = 0; id < nation_count(); id++) {
         uint32_t nation = nation_at(id);
         int rep = (int16_t)rd16(g_mem, nation + NATION_REPUTATION);
-        if (rep <= best_rep || !in_continent(nation, continent)) continue;
+        if (rep <= best_rep || !in_continent(nation, continent) || !season_nl_nation_can_play(id)) continue;
         uint32_t club = team_of(id);
         if (rt_unwinding) return 0;
         if (!club || has_team(teams, n, club)) continue;

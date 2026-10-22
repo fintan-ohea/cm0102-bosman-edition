@@ -34,6 +34,8 @@
  * - full_player_search: on the next game day (the search keeps its list for the day, 0x7af160).
  * - sharp_picture: at once (win_sharp_picture_changed).
  * - the other switches: at the next key, draw or save.
+ * The Display mode row says "Next start. Classic suits this screen" in widescreen on a screen less than 800
+ * pixels high (win_short_screen, the widescreen hint).
  * save_folder: the Change button of its row opens the computer's own folder picker (host_pick_folder, Q419)
  * and writes the choice to settings.txt; the row then shows the new folder, and the game uses it at the next
  * start. The test variable RECOMP_PICK_FOLDER gives the answer of the picker without a window. When
@@ -327,7 +329,9 @@ static void build_row(const Row *r, int index, int y1, int y2, uint32_t green, u
         if (i == cur) current(a, i + 1, s);
         else choice(a, i + 1, s, VALUE_ID, (uint32_t)index * 16u + (uint32_t)i, green);
     }
-    note(index == failed_row ? "Not saved: settings.txt\ncannot be written" : r->note, weights_two, 4, y1, y2, light);
+    const char *n = r->note;
+    if (r->id == OPT_DISPLAY && win_short_screen()) n = "Next start. Classic\nsuits this screen";
+    note(index == failed_row ? "Not saved: settings.txt\ncannot be written" : n, weights_two, 4, y1, y2, light);
 }
 
 /* The build of the box: cdecl, no arguments. The frame follows 0x823950. */

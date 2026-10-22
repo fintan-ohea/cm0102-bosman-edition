@@ -101,6 +101,7 @@ import time
 # with code 3 and names the state the game was in.
 STEPS = [
     "1000 click 400 300",                   # the intro: a click ends the logos and their sounds (INTRO_CLICK)
+    "wait screen:0x823950",                 # the settings screen of a first start (SETTINGS_WAIT)
     "8000 dump {d}/1-settings.bmp",
     "8200 click 522 272",                   # settings: Background Changes Off
     "8500 click 662 524",                   # settings: Ok
@@ -237,7 +238,8 @@ SAME_SAVE_RUNS = [
 # ref-0.5.0 itself is not compared with normal. --ref-build stays free for the main build.
 REF_050 = None
 # --ref-setup <name> (with --ref-build): the run setup-<name> plays this build with RECOMP_SETUP_TEXT=<name>, the
-# Setup Game of the reference build (for example 0.6.0-preview, database.c), and is compared with ref-build.
+# Setup Game of the reference build (0.6.0-preview, or menu-b for the strip of batch S; database.c), and is compared
+# with ref-build.
 REF_SETUP = None
 TEXT_050_RUN = ("text-0.5.0", {"faster_days": "off", "_against": "ref-0.5.0",
                                "_env": {"RECOMP_SETUP_TEXT": "0.5.0", "RECOMP_SEASON_CODE": "off"}})
@@ -311,6 +313,11 @@ SLEEP_DANGER_RUN = ("sleep-force", {"_env": {"RECOMP_IDLE_SLEEP": "force"}})
 
 SAVE_NAME = "samesave.sav"
 INTRO_CLICK = "1000 click 400 300"
+# The settings screen (build 0x823950) of a first start. Its clicks wait for it: on a slow machine (the
+# Windows build under wine in an emulated container) the screen came after 8 s, the clicks missed it, and
+# Background Changes stayed on, so every later screen had another background picture. A test whose user
+# folder already has game.cfg sees no settings screen and leaves out this wait with the settings clicks.
+SETTINGS_WAIT = "wait screen:0x823950"
 INTRO_WAIT = 20000  # ms
 
 
@@ -530,6 +537,11 @@ RULES_PART = "bosman_season.dat"
 # the four parts and bosman_season.dat, and a heap trace of Setup Game is the same with changing rules on and
 # off, so the rules-on game's own memory move meets the new menu's layout. Only the new-game check uses this.
 RULES_ON_PARTS = ("fifa_rankings.dat", "general.dat", "national_teams.dat", "staff history.tmp", "contract.dat")
+# O128 (the standard of O107): in a new game the runs off and foreign-off may differ in club records.dat. The same
+# build with the menu of the preview (RECOMP_SETUP_TEXT=0.6.0-preview) equals normal in both, so the Setup Game
+# top row's layout (Q422) meets the memory move that those options already make (foreign_colours draws names in
+# another colour); it is not decision code. Only those two runs of the new-game check use this.
+NEW_GAME_LAYOUT_PARTS = ("club records.dat",)
 
 
 # A saved test game that opens on another screen than the news ends its load at another wait (0.6.0 slice 11).
@@ -548,7 +560,9 @@ def same_save(program, game, mode, days, save_name=None, search=False, options=F
     if save_name is None:
         steps = [s for s in STEPS if "5-holiday" not in s and "quit" not in s]
         return compare_runs(program, game, mode, new_game_runs(SAME_SAVE_RUNS),
-                            without_intro_click(steps) + ["400000 quit"], days, allowed={"rules-on": (RULES_PART,) + RULES_ON_PARTS},
+                            without_intro_click(steps) + ["400000 quit"], days,
+                            allowed={"rules-on": (RULES_PART,) + RULES_ON_PARTS, "off": NEW_GAME_LAYOUT_PARTS,
+                                     "foreign-off": NEW_GAME_LAYOUT_PARTS},
                             required={"rules-on": RULES_PART}, text_050=True)
     # --save: load the saved test game, then the same Go on Holiday steps as the new game.
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fixtures"))
@@ -650,6 +664,12 @@ def main(argv):
         env = dict(os.environ, HOME=home, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", RECOMP_NO_BOX="1",
                    RECOMP_SCRIPT="; ".join(scaled_steps(mode, shots)))
         env["RECOMP_USER_DIR"] = user
+        # The season tables (names, rules) of the build, as the season checks read them
+        # (rules_report_check.py). Without them the game reads <game folder>/Seasons: a download has it, the
+        # clean files do not, and the news screen of the two showed other names ("Premier Division").
+        table = os.path.join(os.path.dirname(program), "seasons", "rules.tsv")
+        if os.path.exists(table) and "RECOMP_RULES_TABLE" not in env:
+            env["RECOMP_RULES_TABLE"] = table
         r = subprocess.run([program, "--game", game], env=env, capture_output=True, text=True, timeout=300)
         if r.returncode != 0:
             print(r.stderr[-2000:])

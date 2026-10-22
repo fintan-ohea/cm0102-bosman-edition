@@ -20,6 +20,7 @@
  * there means (clubs - 1) * meetings (0x689b1d..0x689b36), 35 for 36 clubs. The league phase passes its match
  * count, 8 or 6. */
 #include "win.h"
+#include "season_records.h"
 #include "season.h"
 #include "season_uefa.h"
 #include "season_uefa_league.h"
@@ -124,6 +125,9 @@ const SeasonLeagueDay *season_uefa_league_days(char comp, int *weekday)
 
 static uint32_t pending_stage, pending_list;
 
+/* A load or a new game (season_change_reset): no list is pending (load sweep). */
+void season_uefa_league_reset(void) { pending_stage = pending_list = 0; }
+
 void o_006835c0(void);
 
 /* League::create_fixtures, thiscall () returning 1 or 0. Only the league phase stage that is being made gets the
@@ -137,6 +141,7 @@ RT_WRAP(006835c0, league_create_fixtures)
         return;
     }
     uint32_t league = cpu.ecx;
+    season_records_league_log(league, rd32(g_mem, cpu.esp));      /* test log of slice 15b's fix */
     if (pending_stage && league == pending_stage && pending_list) {
         wr32(g_mem, league + 0xea, pending_list);
         pending_stage = pending_list = 0;
@@ -230,7 +235,10 @@ uint32_t season_uefa_league_make(uint32_t parent, uint32_t *clubs, int days, int
                       order, places, year, (uint32_t)stage, name, 0xf, 2, 0, 8, (uint32_t)days, 0, 2};
     pending_stage = obj, pending_list = list;
     call_this(F_LEAGUE_STAGE, obj, 22, a);
-    if (rt_unwinding) return 0;
+    if (rt_unwinding) {                         /* a later League at the same address must not take the list */
+        pending_stage = pending_list = 0;
+        return 0;
+    }
     cpu.esp = saved_esp;
     if (pending_stage) {                        /* create_fixtures did not run: the list is not the stage's */
         pending_stage = pending_list = 0;

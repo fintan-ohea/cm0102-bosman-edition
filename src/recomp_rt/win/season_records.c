@@ -1175,7 +1175,7 @@ void o_0090dae0(void);
  * 15 filled slots of +0xd7 (0x90d2f0, the count loop of 0x32 slots). The wrap names such a club. It only reads. */
 RT_WRAP(0090dae0, virtual_staff_top_up)
 {
-    uint32_t club = rt_arg(0);
+    uint32_t club = rt_arg(0), fixture = rt_arg(3);
     o_0090dae0();
     if (rt_unwinding || !getenv("RECOMP_CLUB_LOG") || !club) return;
     int n = 0;
@@ -1186,7 +1186,84 @@ RT_WRAP(0090dae0, virtual_staff_top_up)
         name[51] = 0;
         fprintf(stderr, "recomp: club records: %s (club %d, nation %08x, division %08x) has %d squad slots after the "
                         "virtual players\n", name, (int)rd32(g_mem, club), rd32(g_mem, club + 0x53), rd32(g_mem, club + 0x57), n);
+        /* The fixture (arg 3: its record +0x14) and, for a national team, the nation's squad record of
+         * NationalTeams [0xb74318] (+4 + nation id * 0x6e; the senior slot +0x32..+0x45, end date +0x3a, picked
+         * +0x43: select_squads_for_fixture 0x76bab0 at 0x76bb65..0x76bc23). */
+        uint32_t fx = fixture, rec = fx ? rd32(g_mem, fx + 0x14) : 0, nat = rd32(g_mem, club + 0x53);
+        char rn[52] = "";
+        if (rec) { memcpy(rn, g_mem + rec + 4, 51); rn[51] = 0; }
+        fprintf(stderr, "recomp: club records:   fixture %08x of %s, its bytes +0x40 %02x +0x43 %02x +0x4d %04x\n", fx, rn,
+                fx ? g_mem[fx + 0x40] : 0, fx ? g_mem[fx + 0x43] : 0, fx ? rd16(g_mem, fx + 0x4d) : 0);
+        fprintf(stderr, "recomp: club records:   club pointer %08x, fixture bytes:", club);
+        for (uint32_t k = 0; fx && k < 0x50; k++) fprintf(stderr, "%s%02x", k % 16 ? " " : " |", g_mem[fx + k]);
+        fputc('\n', stderr);
+        /* The competition objects of g_comp_object_table [0xadadfc] (by record id) whose record is the fixture's. */
+        uint32_t objs = rd32(g_mem, 0xadadfcu);
+        for (uint32_t id = 0; objs && rec && id < 1024; id++) {
+            uint32_t o = rd32(g_mem, objs + 4 * id);
+            if (o >= 0x10000u && o < 0xfff00000u && rd32(g_mem, o + 4) == rec)
+                fprintf(stderr, "recomp: club records:   object %08x of record %u, vtable %08x, clubs %d\n", o, id,
+                        rd32(g_mem, o), (int16_t)rd16(g_mem, o + 0x3e));
+        }
+        uint32_t nt = rd32(g_mem, 0xb74318u);
+        if (nt && nat) {
+            uint32_t sq = rd32(g_mem, nt + 4) + rd32(g_mem, nat) * 0x6eu;
+            fprintf(stderr, "recomp: club records:   squad record of nation %u:", rd32(g_mem, nat));
+            for (uint32_t k = 0x32; k < 0x46; k++) fprintf(stderr, " %02x", g_mem[sq + k]);
+            fputc('\n', stderr);
+        }
     }
+}
+
+
+/* Test log (RECOMP_CLUB_LOG=2): FIXTURE_MANAGER::add_fixture 0x5aa680 (its wrap in season_kind_cup_breaks.c calls
+ * this), for a fixture whose record (+0x14) has the long name of RECOMP_FIXTURE_RECORD: the caller (return
+ * address) and the fixture's clubs (+0x1c, +0x20). It only reads. */
+void season_records_fixture_log(uint32_t fx, uint32_t ret)
+{
+    const char *want = getenv("RECOMP_FIXTURE_RECORD"), *v = getenv("RECOMP_CLUB_LOG");
+    if (!v || strcmp(v, "2") || fx < 0x10000u) return;
+    uint32_t rec = rd32(g_mem, fx + 0x14);
+    char rn[52] = "";
+    if (rec >= 0x10000u && rec < 0xfff00000u) { memcpy(rn, g_mem + rec + 4, 51); rn[51] = 0; }
+    /* A club pointer outside the club table: the fixture names no club. */
+    uint32_t base = rd32(g_mem, 0xae23b4u), end = base + rd32(g_mem, 0xae235cu) * 0x245u;
+    int bad = 0;
+    for (int k = 0; k < 2; k++) {
+        uint32_t c = rd32(g_mem, fx + 0x1c + 4u * (uint32_t)k);
+        bad |= c < base || c >= end || (c - base) % 0x245u;
+    }
+    if ((want && *want && !strcmp(rn, want)) || bad)
+        fprintf(stderr, "recomp: club records: add_fixture from %08x: %s, clubs %08x %08x%s\n", ret, rn,
+                rd32(g_mem, fx + 0x1c), rd32(g_mem, fx + 0x20), bad ? " (not a club)" : "");
+}
+
+/* Test log (RECOMP_CLUB_LOG=2): League::create_fixtures 0x6835c0 (its wrap in season_uefa_league.c calls this):
+ * a league whose table (+0xb1, rows of 0x3b, count +0x3e) holds a row that is not a club of the club table. It
+ * names the object, its vtable, record and count, the caller and the bad rows. It only reads. */
+void season_records_league_log(uint32_t league, uint32_t ret)
+{
+    const char *v = getenv("RECOMP_CLUB_LOG");
+    if (!v || strcmp(v, "2") || league < 0x10000u) return;
+    uint32_t table = rd32(g_mem, league + 0xb1), rec = rd32(g_mem, league + 4);
+    int n = (int16_t)rd16(g_mem, league + 0x3e);
+    uint32_t base = rd32(g_mem, 0xae23b4u), end = base + rd32(g_mem, 0xae235cu) * 0x245u;
+    if (table < 0x10000u || n <= 0 || n > 64) return;
+    int bad = 0;
+    for (int i = 0; i < n; i++) {
+        uint32_t c = rd32(g_mem, table + (uint32_t)i * 0x3bu);
+        bad += c < base || c >= end || (c - base) % 0x245u;
+    }
+    if (!bad) return;
+    char rn[52] = "";
+    if (rec >= 0x10000u && rec < 0xfff00000u) { memcpy(rn, g_mem + rec + 4, 51); rn[51] = 0; }
+    fprintf(stderr, "recomp: club records: create_fixtures from %08x: league %08x vtable %08x %s, %d rows, %d not "
+                    "clubs:", ret, league, rd32(g_mem, league), rn, n, bad);
+    for (int i = 0; i < n; i++) {
+        uint32_t c = rd32(g_mem, table + (uint32_t)i * 0x3bu);
+        if (c < base || c >= end || (c - base) % 0x245u) fprintf(stderr, " row %d %08x;", i, c);
+    }
+    fputc('\n', stderr);
 }
 
 void o_0090d2f0(void);
@@ -1200,9 +1277,50 @@ void o_0090d2f0(void);
  * stays short: in a 2023 start (October 2023, all nations) United States U21 had 11 on day 243 of 2024, in an
  * Under 21 International. In a season game the call takes no_check 1 at once: the same match as after the box,
  * with no modal box that stops the game. The base game keeps the original's check (Q152). */
+void season_national_sizes(uint32_t fixture);   /* season_national_fill.c */
+void season_national_fill(uint32_t fixture);
+
 RT_WRAP(0090d2f0, virtual_staff_fill_check)
 {
-    if (season_code_on() && (season_start_year() != SEASON_FIRST_YEAR || season_changing_rules()))
-        g_mem[cpu.esp + 0xc] = 1;   /* no_check; the wrap of 0x90dae0 above names a short club (RECOMP_CLUB_LOG) */
+    uint32_t fixture = rt_arg(0);
+    int season = season_code_on() && (season_start_year() != SEASON_FIRST_YEAR || season_changing_rules());
+    if (season) g_mem[cpu.esp + 0xc] = 1;   /* no_check; the wrap of 0x90dae0 above names a short club (RECOMP_CLUB_LOG) */
+    if (season) season_national_sizes(fixture);   /* a national side whose nation has no squad sizes */
     o_0090d2f0();
+    if (season && !rt_unwinding) season_national_fill(fixture);   /* a national side that stays short */
+}
+
+void o_006db500(void);
+
+/* Test log (RECOMP_CLUB_LOG=1): the team pick 0x6db500, thiscall, called by CM3_MATCH_ENGINE::init_match 0x6b7f20
+ * once per side (0x6b89b9 for the away side, args: engine, [club+0xcf], club+0xd7, ..., club, opponent, fixture).
+ * init_match shows match_eng.cpp 612 (home) or 652 (away) when it returns fewer than 11 (0x6b89be). The line names
+ * the side, its squad slots, the national squad size of NationalTeams (0x775520) and the fixture's competition
+ * (record +0x14). It only reads. */
+RT_WRAP(006db500, team_pick_log)
+{
+    uint32_t club = rt_arg(2) - 0xd7, fixture = rt_arg(7);
+    o_006db500();
+    if (rt_unwinding || (int8_t)cpu.eax >= 11 || !getenv("RECOMP_CLUB_LOG")) return;
+    int n = 0;
+    for (uint32_t j = 0; j < SQUAD; j++) n += rd32(g_mem, club + 0xd7 + 4 * j) != 0;
+    char name[52] = "", cname[52] = "", hname[52] = "";
+    uint32_t rec = rd32(g_mem, fixture + 0x14), home = rd32(g_mem, fixture + 0x1c);
+    if (club >= 0x10000u) memcpy(name, g_mem + club + 4, 51);
+    if (rec >= 0x10000u) memcpy(cname, g_mem + rec + 4, 51);
+    if (home >= 0x10000u) memcpy(hname, g_mem + home + 4, 51);
+    fprintf(stderr, "recomp: club records: team pick of %s (club %08x) gives %d players from %d squad slots", name, club,
+            (int8_t)cpu.eax, n);
+    uint32_t nt = rd32(g_mem, 0xb74318u), sizes = nt >= 0x10000u ? rd32(g_mem, nt + 4) : 0;
+    uint32_t sides[2] = {club, rt_arg(6)};
+    for (int k = 0; k < 2; k++) {                     /* 0x7754c0 (+0x42) and 0x775520 (+0x43), kinds 0 to 2 */
+        uint32_t nat = sides[k] >= 0x10000u ? rd32(g_mem, sides[k] + 0x53) : 0;
+        if (sizes < 0x10000u || nat < 0x10000u || rd32(g_mem, nat) >= 0x10000u) continue;
+        fprintf(stderr, ", %s national squad sizes", k ? "opponent" : "its");
+        for (uint32_t t = 0; t < 3; t++)
+            fprintf(stderr, " %d/%d", g_mem[sizes + 110u * rd32(g_mem, nat) + 20 * t + 0x42],
+                    g_mem[sizes + 110u * rd32(g_mem, nat) + 20 * t + 0x43]);
+    }
+    fprintf(stderr, ", record %d %s, home %s, round %d\n", rec >= 0x10000u ? (int)rd32(g_mem, rec) : -1, cname, hname,
+            (int16_t)rd16(g_mem, fixture + 0x30));
 }

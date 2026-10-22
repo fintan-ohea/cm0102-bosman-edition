@@ -24,6 +24,11 @@ void season_records_after_load(void);
  * `real` (the real column of Seasons/clubs.tsv), or -1. */
 int season_records_club(int season, const char *real);
 
+/* Test log of FIXTURE_MANAGER::add_fixture 0x5aa680 (season_kind_cup_breaks.c calls it). */
+void season_records_fixture_log(uint32_t fixture, uint32_t ret);
+/* Test log of League::create_fixtures 0x6835c0 (season_uefa_league.c calls it). */
+void season_records_league_log(uint32_t league, uint32_t ret);
+
 /* The squad fill (Q509) at the start of 0x524d70, after slice 15's club moves (season_clubs.c). */
 void season_records_fill(int season);
 

@@ -6,7 +6,7 @@ save near each season change that a new program loads and plays on.
 Usage:
     python3 tests/seasons/soak_run.py <cm0102_recomp> <game folder> --keep <folder> [--start 2001] [--last 2027]
         [--seed 1] [--nations all|England,...] [--database <folder>] [--changing-rules on|off] [--leg-days 365]
-        [--timeout 14400]
+        [--extra regional,c2,spain,...] [--timeout 14400]
 
 The legs. Leg 0 makes the game (tests/seasons/rules_report_check.py: the steps of a new game, the season jump to
 --last, the rules report) with RECOMP_SAVE_AFTER_DAYS=<leg days>: at the first human turn that many game days after
@@ -87,8 +87,8 @@ def play(args, env, log, timeout):
     return code, time.time() - start, box or first_box(log)
 
 
-def leg_env(program, user, home, shots, steps, last, report, extra):
-    table = os.path.join(os.path.dirname(os.path.abspath(program)), "seasons", "rules.tsv")
+def leg_env(program, game, user, home, shots, steps, last, report, extra):
+    table = rrc.rules_table(program, game)
     return dict(os.environ, HOME=home, SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", RECOMP_NO_BOX="1",
                 RECOMP_USER_DIR=user, RECOMP_FIXED_CLOCK="1", RECOMP_SEASON_JUMP=str(last), RECOMP_SCREEN_LOG="1",
                 RECOMP_RULES_REPORT=report, RECOMP_RULES_TABLE=table,
@@ -115,11 +115,14 @@ def settings(user, rules, database):
 def new_game_leg(o, work, save_days):
     user, home, shots = folders(work)
     settings(user, o["rules"], o["database"])
-    steps = rrc.league_steps(o["nations"], [])
+    steps = rrc.league_steps(o["nations"], o["extra"])
     extra = {"RECOMP_START_SEASON": str(o["start"])}
+    test_extra = [e for e in o["extra"] if e in rrc.ENV_EXTRA]     # Spain and Portugal: a test switch, no click
+    if test_extra:
+        extra["RECOMP_TEST_EXTRA"] = ",".join(test_extra)
     if save_days:
         extra["RECOMP_SAVE_AFTER_DAYS"] = str(save_days)
-    env = leg_env(o["program"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
+    env = leg_env(o["program"], o["game"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
     return play([o["program"], "--game", o["game"], "-seed", str(o["seed"])], env, os.path.join(work, "stderr.txt"),
                 o["timeout"])
 
@@ -133,7 +136,7 @@ def load_leg(o, work, save, save_days):
     load = smoke_run.without_intro_click(fixtures.LOAD_STEPS)
     steps = [x for x in load if x != "wait first-news"] + [f"{o['timeout'] * 1000} quit"]
     extra = {"RECOMP_SAVE_AFTER_DAYS": str(save_days)} if save_days else {}
-    env = leg_env(o["program"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
+    env = leg_env(o["program"], o["game"], user, home, shots, steps, o["last"], os.path.join(work, "report.tsv"), extra)
     return play([o["program"], "--game", o["game"], "-seed", str(o["seed"])], env, os.path.join(work, "stderr.txt"),
                 o["timeout"])
 
@@ -148,7 +151,8 @@ def main(argv):
          "seed": int(arg(argv, "--seed", 1)), "nations": nations.split(","),
          "database": os.path.abspath(arg(argv, "--database")) if "--database" in argv else None,
          "rules": arg(argv, "--changing-rules", "on"), "days": int(arg(argv, "--leg-days", 365)),
-         "timeout": int(arg(argv, "--timeout", 14400))}
+         "timeout": int(arg(argv, "--timeout", 14400)),
+         "extra": [e for e in arg(argv, "--extra", "").split(",") if e]}
     if o["last"] < o["start"]:
         print("soak_run.py: --last is before --start")
         return 2

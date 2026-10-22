@@ -135,7 +135,7 @@ def play(program, game, work, label, year, db_folder, env=None, steps=None, seas
 
 
 # Choose Season screen positions in classic mode (tests/seasons/season_screen_run.py).
-SETUP_SEASON, TILE_2010, CHOOSE, BACK = "click 445 107", "click 132 182", "click 675 573", "click 358 573"
+SETUP_SEASON, TILE_2010, CHOOSE, BACK = "click 277 109", "click 132 182", "click 675 573", "click 358 573"
 
 
 def second_steps():

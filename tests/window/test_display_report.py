@@ -20,18 +20,19 @@ def main(argv):
 
     with tempfile.TemporaryDirectory() as user:
         report = os.path.join(user, "display-report.txt")
-        env = dict(os.environ, RECOMP_USER_DIR=user, RECOMP_SCRIPT="3000 resize 1000 700; 4000 report; 5000 quit")
+        env = dict(os.environ, RECOMP_USER_DIR=user, RECOMP_SCRIPT="3000 resize 1300 820; 4000 report; 5000 quit")
         err = subprocess.run([program, "--game", game], env=env, capture_output=True, text=True,
                              timeout=120).stderr
         check("written at start", "display report written (at start)" in err)
         check("written on the report key", "display report written (on the report key)" in err)
         check("written at quit", "display report written (at quit)" in err)
         text = open(report).read() if os.path.exists(report) else ""
-        for part in ("System: ", "Screens (SDL):", "Now: window 1000x700", "Last window changes",
+        for part in ("System: ", "Screens (SDL):", "Now: window 1300x820", "Last window changes",
                      "Settings: display = widescreen", "Game folder: "):
             check("report has " + part, part in text)
-        check("the change log has the resize", "size changed: window 1000x700" in text)
-        check("the change log has the report key", "report key: window 1000x700" in text)
+        check("the change log has the resize", "size changed: window 1300x820" in text)
+        check("1300x820 is above a fit of 1: the report says sharp bilinear", "sharp: " in text)
+        check("the change log has the report key", "report key: window 1300x820" in text)
         home = os.path.expanduser("~")
         name = os.path.basename(home)
         check("no account name in the paths", home not in text and ("/%s/" % name) not in text)

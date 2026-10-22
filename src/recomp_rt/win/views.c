@@ -253,7 +253,7 @@ void views_widget_drawn(uint32_t w)
 {
     compare_widget_drawn(w);
     season_screen_widget_drawn(w);      /* the Choose Season screen (0.6.0 slice 13) */
-    setup_widget_drawn(w);              /* the frame of the season strip of Setup Game */
+    setup_widget_drawn(w);              /* the changing rules button of Setup Game */
     if (!star_count || !on_top() || rd32(g_mem, NO_DRAW)) return;
     uint32_t first = display() + WIDGETS;
     if (w < first || (w - first) % WIDGET_SIZE) return;

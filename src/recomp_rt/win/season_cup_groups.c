@@ -713,6 +713,7 @@ void o_0056bab0(void);
 void o_0056bc50(void);
 void o_0056c010(void);
 void o_00595160(void);
+void o_0056b2b0(void);
 
 /* ScoLgeCup and EngAutoCup create_round_table, thiscall (char stage, short *rounds, short *first id, int *out) ret
  * 0x10, vtable +0x3c (0x96f568, 0x969894). The other classes of a format call season_cup_groups_table from the wraps
@@ -796,4 +797,20 @@ RT_WRAP(00595160, groups_stage_honours)
     }
     cpu.ecx = ko;
     rt_jump(rd32(g_mem, rd32(g_mem, ko) + 0x30));
+}
+
+/* EngAutoCup::build_fate_news_text 0x56b2b0, slot +0x48, thiscall (10 arguments) ret 0x28. For a full text (argument
+ * 9, tested at 0x56b2b5) it calls the tie writer 0x4b0b80 with the fixture of argument 5 and no test of it. Comp's
+ * version 0x48c6d0 calls 0x4b0b80 only for a fixture (test at 0x48c6d7). In the original every EFL Trophy fate item
+ * comes from a tie; an item of a group stage here has none, and NewsItem::write_text 0x77bc80 (call at 0x77defe)
+ * then made 0x4b0b80 read a fixture at 0 (box match_stats.CPP 234 from 0x7295dc, gate 2022, 25 December 2022). Only
+ * a full text with no fixture goes to 0x48c6d0; a call with a fixture runs the original as before (the base game
+ * never has a zero fixture there, because the original boxes on it). */
+RT_WRAP(0056b2b0, groups_auto_fate_news)
+{
+    if (rd32(g_mem, cpu.esp + 0x24u) && !rd32(g_mem, cpu.esp + 0x14u)) {
+        rt_jump(0x0048c6d0u);
+        return;
+    }
+    o_0056b2b0();
 }

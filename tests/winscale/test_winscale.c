@@ -1,4 +1,4 @@
-/* Whole pixels or not with sharp_picture (winscale.h, 0.6.0 Windows display scaling). */
+/* The scaling of the picture to the window (winscale.h, 0.6.0 picture fill). */
 #include "winscale.h"
 
 #include <stdio.h>
@@ -8,27 +8,36 @@ static int failed;
 
 int main(void)
 {
-    /* The old rule (Mac, Linux). */
-    CHECK(winscale_whole(1280, 800, 1280, 800, 0));                 /* 1 time */
-    CHECK(winscale_whole(1600, 1000, 1280, 800, 0));                /* 1.25 times: 1 is 4/5 */
-    CHECK(!winscale_whole(1920, 1200, 1280, 800, 0));               /* 1.5 times: nearest pixels fill */
-    CHECK(winscale_whole(2560, 1600, 1280, 800, 0));                /* 2 times */
-    CHECK(winscale_whole(3072, 1920, 1280, 800, 0));                /* 2.4 times: 2 is at least 4/5 */
-    CHECK(!winscale_whole(3712, 2320, 1280, 800, 0));               /* 2.9 times */
-    CHECK(!winscale_whole(1000, 625, 1280, 800, 0));                /* smaller than the picture */
+    /* The fit keeps the shape: the smaller of the two scales. */
+    CHECK(winscale_fit(1280, 800, 1280, 800) == 1);
+    CHECK(winscale_fit(1366, 705, 800, 600) == 705.0 / 600);       /* classic maximised on 1366x768 */
+    CHECK(winscale_fit(1110, 694, 1280, 800) < 0.87);               /* widescreen fitted on 1366x768 */
 
-    /* Windows: scale 1 from 1 up to 2 times. */
-    CHECK(winscale_whole(1280, 800, 1280, 800, 1));
-    CHECK(winscale_whole(1281, 801, 1280, 800, 1));                 /* a 1-pixel round-up at 150 % */
-    CHECK(winscale_whole(1600, 1000, 1280, 800, 1));                /* 125 % */
-    CHECK(winscale_whole(1920, 1009, 1280, 800, 1));                /* 1080p at 125 %, maximised */
-    CHECK(winscale_whole(1920, 1200, 1280, 800, 1));                /* 150 % */
-    CHECK(winscale_whole(1599, 1199, 800, 600, 1));                 /* classic, just under 2 times */
-    CHECK(winscale_whole(1600, 1200, 800, 600, 1));                 /* classic, 2 times */
-    CHECK(winscale_whole(3072, 1920, 1280, 800, 1));                /* 2.4 times: the old rule */
-    CHECK(!winscale_whole(3712, 2320, 1280, 800, 1));               /* 2.9 times: the old rule */
-    CHECK(!winscale_whole(1279, 800, 1280, 800, 1));                /* smaller: as before */
-    CHECK(!winscale_whole(0, 0, 1280, 800, 1));                     /* no output size */
-    puts(failed ? "FAIL" : "PASS");
+    /* The work texture: the smallest whole number at least the fit. */
+    CHECK(winscale_work(1110, 694, 1280, 800, 0, 0) == 1);          /* smaller than the picture: none */
+    CHECK(winscale_work(1280, 800, 1280, 800, 0, 0) == 1);          /* 1 time: none */
+    CHECK(winscale_work(1281, 801, 1280, 800, 0, 0) == 1);          /* a 1-pixel round-up at 150 %: none */
+    CHECK(winscale_work(1366, 705, 800, 600, 0, 0) == 2);           /* 1.175 times: 2, then down */
+    CHECK(winscale_work(1366, 768, 800, 600, 0, 0) == 2);           /* classic full screen, 1.28 times */
+    CHECK(winscale_work(1920, 1009, 1280, 800, 0, 0) == 2);         /* 1080p at 125 %, maximised */
+    CHECK(winscale_work(2560, 1600, 1280, 800, 0, 0) == 2);         /* 2 times exactly */
+    CHECK(winscale_work(3024, 1890, 1280, 800, 0, 0) == 3);         /* 2.36 times */
+    CHECK(winscale_work(3840, 2160, 800, 600, 0, 0) == 4);          /* classic on 4K: 3.6 times */
+    CHECK(winscale_work(3840, 2160, 800, 600, 2048, 2048) == 2);    /* a small texture limit */
+    CHECK(winscale_work(0, 0, 1280, 800, 0, 0) == 1);
+
+    /* The 800x600 full screen: classic only, and only when the screen lists the mode. */
+    CHECK(winscale_mode_change(800, 600, 1));
+    CHECK(!winscale_mode_change(800, 600, 0));                     /* a Mac: no 800x600 mode */
+    CHECK(!winscale_mode_change(1280, 800, 1));                    /* widescreen: the desktop size */
+
+    /* The widescreen hint: a screen less than 800 real pixels high. */
+    CHECK(winscale_short_screen(1280, 768));
+    CHECK(winscale_short_screen(1280, 720));
+    CHECK(!winscale_short_screen(1280, 800));
+    CHECK(!winscale_short_screen(1280, 1080));
+    CHECK(!winscale_short_screen(800, 768));                       /* classic: no hint */
+    CHECK(!winscale_short_screen(1280, 0));                        /* height unknown */
+    if (!failed) printf("winscale: all checks passed\n");
     return failed;
 }

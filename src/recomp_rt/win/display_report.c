@@ -91,16 +91,19 @@ static void window_line(Text *t)
     SDL_RenderGetViewport(r, &vp);
     SDL_RenderGetScale(r, &sx, &sy);
     Uint32 f = SDL_GetWindowFlags(w);
-    add(t, "window %dx%d, output %dx%d pixels, picture %dx%d drawn at %dx%d (scale %.3f)%s%s%s\n", ww, wh, ow, oh,
-        (int)rt_screen_w, (int)rt_screen_h, (int)(vp.w * sx + 0.5f), (int)(vp.h * sy + 0.5f), sx,
-        SDL_RenderGetIntegerScale(r) ? ", whole pixels" : "", (f & SDL_WINDOW_MAXIMIZED) ? ", maximised" : "",
-        (f & SDL_WINDOW_FULLSCREEN) ? ", full screen" : "");
+    char way[80];
+    win_picture_way(way, sizeof way);
+    add(t, "window %dx%d, output %dx%d pixels, picture %dx%d drawn at %dx%d (scale %.3f, %s)%s%s\n", ww, wh, ow, oh,
+        (int)rt_screen_w, (int)rt_screen_h, (int)(vp.w * sx + 0.5f), (int)(vp.h * sy + 0.5f), sx, way,
+        (f & SDL_WINDOW_MAXIMIZED) ? ", maximised" : "",
+        (f & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP ? ", full screen"
+        : (f & SDL_WINDOW_FULLSCREEN) ? ", full screen in an 800x600 mode" : "");
 }
 
 void display_report_event(const char *what)
 {
     if (!win_sdl_window()) return;
-    char line[260];
+    char line[300];
     Text t = {line, sizeof line, 0};
     window_line(&t);
     Event *e = &events[event_count % REPORT_EVENTS];
@@ -142,6 +145,7 @@ static void build(char *buf, size_t room, const char *when)
     if (tex && !SDL_GetTextureScaleMode(tex, &sm)) add(&t, "Picture filter: %s\n", scale_mode_name(sm));
     const char *hint = SDL_GetHint(SDL_HINT_RENDER_SCALE_QUALITY);
     if (hint) add(&t, "SDL scale quality hint: %s\n", hint);
+    if (win_short_screen()) add(&t, "Screen less than 800 pixels high: classic mode suits it better\n");
 
     SDL_Window *w = win_sdl_window();
     int on = w ? SDL_GetWindowDisplayIndex(w) : -1;

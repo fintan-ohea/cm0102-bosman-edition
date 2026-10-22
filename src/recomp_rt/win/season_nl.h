@@ -143,6 +143,9 @@ int season_nl_nation_of_club(uint32_t club);
  * nation), or 0. */
 uint32_t season_nl_nation_team(int id);
 
+/* 1 when the nation id has a continent in the data (nation +0x71), so its national team can take a squad. */
+int season_nl_nation_can_play(int id);
+
 /* The ranked results of the UEFA edition of year `year` (2018 for 2018-19) while the Nations League object
  * holds its tables (from its draw to the draw of the next edition), else 0. */
 int season_nl_held_results(int year, SeasonNlRow *rows);
@@ -168,5 +171,7 @@ int season_gold_cup_record(uint32_t rec);
 int season_finalissima_round_table(void (*original)(void));        /* 1 for the record of the Gold Cup or the Finalissima */
 /* 1 for the record of an object of slice 28 (season_nl.c): its fixtures are international (0x669ae0). */
 int season_nl_international(uint32_t rec);
+/* 1 while a Nations League object runs the Euro qualifying constructor (season_nl.c, load sweep). */
+int season_nl_in_ctor(void);
 
 #endif

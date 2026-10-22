@@ -24,7 +24,7 @@
  * seasons_db_prepare (slice 14), which unpacks a zipped database once into Databases. Before the unpack the
  * screen is built once more with a line that says so, and the unpack runs at the next input call. Then the
  * options database and season get the choice, season_set_new_game gets the start year and the screen goes
- * back to Setup Game, whose season strip shows the season, its database and the changing rules state.
+ * back to Setup Game, whose top row shows the season, its database and the changing rules state.
  *
  * Same game (Q152): the screen keeps its texts in runtime memory (win_static_alloc), not in the game's heap.
  * It reads files only: settings.txt changes through options_set. The push of the node is the original's.
@@ -775,6 +775,7 @@ static int rules_choice = -1;       /* -1: the option changing_rules */
 
 int season_screen_rules_choice(void) { return rules_choice; }
 int season_screen_rules_on(void) { return rules_choice < 0 ? options_bool(OPT_CHANGING_RULES) : rules_choice; }
+void season_screen_set_rules(int on) { rules_choice = on ? 1 : 0; }
 
 /* "Changing rules", On and Off (the chosen one a yellow framed label, as the options box), and what it does. */
 static void rules_row(const Layout *L, int x, int y)

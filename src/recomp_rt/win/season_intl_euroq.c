@@ -30,6 +30,7 @@
  * these), so they are set again after a load (ctor epilogue 0x57d03b). */
 #include "win.h"
 #include "season_intl.h"
+#include "season_nl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,8 @@
 #define EURO_VTABLE 0x96a020u
 #define GROUP_STAGE 0x0057ed10u         /* group stage builder, thiscall (index, teams, 6), ret 0xc */
 #define NATION_NAME 0x4u
+#define F_MALLOC 0x00944e46u            /* malloc, cdecl (size) */
+#define F_FREE 0x009452cau              /* free, cdecl (block) */
 
 enum { ORIGINAL, NINE_GROUPS, TEN_GROUPS };
 
@@ -53,6 +56,14 @@ static int logging(void)
 }
 
 static int readable(uint32_t p) { return p >= 0x10000u && p < 0xfff00000u; }
+
+static uint32_t call_cdecl(uint32_t fn, int nargs, const uint32_t *args)
+{
+    Cpu saved = cpu;
+    uint32_t r = rt_callback(fn, nargs, args);
+    if (!rt_unwinding) cpu = saved;
+    return r;
+}
 
 static uint32_t call_this(uint32_t fn, uint32_t self, int nargs, const uint32_t *args)
 {
@@ -81,8 +92,10 @@ void rt_euroq_rules(uint32_t self)
     int f = format_of(self);
     if (f < 0) return;
     static const uint8_t bytes[3][5] = {{1, 1, 7, 8, 9}, {2, 1, 7, 8, 9}, {2, 0, 8, 0xff, 9}};
-    wr8(g_mem, self + 0xbeu, bytes[f][0]);
-    wr8(g_mem, self + 0xbfu, bytes[f][1]);
+    if (!season_nl_in_ctor()) {                 /* a Nations League keeps its own (saved) places */
+        wr8(g_mem, self + 0xbeu, bytes[f][0]);
+        wr8(g_mem, self + 0xbfu, bytes[f][1]);
+    }
     wr8(g_mem, self + 0xffu, bytes[f][2]);
     wr8(g_mem, self + 0x100u, bytes[f][3]);
     wr8(g_mem, self + 0x101u, bytes[f][4]);
@@ -191,6 +204,24 @@ RT_WRAP(0057ed10, euroq_group_stage)
         return;
     }
     uint32_t stages = rd32(g_mem, self + 0xcu);
+    int32_t count = (int32_t)rd32(g_mem, self + 0x2cu);
+    if (index == 0u && readable(stages) && count >= 0 && count < 10) {
+        /* A campaign after one that ended with no stage after the groups (+0x2c 9, euroq_advance below): +0x2c
+         * stays 9, as start_new_season 0x57eb20 does not set it, and after a load League::load gave the array
+         * only 9 slots, so stage[9] would be past its end. A new array of 10 slots and +0x2c 10 (load sweep). */
+        uint32_t size[1] = {40}, fresh = call_cdecl(F_MALLOC, 1, size);
+        if (rt_unwinding) return;
+        if (readable(fresh)) {
+            memset(g_mem + fresh, 0, 40);
+            memcpy(g_mem + fresh, g_mem + stages, 4u * (uint32_t)count);
+            wr32(g_mem, self + 0xcu, fresh);
+            wr32(g_mem, self + 0x2cu, 10);
+            uint32_t old[1] = {stages};
+            call_cdecl(F_FREE, 1, old);
+            if (rt_unwinding) return;
+            stages = fresh;
+        }
+    }
     if (index == 0u && readable(stages)) {      /* the array is not cleared: stage[8] held a stale pointer */
         wr32(g_mem, stages + 32u, 0);
         wr32(g_mem, stages + 36u, 0);
@@ -220,12 +251,20 @@ void o_0057ec60(void);
  * the groups, the step makes it 9, and 0x57ef50 takes its no-ranking path (the news for the teams that are out)
  * and makes no stage[9], so the next update would call an empty stage at 0x6848f8. When stage[9] is still empty
  * after the step (the group builder above clears it), +0x30 goes back to 8 and +0x2c to 9: the next update ends
- * the qualifying. A stage that slice 28 builds there keeps the original's step. */
+ * the qualifying. A stage that slice 28 builds there keeps the original's step.
+ *
+ * The ctor allocates the 10 slots of the stage array with malloc and does not clear them (0x57d00b..0x57d01e),
+ * and League::load_from_temp_file fills only the slots 0 to +0x30 of that array (0x688e3a..0x689017). So after a
+ * load slot 9 can hold old heap bytes: the test below took them for a stage, +0x30 stayed 9, and the next update
+ * called through them (gate run of a 2025 start, 8 October 2027: "call to 0 ... from 0x6848fb"). Only the step
+ * makes stage[9], so the slot is cleared before it. */
 RT_WRAP(0057ec60, euroq_advance)
 {
     uint32_t self = cpu.ecx;
     int ten = format_of(self) == TEN_GROUPS;
     int last = (int32_t)rd32(g_mem, self + 0x30u) == (int8_t)rd8(g_mem, self + 0xffu);
+    uint32_t slots = rd32(g_mem, self + 0xcu);
+    if (ten && last && readable(slots) && (int32_t)rd32(g_mem, self + 0x2cu) == 10) wr32(g_mem, slots + 4u * 9u, 0);
     o_0057ec60();
     if (rt_unwinding || !ten || !last) return;
     uint32_t stages = rd32(g_mem, self + 0xcu), next = rd32(g_mem, self + 0x30u);
