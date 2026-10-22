@@ -33,6 +33,9 @@ python3 -I match.py 2004 "<DB>/September 2005" "<facts>" "<work>"
 python3 -I leagues.py 2004 "<DB>/September 2005" "<facts>" "<work>"
 python3 -I convert.py 2004 "<DB>/September 2005" "<facts>" "<work>" "<DB>/September 2010 ODB" "<conv>" "<DB>/October 2003"
 python3 -I keyplayers.py 2004 "<conv>" "<facts>" "<work>" "<DB>" "<out>" [<overrides.tsv>]
+python3 -I duplicates.py merge "<out>" "<DB>/September 2005" "<conv>" "<work>/duplicates.tsv"
+python3 -I staff_slots.py "<out>" "<work>/staff-slots.tsv"
+python3 -I duplicates.py check "<out>"
 ```
 
 ## 2006/07 (Summer 2006)
@@ -46,7 +49,18 @@ python3 -I match.py 2006 "<DB>/November 2007" "<facts>" "<work>"
 python3 -I leagues.py 2006 "<DB>/November 2007" "<facts>" "<work>"
 python3 -I convert.py 2006 "<DB>/November 2007" "<facts>" "<work>" "<DB>/September 2010 ODB" "<conv>" "<DB>/September 2005"
 python3 -I keyplayers.py 2006 "<conv>" "<facts>" "<work>" "<DB>" "<out>" [<overrides.tsv>]
+python3 -I duplicates.py merge "<out>" "<DB>/November 2007" "<conv>" "<work>/duplicates.tsv"
+python3 -I staff_slots.py "<out>" "<work>/staff-slots.tsv"
+python3 -I duplicates.py check "<out>"
 ```
+
+`duplicates.py merge` makes one row of each person who has two (a fill row or a key player's row beside the
+template's row, or a template that has a person twice; the rules are in its header), and `check` fails while one
+is left. The release zips run the check too.
+
+`staff_slots.py` gives empty coach, scout, physio and manager slots at the lowest-reputation clubs of each nation
+to that nation's free non-playing staff, until a new game with every league selected needs fewer than 22,000 of
+the original game's 23,000 extra staff rows (else it stops at "Database.cpp 1844"; the header has the rules).
 
 `<conv>` is a new folder for the converter's output. The overrides file (identity decisions per key player, see
 `keyplayers.py`) names FM rows, so it stays in the work folder with the FM data. Two builds with different
@@ -90,3 +104,14 @@ database division only through its TARGETS list, so slice 15 adds these lines to
 ```
 
 Switzerland has 12 places in the game and 10 real clubs in 2004/05 and 2006/07.
+
+## Long holiday test (original start)
+
+```bash
+python3 tools/seasons/own_db/long_test.py build/cm0102_recomp <game folder> <out folder> [england-germany|all]
+```
+
+The game folder is a 3.9.68 game with the season database in its Data folder, as a player installs it. The test
+plays from July 2001 to 1 September 2004 on holiday, saves on each 1 July and on 1 September, loads each save in
+the next step, and checks the squads of Real Madrid, Bayern and Arsenal in each save (`save_check.py`). It passes
+with no error box, every save written and loaded, and every squad check passed (header of `long_test.py`).
