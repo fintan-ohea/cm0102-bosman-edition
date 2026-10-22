@@ -4,11 +4,14 @@ database (season settings FILL), and appended to the template's tables before co
 fill(T, F, fp, M, L, S_) -> {FM person index: new staff id}. T is the template, F the fill database (cmdb.Folder).
 
 Who: an FM player (job bit 1, not a player-coach or player-manager) with a date of birth, at an FM club that maps
-to a template club in a division (leagues.pkl), whom match.py did not match. He is found in F by first and second
-name or common name and date of birth (F's birth shift from the date shift research), else by surname and the date
-one day either way when that is unique, else by club (F's club id is the template's for most clubs) and one surname
-word, with the birth year two years either way (the older data has some years wrong). A person whom the template also has under F's name and date is skipped:
-the template already holds him.
+to a template club in a division (leagues.pkl), whom match.py did not match. First he is looked for in the template
+itself (people.py: names that agree, dates up to two days apart, the same nation): one hit maps him to that row,
+which convert.py then moves to his FM club (2026-10-21: such players came in twice). Else he is found in F by first
+and second name or common name and date of birth (F's birth shift from the date shift research), else by surname
+and the date one day either way when that is unique, else by club (F's club id is the template's for most clubs),
+one surname word and the first word of the first name (or the common name), with the birth year two years either
+way (the older data has some years wrong). An F row whom the template also holds (the exact name and date, or
+people.py) is skipped. duplicates.py merges the rows that these tests still miss.
 
 What is copied (record layouts: include/database.h and the staff.dat of the Update Team databases, format 2):
 - the staff row (110 bytes): names, date of birth, nations, caps, the rest as F has it. +0x61 is the player row,
@@ -27,6 +30,7 @@ import datetime
 import struct
 
 from cmdb import cstr, norm, swords
+from people import PLACEHOLDER_DAYS, days_apart_ok, names_agree
 from seasons import template_shifts
 
 CUM = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
@@ -76,6 +80,35 @@ def fill(T, F, fp, M, L, S_):
             c = _i(r, 0x0c)
             have.update(keys(tfn.get(_i(r, 4), ""), tsn.get(_i(r, 8), ""), tcn.get(c, "") if c >= 0 else "",
                              (_md(d), y + tsh["birth"])))
+    # The template's people with a player row by real date of birth (forum report, 2026-10-21): the templates store
+    # some dates one day later than FM, and some names split another way, so the exact "have" keys miss them and the
+    # same player came in twice. people.py says when two rows are one person.
+    tbyday = collections.defaultdict(list)
+    for r in T.rows(6):
+        d, y = struct.unpack_from("<hH", r, 0x10)
+        if y <= 1900 or _i(r, 0x61) < 0:
+            continue
+        try:
+            day = datetime.date(y + tsh["birth"], *_md(d)).toordinal()
+        except ValueError:
+            continue
+        c = _i(r, 0x0c)
+        tbyday[day].append((_i(r, 0), _i(r, 0x1a), tfn.get(_i(r, 4), ""), tsn.get(_i(r, 8), ""),
+                            tcn.get(c, "") if c >= 0 else "", d in PLACEHOLDER_DAYS))
+
+    def in_template(first, second, common, day, nation=None):
+        """The template rows that are this person (people.py), any nation when nation is None."""
+        out = set()
+        for dd in range(-2, 3):
+            for tid, tnat, f, s_, c, new_year in tbyday.get(day + dd, ()):
+                if nation is not None and tnat != nation:
+                    continue
+                k = names_agree(first, second, common or "", f, s_, c)
+                jan1 = new_year or datetime.date.fromordinal(day).timetuple().tm_yday - 1 in PLACEHOLDER_DAYS
+                if k and days_apart_ok(k, abs(dd), jan1):
+                    out.add(tid)
+        return out
+
     # F's players by name and real date of birth.
     fidx, sidx, cidx = collections.defaultdict(list), collections.defaultdict(list), collections.defaultdict(list)
     frows = F.rows(6)
@@ -90,19 +123,34 @@ def fill(T, F, fp, M, L, S_):
         k = keys(ffn.get(_i(r, 4), ""), fsn.get(_i(r, 8), ""), fcn.get(c, "") if c >= 0 else "", dob)
         if any(x in have for x in k):
             continue
+        try:
+            fday = datetime.date(dob[1], *dob[0]).toordinal()
+        except ValueError:
+            fday = None
+        if fday and in_template(ffn.get(_i(r, 4), ""), fsn.get(_i(r, 8), ""), fcn.get(c, "") if c >= 0 else "", fday):
+            continue
         for x in k:
             fidx[x].append(i)
         last = norm(fsn.get(_i(r, 8), "")).split()
         if last:
             sidx[(last[-1], dob)].append(i)
         if _i(r, 0x39) >= 0:
+            first = norm(ffn.get(_i(r, 4), "")).split()
             for w in swords(fsn.get(_i(r, 8), ""), fcn.get(c, "") if c >= 0 else ""):
-                cidx[(_i(r, 0x39), w)].append((i, dob[1]))
+                cidx[(_i(r, 0x39), w)].append((i, dob[1], first[0] if first else "",
+                                               norm(fcn.get(c, "") if c >= 0 else "")))
     want, used = {}, set()
+    found, taken = {}, set(pmap.values())
     for n, x in enumerate(fp):
         if n in matched or x["job"] != 1 or not x["dob"] or x["dob"].year <= 1900:
             continue
         if clubmap.get(x["club"]) not in in_div:
+            continue
+        # The template's own row first: the FM player takes it (convert.py moves it to his FM club).
+        t = in_template(x["fn"], x["sn"], x["cn"], x["dob"].toordinal(), M["natmap"].get(x["nat"])) - taken
+        if len(t) == 1:
+            found[n] = t.pop()
+            taken.add(found[n])
             continue
         dob = ((x["dob"].month, x["dob"].day), x["dob"].year)
         c = set()
@@ -118,18 +166,25 @@ def fill(T, F, fp, M, L, S_):
                     break
         if len(c) != 1:
             # F's club is the template club that the FM club maps to (F and the template share most club ids), and
-            # one surname word is the same; the birth year two years either way.
+            # one surname word is the same; the birth year two years either way. The first word of the first name, or
+            # the common name, must agree too: a surname word alone took the older database's Sergio Ramos for FM's
+            # Felipe Ramos of Real Madrid Castilla (forum report, 2026-10-21).
             t = clubmap[x["club"]]
+            first = norm(x["fn"]).split()
+            first = first[0] if first else ""
             c = set()
             for w in swords(x["sn"], x["cn"] or ""):
-                c |= {i for i, y in cidx.get((t, w), ()) if abs(y - x["dob"].year) <= 2}
+                c |= {i for i, y, f, cn in cidx.get((t, w), ())
+                      if abs(y - x["dob"].year) <= 2 and ((first and f == first) or (cn and cn == norm(x["cn"] or "")))}
         if len(c) == 1:
             i = c.pop()
             if i not in used:
                 want[n] = i
                 used.add(i)
+    print(f"fill: {len(found)} FM players found in the template itself (a date one or two days off, a name written "
+          f"another way)")
     if not want:
-        return {}
+        return found
 
     # Names: reuse the template's row with the same text (the same nation first), else append.
     def name_ids(t, fnames):
@@ -253,4 +308,5 @@ def fill(T, F, fp, M, L, S_):
     T.reindex()
     print(f"fill from {S_.FILL}: {len(want)} found, {len(out)} added, {len(nf)}/{len(ns)}/{len(nc)} new names, "
           f"{len(hist_new)} career rows")
+    out.update(found)
     return out
