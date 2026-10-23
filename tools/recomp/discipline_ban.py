@@ -28,7 +28,10 @@ entry. Discipline::hold_bans_for_loan 0x5563f0 holds the bans of a domestic body
 one nation. The All-Ireland cup of 0.6.0 (season_new_cups.c, "new_all_ireland") has the clubs of the Republic of
 Ireland and of Northern Ireland and one ruling body: a player of an Irish club on loan at a Northern Irish club
 (his Irish ban held) met the Irish body in it (14 February 2011 and 2012 in the gate runs). rt_ruling_body_held
-logs the player and goes on at 0x7e83a1 without the box, as the original does after it.
+logs the player and goes on at 0x7e83a1 without the box, as the original does after it. The cause fix is at the
+loan: rt_ban_nation_applies (season_new_cups.c) makes the hold 0x5563f0 and the restore 0x556570 count the two
+nations as one while the cup is in the game (je 0x55647d, je 0x55671e), so no such held ban is made; the skip at
+0x7e833c stays as a logged safety net.
 """
 
 INSNS = {
@@ -36,5 +39,7 @@ INSNS = {
                "{ uint32_t e_ = rt_discipline_ban_entry(esi, ebp); if (e_ == 1u) ecx = (uint32_t)(esp + 0x1cu); "
                "else if (e_) { eax = e_; goto L_556e34; } else goto L_556e63; }"),
     0x55DEB6: ("je 0x55def0", "if (cc_e(F) && !rt_discipline_oceania_body()) goto L_55def0;"),
+    0x55647D: ("je 0x5564e0", "if (cc_e(F) || rt_ban_nation_applies(R32(eax), ecx)) goto L_5564e0;"),
+    0x55671E: ("je 0x556799", "if (cc_e(F) || rt_ban_nation_applies(R32(edx), eax)) goto L_556799;"),
     0x7E833C: ("jne 0x7e83a1", "if (!cc_e(F) || rt_ruling_body_held(esi, ebx)) goto L_7e83a1;"),
 }

@@ -120,4 +120,16 @@ int season_intl_later_held(int i, int (*held)(const char *name, void *ctx), void
  * (Kosovo, admitted in May 2016: the April 2015, October 2015 and April 2016 databases), or 0. */
 int season_intl_uefa_from(const char *name);
 
+/* The real draw of a finals edition whose qualifying began before the game (O259 A9): the names of its
+ * finalists, ';' between nations and '/' between the names of one nation, or NULL. */
+const char *season_intl_real_draw(const char *file, int year);
+/* 1 in a season game that starts in the finals' season or the one before, for an edition of that table. */
+int season_intl_late_start(const char *file, int year);
+/* The real inter-confederation play-off of a World Cup (O259 A16): k 0 the AFC team, 1 its partner, 2 and 3 the
+ * other tie; NULL when the table has none. */
+const char *season_intl_real_tie(int year, int k);
+/* The national team of the first nation that one of the names ('/' between them) gives: no case, not a dead
+ * record, a continent; 0 when the data has none (season_intl.c). */
+uint32_t season_intl_team_named(const char *names);
+
 #endif

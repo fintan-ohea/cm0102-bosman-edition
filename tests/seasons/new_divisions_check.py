@@ -15,6 +15,10 @@ The runs (changing_rules off, the database of the start season, test-fixtures/da
                  loaded and played 30 days: Primera Federación and Liga 3 take their new clubs at the change, no box
     greece-load  2021/22 with Greece, saved after 330 days, loaded and played 30 days: the module makes the second
                  group again from its save file, the group's exchange runs at the change, no box
+    por-cup      a 2021/22 start with Portugal's Liga 3 (and every nation below the 16 rows) to its first start report,
+                 with the Portuguese Cup's safety net off (RECOMP_BOX_FIXES=off, rt_por_cup_none): the club moves send
+                 the clubs that leave Liga 3's group divisions to the Third Division, so the cup finds its 164
+                 entrants with no club of no division (O260 A24; before, por_cup.cpp 74)
 A run takes about 5 to 25 minutes (iberia-load selects every nation below the 16 rows).
 """
 import os
@@ -55,6 +59,23 @@ def check_liga3(program, game, work):
         fails.append(f"liga3: the 3. Liga of 2008/09 did not end complete with no stage ({work}/stderr.txt)")
     if "message box" in log:
         fails.append(f"liga3: a message box ({work}/stderr.txt)")
+    return fails
+
+
+def check_por_cup(program, game, work):
+    code, _ = rrc.run(program, game, 2021, 2021, os.path.join(DATABASES, "October 2021"), ["all"] + OTHERS,
+                      ["portugal"], work, 7200, options_more={"changing_rules": "off"},
+                      env_more={"RECOMP_BOX_FIXES": "off"}, start_only=True)
+    log = open(os.path.join(work, "stderr.txt"), encoding="latin-1").read()
+    fails = [] if code == 0 else [f"por-cup: code {code} ({work})"]
+    if "message box" in log:
+        fails.append(f"por-cup: a message box ({work}/stderr.txt)")
+    moved = re.search(r"club moves: (\d+) clubs that leave a group division of a new form go to its lower division", log)
+    print("  por-cup: " + (moved.group(0) if moved else "no clubs to the lower division"))
+    if not moved:
+        fails.append(f"por-cup: the club moves sent no club of a Liga 3 group to the Third Division ({work}/stderr.txt)")
+    if "with no division (safety net)" in log:
+        fails.append(f"por-cup: the Portuguese Cup took a club with no division ({work}/stderr.txt)")
     return fails
 
 
@@ -99,11 +120,12 @@ def main(argv):
     program, game = os.path.abspath(argv[1]), os.path.abspath(argv[2])
     only = rrc.arg(argv, "--only")
     keep = os.path.abspath(rrc.arg(argv, "--keep")) if "--keep" in argv else tempfile.mkdtemp(prefix="cm0102-div-")
-    names = only.split(",") if only else ["liga3"] + list(RUNS)
+    names = only.split(",") if only else ["liga3", "por-cup"] + list(RUNS)
     failed = []
     for name in names:
         work = os.path.join(keep, name)
-        failed += check_liga3(program, game, work) if name == "liga3" else check_load(name, program, game, work)
+        check = {"liga3": check_liga3, "por-cup": check_por_cup}.get(name)
+        failed += check(program, game, work) if check else check_load(name, program, game, work)
     for text in failed:
         print("FAIL  " + text)
     print("PASS" if not failed else f"FAILED: {len(failed)}")
