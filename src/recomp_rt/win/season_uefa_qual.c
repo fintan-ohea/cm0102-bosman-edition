@@ -164,18 +164,31 @@ typedef struct {
  * League rounds (0x583cef..0x583d0e) and 3 for the UEFA Cup's (0x9026a4). A date d with weekday w moves by the same
  * days as d + n with weekday w + n, so the dates below keep their order in every year:
  *   Champions League: the preliminary round (2018/19 on) is a tournament of single matches, as the real one
- *   (rows uefa-138, uefa-139: "PR 4", one winner): semi-finals on the Sunday and the final on the Tuesday before
- *   the first qualifying round (15 and 17 July, so from 12 July). First legs on Wednesday 18 July, 1, 15 and 29
- *   August, second legs 7 days later (+0x22), the last by 8 September.
- *   Europa League: one day after the Champions League (Thursday). The preliminary round has two legs, on the
- *   Sunday and the Tuesday before its first qualifying round. So each round starts after the Champions League
+ *   (rows uefa-138, uefa-139: "PR 4", one winner): the real days, semi-finals on Tuesday 26 June and the final on
+ *   Friday 29 June (2018/19: 26 and 29 June; 2019/20: 25 and 28; 2021/22: 22 and 25; 2022/23: 21 and 24; 2023/24:
+ *   27 and 30, en.wikipedia.org "20xx-yy UEFA Champions League qualifying"; 2020/21 was moved to August by COVID).
+ *   First legs on Wednesday 18 July, 1, 15 and 29 August, second legs 7 days later (+0x22), the last by 8 September:
+ *   a week after the real ones (Q1 on 10 and 11 July 2018), since a new game in a moved season starts on a Saturday
+ *   from 10 to 16 July.
+ *   Europa League: one day after the Champions League (Thursday). The preliminary round has two legs a week apart,
+ *   on Thursday 28 June and 5 July (real 2018/19: 26 and 28 June, 5 July; 2019/20: 27 June, 2 and 4 July).
+ *   The tables of a running game are made at the season change, on day 171 (20 or 21 June; measured in 2020 and
+ *   2021). A draw date before it is drawn on that day, and the semi-finals come 2 to 9 days after it (3 or more in
+ *   2018 to 2023, the seasons of the rows with this round). A new game makes the tables at its setup and plays the
+ *   preliminary rounds there.
+ *   A winner goes into its tie of the next round when its tie ends (Cup::process_fixture 0x51a150, 0x51a472..). If
+ *   that tie's match day is then 2 days away or less (0x54c5b0 with 2, the test after it), its fixture goes to a
+ *   later free day (0x5ab510), a week later for a first qualifying round. So each match of a chain is at least 3
+ *   days after the one before it (row A18: with the final on 17 July a preliminary round winner played its first
+ *   qualifying round a week late, and the Europa and Conference League rounds that take its losers waited). So each
+ *   round starts after the Champions League
  *   round whose losers it takes has ended (the preliminary round and Q1 before EL Q2, Q2 before EL Q3, Q3 before
  *   EL PO), and its play-offs end the day after the Champions League's: the hand-over of the play-off losers (at the
  *   Champions League group draw) comes before the Europa League group draw.
  * The real calendar starts in late June (rows uefa-66 to uefa-160): these dates keep its order in fewer weeks. */
 static const Level CL_LEVELS[] = {
-    {240, SEASON_UEFA_CL_PR, 0, 0, 1, 0, 6, {12, 6}, {15, 6}},
-    {230, 0, 0, 1, 1, 0, 1, {12, 6}, {17, 6}},
+    {240, SEASON_UEFA_CL_PR, 0, 0, 1, 0, 1, {21, 5}, {26, 5}},
+    {230, 0, 0, 1, 1, 0, 4, {21, 5}, {29, 5}},
     {250, SEASON_UEFA_CL_Q1, 0, 0, 2, 7, 2, {12, 6}, {18, 6}},
     {260, SEASON_UEFA_CL_Q2_CP, SEASON_UEFA_CL_Q2_LP, 0, 2, 7, 2, {26, 6}, {1, 7}},
     {270, SEASON_UEFA_CL_Q3_CP, SEASON_UEFA_CL_Q3_LP, 0, 2, 7, 2, {9, 7}, {15, 7}},
@@ -193,7 +206,7 @@ static const Level ECL_LEVELS[] = {
 };
 #define ECL_N ((int)(sizeof ECL_LEVELS / sizeof ECL_LEVELS[0]))
 static const Level EL_LEVELS[] = {
-    {240, SEASON_UEFA_EL_PR, 0, 0, 2, 2, 6, {12, 6}, {15, 6}},
+    {240, SEASON_UEFA_EL_PR, 0, 0, 2, 7, 3, {21, 5}, {28, 5}},
     {250, SEASON_UEFA_EL_Q1, 0, 0, 2, 7, 3, {12, 6}, {19, 6}},
     {260, SEASON_UEFA_EL_Q2, 0, 0, 2, 7, 3, {26, 6}, {2, 7}},
     {270, SEASON_UEFA_EL_Q3, 0, 0, 2, 7, 3, {9, 7}, {16, 7}},
@@ -444,7 +457,14 @@ uint32_t season_uefa_cl_qual_table(uint32_t cl, int *rounds_out, uint32_t *name_
         const Level *lv = &CL_LEVELS[L.level[i]];
         wr16(g_mem, rec + 7, (uint16_t)lv->round_code);
         wr16(g_mem, rec + 9, (uint16_t)i);
-        wr16(g_mem, rec + 0xd, 0x200);
+        /* +0xd: the draw bit 0x200, and for a round of single matches (the preliminary round's semi-finals and
+         * final) extra time and penalties on the day, as the real one and slice 21a's type 'E' (0x2 | 0x1). Without
+         * them a level match is replayed days later: in a 2019 start a semi-final replay put the final after its
+         * date, its winner reached its first qualifying round tie a week late, and that round, with every Europa and
+         * Conference League round that takes its losers, ended a week late (box Cup.cpp 1278, row A18). The rounds
+         * of two legs keep the rule of their second leg (+0xf) from the original's round. */
+        wr16(g_mem, rec + 0xd, (uint16_t)(lv->legs == 1 ? 0x200 | 0x2 | 0x1 : 0x200));
+        if (lv->legs == 1) g_mem[rec + 0x20] = 0;               /* no replay */
         g_mem[rec + 0xb] = 4;
         wr16(g_mem, rec + 0x18, (uint16_t)L.clubs_in[i]);
         wr16(g_mem, rec + 0x1a, (uint16_t)(L.clubs_in[i] / 2));
@@ -1086,7 +1106,11 @@ static void log_week(void)
  * Here, each day before the cup's own update, a round with no drawn tie whose draw is due (the next day at the
  * latest) and whose first leg is less than 4 days away gets its first leg a week from today, on its match day
  * (cup_set_round_match_date 0x521eb0, as the table is made). The second leg follows by the gap of the round. A round
- * on time is not touched. */
+ * on time is not touched. Row A18 of the 0.6.0 release test found two causes in the Champions League preliminary
+ * round, both fixed at the source: a level single match was replayed (the round rule, where the table is made), and
+ * its dates broke the 3-day rule of the dates block. What is left is a tie that the game itself moves a week, when a
+ * club of it already has a match on its day (seen: Steaua Bucharest v Liverpool, 14 August 2019, an England game);
+ * this logged net covers that case. */
 static void doy_to_dm(int doy, int year, int *day, int *month)
 {
     static const int len[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -1102,6 +1126,7 @@ static void doy_to_dm(int doy, int year, int *day, int *month)
 
 static void cup_dates_ahead(uint32_t cup)
 {
+    if (getenv("RECOMP_UEFA_NO_LATE_MOVE")) return;          /* test only: the retest of row A18 without this net */
     uint32_t t = rd32(g_mem, cup + 0xa3);
     int rounds = (int16_t)rd16(g_mem, cup + 0x3c), today = (int16_t)rd16(g_mem, 0xae2c90u);
     int year = (int16_t)rd16(g_mem, cup + 0x40);
