@@ -85,6 +85,47 @@ RT_WRAP(0076e3b0, write_call_up_news_text)
 #define CLUB_NATION 0x53u
 
 void o_0076e0b0(void);
+void o_006e2000(void);
+
+#define SQUAD 0xd7u                     /* 50 player pointers of a national side (0x76d09d) */
+#define PICK_FROM_SELECT 0x0076d04cu    /* the return address of the pick call in select_squad (0x76d047) */
+
+/* The repeats in the squad of a national side: the slots whose player is in an earlier slot too. */
+static int squad_repeats(uint32_t side)
+{
+    int n = 0;
+    for (uint32_t i = 0; i < 50; i++) {
+        uint32_t p = rd32(g_mem, side + SQUAD + 4 * i);
+        for (uint32_t k = 0; p && k < i; k++)
+            if (rd32(g_mem, side + SQUAD + 4 * k) == p) { n++; break; }
+    }
+    return n;
+}
+
+/* Test switch RECOMP_TEST_REPEAT_PICK=1 (O260 A15 retest): match_man_assign_players_to_positions 0x6e2000, cdecl
+ * (players, count, position masks, places, subs, out, ...), called from select_squad, gives a pick of the human
+ * manager's club for two more places, the repeat that a short pool makes. Without the switch it is the original. */
+RT_WRAP(006e2000, pick_players)
+{
+    static int on = -1;
+    if (on < 0) { const char *v = getenv("RECOMP_TEST_REPEAT_PICK"); on = v && *v == '1'; }
+    uint32_t from = rd32(g_mem, cpu.esp), out = rt_arg(5), places = rt_arg(3) & 0xffu;
+    o_006e2000();
+    if (rt_unwinding || !on || from != PICK_FROM_SELECT || places < 3) return;
+    /* A player of the human manager's club (the manager of the screen's player slot, 0xb74c26 + slot * 0x300 with
+     * the slot at 0xb77c7a; club +0x39, else +0x24 as holiday_next.c), so that the item reaches the text writer. */
+    uint32_t manager = rd32(g_mem, 0xb74c26u + (uint32_t)(int16_t)rd16(g_mem, 0xb77c7au) * 0x300u);
+    if (!manager) return;
+    uint32_t club = rd32(g_mem, manager + 0x39u) ? rd32(g_mem, manager + 0x39u) : rd32(g_mem, manager + 0x24u);
+    for (uint32_t i = 0; club && i < places; i++) {
+        uint32_t p = rd32(g_mem, out + 4 * i);
+        if (!p || rd32(g_mem, p + 0x39u) != club) continue;
+        for (uint32_t k = 0, put = 0; k < places && put < 2; k++)
+            if (k != i) { wr32(g_mem, out + 4 * k, p); put++; }
+        fprintf(stderr, "recomp: test: the squad pick repeats a player of the human club three times\n");
+        return;
+    }
+}
 
 /* national_teams_post_call_up_news 0x76e0b0, stdcall (national side, b squad, fixture, date, finals, opponents,
  * count): in a season game, from select_squad, the repeats of the nation's squads go out before the news. */
@@ -93,11 +134,15 @@ RT_WRAP(0076e0b0, post_call_up_news)
     uint32_t side = rt_arg(0);
     int season = season_code_on() && (season_start_year() != SEASON_FIRST_YEAR || season_changing_rules());
     if (season && rd32(g_mem, cpu.esp) == NEWS_FROM_SELECT && side && rd32(g_mem, side + CLUB_NATION)) {
+        int before = squad_repeats(side);
         Cpu saved = cpu;
         uint32_t a[1] = {rd32(g_mem, side + CLUB_NATION)};
         rt_callback(REMOVE_REPEATS, 1, a);
         if (rt_unwinding) return;
         cpu = saved;
+        if (before && getenv("RECOMP_SCREEN_LOG"))
+            fprintf(stderr, "recomp: call-up squad: %d repeats taken out before the news, %d left\n", before,
+                    squad_repeats(side));
     }
     o_0076e0b0();
 }
