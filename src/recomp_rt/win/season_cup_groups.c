@@ -808,7 +808,34 @@ RT_WRAP(00595160, groups_stage_honours)
  * never has a zero fixture there, because the original boxes on it). */
 RT_WRAP(0056b2b0, groups_auto_fate_news)
 {
+    /* The cause (O260 A19): in a group season the stages 0 to groups - 1 are the League_Stage groups of
+     * season_cup_groups.c (draw_groups gives each its number), and their fate items have no tie. The classes of the
+     * original with groups split their fate text by stage: ItaCup's 0x63f130 tests the stage (argument 3, cmp al, 7
+     * at 0x63f134: its groups are stages 0 to 6) and writes a tie only for the knockout. So an EFL Trophy item of a
+     * group stage takes Comp's text 0x48c6d0 (the version of ScoLgeCup, TurCup and Cup_Stage), and the knockout
+     * stage (number groups) keeps EngAutoCup's own text with its tie. */
+    /* RECOMP_TEST_GROUP_FATE=original turns the routing and the safety net off (the retest of the old box). */
+    static int original = -1, logged;
+    if (original < 0) {
+        const char *v = getenv("RECOMP_TEST_GROUP_FATE");
+        original = v && !strcmp(v, "original");
+    }
+    if (original) {
+        o_0056b2b0();
+        return;
+    }
+    const SeasonCupGroups *g = layout(cpu.ecx);
+    int stage = (int8_t)g_mem[cpu.esp + 0xcu];
+    if (g && stage >= 0 && stage < g->groups) {
+        if (!logged++)
+            fprintf(stderr, "recomp: cup groups: EFL Trophy fate text of group stage %d (fate %d, fixture %s) by "
+                    "Comp's text\n", stage, (int8_t)g_mem[cpu.esp + 8u], rd32(g_mem, cpu.esp + 0x14u) ? "set" : "none");
+        rt_jump(0x0048c6d0u);
+        return;
+    }
+    /* Safety net: a full text with no fixture (gate 2022, 25 December 2022, before the cause was found). */
     if (rd32(g_mem, cpu.esp + 0x24u) && !rd32(g_mem, cpu.esp + 0x14u)) {
+        fprintf(stderr, "recomp: cup groups: EFL Trophy fate text of stage %d with no fixture\n", stage);
         rt_jump(0x0048c6d0u);
         return;
     }
