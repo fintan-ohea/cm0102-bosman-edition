@@ -437,7 +437,7 @@ void rt_euroq_log(uint32_t euro, uint32_t club, uint32_t stage, uint32_t playoff
 uint32_t rt_wcq_europe_playoff(uint32_t self, uint32_t exempt);
 uint32_t rt_wcq_europe_no_asia(uint32_t self);
 void rt_wcq_asia_format(uint32_t self);
-uint32_t rt_wcq_asia_partner(uint32_t self, uint32_t asian, uint32_t original);
+uint32_t rt_wcq_asia_partner(uint32_t self, uint32_t asian_at, uint32_t original);
 uint32_t rt_wcq_oceania_pair(uint32_t self, uint32_t teams, uint32_t found);
 uint32_t rt_wcq_concacaf_playoff(uint32_t self);
 uint32_t rt_wcq_south_america_hosts(uint32_t self, uint32_t hosts);
