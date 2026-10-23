@@ -1260,10 +1260,16 @@ uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b)
 }
 
 /* ItaCup::select_entrants 0x63fd28 (cmp si, 0x20 after the next position, 0x63fd22..0x63fd30): the list of lower clubs
- * is on the stack at esp + 0x1c (4 bytes a club, 0x63fd12), count clubs so far. In the Serie C era, when the position
- * passes 40 with fewer than 32 clubs, the Italian clubs whose last division (+0x5b) is a group and that are not in
- * the list yet join it by reputation, so the loop ends with 32. Else the count is as it is. Q626. Only the last
- * division counts: the cup's sort 0x640590 reads the stats of that division (a club with none stopped at
+ * is on the stack at esp + 0x1c (4 bytes a club, 0x63fd12), count clubs so far. A net (O259, row A22), never the
+ * cause fix. The first loop (0x63fbbc..0x63fcad) takes Serie B's clubs (0x63fc0f), the clubs that Serie B relegated
+ * (last division Serie B, place 3, 4 or above 16: 0x63fc39..0x63fc61) and places 3 to 5 of each group (0x63fc6f..
+ * 0x63fc93; group C through rt_ita_cup_c1b): 20 + 4 + 9 = 33 or more, so the endless second loop (0x63fd22) never
+ * runs while each group club has its last division and place. The causes of the loop that a 2014 game met are fixed
+ * where they start: group C did not count (rt_ita_cup_c1b) and the clubs had no last season when the cup picks
+ * before Serie A (mark_last_season, record_final_positions in the wrap of 0x63faf0). If a club still lacks them, the
+ * net takes, when the position passes 40 with fewer than 32 clubs, the Italian clubs whose last division (+0x5b) is a
+ * group by reputation, so the loop ends with 32, and logs it (ita_serie_c_run.py fails on that line). Q626. Only the
+ * last division counts: the cup's sort 0x640590 reads the stats of that division (a club with none stopped at
  * comp_stats.CPP 1664), and the upper places take clubs whose last division is Serie A or B (0x63fdc0..0x63fef0), so
  * no club comes twice. */
 uint32_t rt_ita_cup_fill(uint32_t esp, uint32_t count, uint32_t position)

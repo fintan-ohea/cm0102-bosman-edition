@@ -87,6 +87,10 @@ def check_moves(name, log):
             fails.append(f"{name}: {up} clubs up to Serie B and {down} down (want 4 and 4)")
     if "group C starts again" in log:
         fails.append(f"{name}: group C started twice in one season change")
+    # O259, row A22: the Coppa Italia's lower places fill from its own loop (Serie B, its relegated clubs and places 3
+    # to 5 of the groups make 33 or more); the fill of rt_ita_cup_fill is a net that must never run.
+    if "Coppa Italia: the lower places filled" in log or "lower clubs at position" in log:
+        fails.append(f"{name}: the Coppa Italia net filled its lower places (a club lacks its last division)")
     return fails
 
 
