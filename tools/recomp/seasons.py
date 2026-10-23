@@ -330,8 +330,8 @@ INSNS = {
     0x57BE3D: ("jle 0x57becc", "if (cc_le(F)) { if (rt_intl_euro_no_host()) goto L_57bf2f; goto L_57becc; }"),
     # EuroChampQual::get_group_team_count 0x57d9d0 gives the size of each qualifying group by the hosts that the
     # pool leaves out (+0xf6): 1 (0x57d9de) or 2 (0x57d9e5), else the box "euro_champ_qual.cpp 581" (0x57da3d).
-    # A Euro without a host place (2020, 2028) has 0: in a season game it takes the sizes of 1 host (groups 0,
-    # 2, 5 and 7 of six, the others of five: room for 54, the pool holds at most 51, 0x57f76f).
+    # A Euro without a host place (2020, 2028) has 0: in a season game it goes to the branch of 1 host, whose
+    # sizes (0x57da6e, 0x57da8e, 0x57da9b) rt_euroq_group_size gives from the pool for the formats of 24 teams.
     0x57D9DE: ("je 0x57da7b", "if (cc_e(F) || (rt_intl_euro_no_host() && R8(ecx + 0xf6u) == 0u)) goto L_57da7b;"),
 
     # Euro of 24 teams (0.6.0 slice 27, win/season_intl_euro.c). start_new_season 0x57b750 keeps the stage array
@@ -365,12 +365,10 @@ INSNS = {
     0x5E128E: ("lea ecx, [eax + eax*2]", "ecx = eax * rt_intl_copa_groups(esi, 3u);"),
     0x5E1595: ("mov ecx, esi", "SYNC(); rt_intl_copa_stages(esi); ecx = esi;"),
     # EuroChampQual (0.6.0 slice 27): the hosts that the qualifying pool leaves out (+0xf6) are counted at
-    # 0x57f6b7..0x57f6e4 and must be 0 to 2 (box "euro_champ_qual.cpp 1245" at 0x57f6fa); the group sizes
-    # (0x57d9d0) and the play-off round (0x57d4f3: 6 teams for 1, 8 for 2, else the box "euro_champ_qual.cpp
-    # 283" at 0x57d597) take only 1 or 2. A Euro without a host place (2020, 2028) has 0: in a season game the
-    # count becomes 1 here, before the pool size 0x33 - count (0x57f76f), so the qualifying takes the shape of
-    # one host (a pool of 50).
-    0x57F768: ("movsx eax, byte ptr [esi + 0xf6]", "if (rt_intl_euro_no_host() && R8(esi + 0xf6u) == 0u) W8(esi + 0xf6u, 1u); eax = (uint32_t)(int32_t)(int8_t)R8(esi + 0xf6u);"),
+    # 0x57f6b7..0x57f6e4 and may be 0 to 2 (box "euro_champ_qual.cpp 1245" at 0x57f6fa only above 2); the pool
+    # is 0x33 - count (0x57f76f). A Euro without a host place (2020, 2028) keeps 0 and the whole pool of 51 (O260
+    # A13): its group sizes come from the pool (0x57d9de below, rt_euroq_group_size) and its play-off from
+    # rt_euroq_hosts (0x57d4f3: 8 teams), so 10 groups give 20 and the play-off 4: the 24 places, no host.
 
     # World Cup qualifying 2006 to 2022 (0.6.0 slice 27, win/season_intl_qual.c). Gate: a season game and the
     # World Cup year (campaign +0x40 + 2) in 2006 to 2022; outside it each site gives the original's value.

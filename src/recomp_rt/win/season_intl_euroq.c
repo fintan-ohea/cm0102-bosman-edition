@@ -115,10 +115,13 @@ uint32_t rt_euroq_skip_2002(uint32_t self)
 }
 
 /* The host count that sizes the play-off (0x57f014: best runners-up, 0x57f115: play-off teams, 0x57d4f3:
- * template). Euro 2016 takes the shape of two hosts: 1 best third and 8 in the play-off. */
+ * template). Euro 2016 takes the shape of two hosts: 1 best third and 8 in the play-off. A Euro with no host
+ * (2020, 2028, O260 A13) takes it too: the template 0x57d4f3 has 6 teams for 1 host, 8 for 2 and the box
+ * "euro_champ_qual.cpp 283" (0x57d597) for 0, and 8 teams give the 4 places that no host leaves free. */
 uint32_t rt_euroq_hosts(uint32_t self, uint32_t original)
 {
-    return format_of(self) == NINE_GROUPS ? 2u : original;
+    int f = format_of(self);
+    return f == NINE_GROUPS || (f >= 0 && (original & 0xffu) == 0) ? 2u : original;
 }
 
 /* The place that the ranking takes from each group (0x57fb4f, 1 the runner-up): the third for Euro 2016.
