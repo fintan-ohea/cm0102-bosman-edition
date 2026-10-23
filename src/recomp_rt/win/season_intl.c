@@ -727,12 +727,30 @@ static int late_out(uint32_t comp, const char *name)
 {
     int year = (int16_t)rd16(g_mem, comp + 0x40u);
     uint32_t nation = team_nation(rt_arg(0));
-    if (!season_intl_late_start(name, year) || !nation || in_real_draw(season_intl_real_draw(name, year), nation))
-        return 0;
-    if (logging())
-        fprintf(stderr, "recomp: season intl: %s %d: %s is not in the real draw, it stays out\n", name, year,
-                win_str(nation + NATION_NAME));
-    return 1;
+    if (!season_intl_late_start(name, year) || !nation) return 0;
+    if (!in_real_draw(season_intl_real_draw(name, year), nation)) {
+        if (logging())
+            fprintf(stderr, "recomp: season intl: %s %d: %s is not in the real draw, it stays out\n", name, year,
+                    win_str(nation + NATION_NAME));
+        return 1;
+    }
+    /* A team of the real play-offs (season_intl_real_tie) enters only from a play-off: the call of add_qualified_team
+     * in the Asian tie's status (stage 12, return 0x91270b) or in Oceania's (0x91e93c: its tie, and the tournament of
+     * 2026). Iraq, a 2026 play-off winner, came first from the AFC section of a December 2025 start and then won
+     * the tournament: "in already" (O259 batch AP). */
+    uint32_t ret = rd32(g_mem, cpu.esp);
+    if (strcmp(name, "world_cup") || ret == 0x0091270bu || ret == 0x0091e93cu) return 0;
+    for (int k = 0; k < 6; k++) {
+        const char *tie = season_intl_real_tie(year, k);
+        int id = tie ? nation_by_alts(tie) : -1;
+        if (id >= 0 && nation_at(id) == nation) {
+            if (logging())
+                fprintf(stderr, "recomp: season intl: %s %d: %s qualifies through the real play-off, not here\n",
+                        name, year, win_str(nation + NATION_NAME));
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static int slots_full(uint32_t comp)
