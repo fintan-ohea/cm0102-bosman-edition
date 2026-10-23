@@ -783,7 +783,10 @@ static void regroup(uint32_t serie_a)
 static int c2c_ended(void)
 {
     uint32_t c = object_of(KEY_C2C);
-    return c && (int16_t)rd16(g_mem, c + 0x40) == IDLE_YEAR;
+    if (c) return (int16_t)rd16(g_mem, c + 0x40) == IDLE_YEAR;
+    /* A23: no league is made for an ended C2/C, so a game that starts in a two-group season has C2/A and C2/B and no
+     * C2/C object (the original's chain would call through it: 0x64252d). */
+    return object_of(KEY_C2A) && object_of(KEY_C2B);
 }
 
 /* The season that ItaSerA starts is a two-group season, or C2/C has ended. */
