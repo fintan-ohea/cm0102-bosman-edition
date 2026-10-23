@@ -23,6 +23,8 @@ The checks of each leg:
     - no stall: once the game is made, the game date (the "date d/y" of the screen log) moves at least once in
       --stall-minutes
     - the program ends with code 0 and leaves samesave.sav in its user folder
+At the end, over the reports of all legs: every division's edition moves on from the end of one season to the
+next (rules_report_check.league_stalls).
 The run folder holds one folder per leg (leg00, leg01, ...) with its stderr.txt, report.tsv and user folder, and
 full.tsv with one line per leg (leg, the season it starts in, the result, minutes, the first fault). The script
 prints the wall time at each 1 July that the game reaches and waits before each leg while
@@ -193,6 +195,10 @@ def main(argv):
             fails += [f"leg {leg} ({season}/{(season + 1) % 100:02d}): {x} ({work})" for x in faults]
             break
         save = os.path.join(work, "user", smoke_run.SAVE_NAME)
+    # Every division moves on from one season to the next (rules_report_check.league_stalls, O278), all legs.
+    reports = [os.path.join(keep, f"leg{n:02d}", "report.tsv") for n in range(len(legs))]
+    comps = [c for r in reports if os.path.exists(r) for c in rrc.read_report(r)[1]]
+    fails += [f"league stall: {line}" for line in rrc.league_stalls(comps)]
     print(f"run: {(time.time() - o['t0']) / 60:.0f} min, folder {keep}")
     for f in fails:
         print(f"FAIL  {f}")

@@ -268,3 +268,84 @@ int season_intl_uefa_from(const char *name)
      * admitted May 2016"); the 2018-19 Nations League has Kosovo in League D (nations-league-tiers.tsv). */
     return name && !strcasecmp(name, "Kosovo") ? 2016 : 0;
 }
+
+/* ---- The real draws of finals whose qualifying began before the game (O259 rows A9 and A16) ---- */
+
+/* The finalists of each World Cup and European Championship that a game can start into after its qualifying
+ * began (a start in the finals' season or the one before, Q388: fill_allowed of season_intl.c). Names of the
+ * data; '/' gives the other names of a nation, first the one of its season (the renames of season_intl_renames).
+ * Sources (read 2026-10-23): https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_qualification and the pages of
+ * 2010, 2014, 2018 and 2022 (the qualified teams), https://en.wikipedia.org/wiki/UEFA_Euro_2004_qualifying and
+ * the pages of 2008, 2012, 2016, 2020 and 2024. Every name is a live record with a continent in each database
+ * of the seasons two before to one after its edition (the O188 sweep script, natinv/real.py). The 2026 World
+ * Cup and Euro 2028 are not here: their qualifying was not over when this table was made. */
+static const struct { const char *file; int year; const char *teams; } real_draws[] = {
+    {"world_cup", 2006, "Germany;Argentina;Brazil;Ecuador;Paraguay;Costa Rica;Mexico;United States;"
+                        "Trinidad & Tobago/Trinidad and Tobago;Angola;Ivory Coast;Ghana;Togo;Tunisia;Australia;"
+                        "Iran;Japan;Saudi Arabia;South Korea;Croatia;Czech Republic/Czechia;England;France;Italy;"
+                        "Holland/Netherlands;Poland;Portugal;Serbia and Montenegro/Serbia/Yugoslavia;Spain;"
+                        "Sweden;Switzerland;Ukraine"},
+    {"world_cup", 2010, "South Africa;Algeria;Cameroon;Ghana;Ivory Coast;Nigeria;Australia;Japan;"
+                        "North Korea/Korea DPR;South Korea;New Zealand;Honduras;Mexico;United States;Argentina;"
+                        "Brazil;Chile;Paraguay;Uruguay;Denmark;England;France;Germany;Greece;Italy;"
+                        "Holland/Netherlands;Portugal;Serbia/Serbia and Montenegro/Yugoslavia;Slovakia;Slovenia;"
+                        "Spain;Switzerland"},
+    {"world_cup", 2014, "Brazil;Algeria;Cameroon;Ghana;Ivory Coast;Nigeria;Australia;Iran;Japan;South Korea;"
+                        "Costa Rica;Honduras;Mexico;United States;Argentina;Chile;Colombia;Ecuador;Uruguay;"
+                        "Belgium;Bosnia-Herzegovina/Bosnia and Herzegovina;Croatia;England;France;Germany;Greece;"
+                        "Italy;Holland/Netherlands;Portugal;Russia;Spain;Switzerland"},
+    {"world_cup", 2018, "Russia;Egypt;Morocco;Nigeria;Senegal;Tunisia;Australia;Iran;Japan;Saudi Arabia;"
+                        "South Korea;Costa Rica;Mexico;Panama;Argentina;Brazil;Colombia;Peru;Uruguay;Belgium;"
+                        "Croatia;Denmark;England;France;Germany;Iceland;Poland;Portugal;"
+                        "Serbia/Serbia and Montenegro/Yugoslavia;Spain;Sweden;Switzerland"},
+    {"world_cup", 2022, "Qatar;Cameroon;Ghana;Morocco;Senegal;Tunisia;Australia;Iran;Japan;Saudi Arabia;"
+                        "South Korea;Canada;Costa Rica;Mexico;United States;Argentina;Brazil;Ecuador;Uruguay;"
+                        "Belgium;Croatia;Denmark;England;France;Germany;Holland/Netherlands;Poland;Portugal;"
+                        "Serbia/Serbia and Montenegro/Yugoslavia;Spain;Switzerland;Wales"},
+    {"euro_champ", 2004, "Portugal;Bulgaria;Croatia;Czech Republic/Czechia;Denmark;England;France;Germany;Greece;"
+                         "Italy;Latvia;Holland/Netherlands;Russia;Spain;Sweden;Switzerland"},
+    {"euro_champ", 2008, "Austria;Switzerland;Croatia;Czech Republic/Czechia;France;Germany;Greece;Italy;"
+                         "Holland/Netherlands;Poland;Portugal;Romania;Russia;Spain;Sweden;Turkey/T\xfcrkiye"},
+    {"euro_champ", 2012, "Poland;Ukraine;Croatia;Czech Republic/Czechia;Denmark;England;France;Germany;Greece;"
+                         "Italy;Holland/Netherlands;Portugal;Republic of Ireland;Russia;Spain;Sweden"},
+    {"euro_champ", 2016, "France;Albania;Austria;Belgium;Croatia;Czech Republic/Czechia;England;Germany;Hungary;"
+                         "Iceland;Italy;Northern Ireland;Poland;Portugal;Republic of Ireland;Romania;Russia;"
+                         "Slovakia;Spain;Sweden;Switzerland;Turkey/T\xfcrkiye;Ukraine;Wales"},
+    {"euro_champ", 2020, "Austria;Belgium;Croatia;Czech Republic/Czechia;Denmark;England;Finland;France;Germany;"
+                         "Hungary;Italy;Holland/Netherlands;North Macedonia/FYR of Macedonia;Poland;Portugal;"
+                         "Russia;Scotland;Slovakia;Spain;Sweden;Switzerland;Turkey/T\xfcrkiye;Ukraine;Wales"},
+    {"euro_champ", 2024, "Germany;Albania;Austria;Belgium;Croatia;Czech Republic/Czechia;Denmark;England;France;"
+                         "Georgia;Hungary;Italy;Holland/Netherlands;Poland;Portugal;Romania;Scotland;"
+                         "Serbia/Serbia and Montenegro/Yugoslavia;Slovakia;Slovenia;Spain;Switzerland;"
+                         "Turkey/T\xfcrkiye;Ukraine"},
+};
+
+/* The inter-confederation play-offs of the same World Cups: the AFC team, its partner, then the other tie in
+ * the order of season_intl_qual.c's ties table (the Oceania stage 2 pair). Sources: the qualification pages
+ * above, section "Inter-confederation play-offs". */
+static const struct { int year; const char *teams[4]; } real_ties[] = {
+    {2006, {"Bahrain", "Trinidad & Tobago/Trinidad and Tobago", "Australia", "Uruguay"}},
+    {2010, {"Bahrain", "New Zealand", "Costa Rica", "Uruguay"}},
+    {2014, {"Jordan", "Uruguay", "New Zealand", "Mexico"}},
+    {2018, {"Australia", "Honduras", "New Zealand", "Peru"}},
+    {2022, {"Australia", "Peru", "New Zealand", "Costa Rica"}},
+};
+
+const char *season_intl_real_draw(const char *file, int year)
+{
+    for (size_t i = 0; i < sizeof real_draws / sizeof real_draws[0]; i++)
+        if (real_draws[i].year == year && file && !strcmp(real_draws[i].file, file)) return real_draws[i].teams;
+    return NULL;
+}
+
+int season_intl_late_start(const char *file, int year)
+{
+    return season_intl_on() && season_start_year() >= year - 1 && season_intl_real_draw(file, year) != NULL;
+}
+
+const char *season_intl_real_tie(int year, int k)
+{
+    for (size_t i = 0; i < sizeof real_ties / sizeof real_ties[0]; i++)
+        if (real_ties[i].year == year && k >= 0 && k < 4) return real_ties[i].teams[k];
+    return NULL;
+}

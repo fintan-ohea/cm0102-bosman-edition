@@ -853,6 +853,23 @@ RT_WRAP(00929dd0, world_club_champ_advance)
 
 void o_0092a6b0(void);
 
+/* After League::load 0x687b10 (season_load.c). The load reads the saved club count +0x3e and makes the table +0xb1
+ * only when the count is not 0 (0x6889db..0x688a07; the read lies in 0x687b10, which runs on past 0x688230). A
+ * Form K parent holds 0 clubs and one zeroed row (parent_table), so a loaded one had no table and never ended
+ * (League::check_complete 0x689add). The table is made here, as at the draw. */
+void season_club_world_loaded(uint32_t obj)
+{
+    if (rd32(g_mem, obj) != CWC_VTABLE || rd32(g_mem, obj + CWC_STAGE_COUNT) != 1 || !rd32(g_mem, obj + CWC_DRAWN) ||
+        rd32(g_mem, obj + CWC_TABLE) || rd16(g_mem, obj + CWC_CLUBS))
+        return;
+    Cpu saved = cpu;
+    int ok = parent_table(obj);
+    if (rt_unwinding) return;
+    cpu = saved;
+    fprintf(stderr, "recomp: club world knockout %d: parent table made at the load (%s)\n",
+            (int16_t)rd16(g_mem, obj + YEAR_AT), ok ? "made" : "failed");
+}
+
 /* WorldClubChamp::update_for_date, thiscall (Date *today, int arg2), ret 8. Date: s16 day of the year, s16 year.
  * The start date test is that of 0x92a73d..0x92a765. */
 RT_WRAP(0092a6b0, world_club_champ_update)
@@ -894,14 +911,14 @@ RT_WRAP(0092a6b0, world_club_champ_update)
         }
     } else if (rd32(g_mem, obj) == CWC_VTABLE && rd32(g_mem, obj + CWC_STAGE_COUNT) == 1 &&
                rd32(g_mem, obj + CWC_DRAWN) && !rd32(g_mem, obj + CWC_TABLE)) {
-        /* A loaded Form K game: the load makes no table for a parent of 0 clubs (inference from this run: the
-         * loaded knockout did not end), and without a table the parent never ends (0x68495e). */
+        /* Net: season_club_world_loaded makes the table at the load. A Form K parent with no table here is a
+         * fault; it never ends without one (0x68495e). */
         Cpu saved = cpu;
         int ok = parent_table(obj);
         if (rt_unwinding) return;
         cpu = saved;
-        fprintf(stderr, "recomp: club world knockout %d: the parent table again after a load (%s)\n", year,
-                ok ? "made" : "failed");
+        fprintf(stderr, "recomp: club world knockout %d: no parent table at the update, the net makes it (%s)\n",
+                year, ok ? "made" : "failed");
     } else if (clubs == 0 && !groups && rd32(g_mem, obj) == CWC_VTABLE && rd32(g_mem, obj + CWC_STAGE_COUNT) != 3 &&
                !rd32(g_mem, obj + CWC_DRAWN)) {
         original_form(obj);                                     /* a later edition of the original form */

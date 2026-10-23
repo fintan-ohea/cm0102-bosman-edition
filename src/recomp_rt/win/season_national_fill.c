@@ -120,11 +120,25 @@ static void fill_side(uint32_t club)
         wr32(g_mem, club + CLUB_SQUAD + 4 * j, best);
         n++;
     }
-    free(busy);
     char name[52];
     memcpy(name, g_mem + club + 4, 51);
     name[51] = 0;
-    fprintf(stderr, "recomp: national fill: %s had %d players it can field, now %d\n", name, before, n);
+    /* Why short: the squad slots it had, the players of its nation in the data (by age for an under-21 side), how
+     * many of them sit in another national squad, and the nation's reputation (the top-up gives no virtual
+     * players above 500, 0x90dd5d). */
+    int slots = 0, data = 0, elsewhere = 0;
+    for (uint32_t j = 0; j < SQUAD; j++) slots += rd32(g_mem, club + CLUB_SQUAD + 4 * j) != 0;
+    for (uint32_t i = 0; readable(staff) && i < count; i++) {
+        uint32_t sp = staff + i * STAFF_SIZE;
+        if (!readable(rd32(g_mem, sp + 0x61)) || (rd32(g_mem, sp + 0x1a) != nation && rd32(g_mem, sp + 0x1e) != nation)) continue;
+        if (u21 && (int16_t)rd16(g_mem, sp + 0x12) < born_from) continue;
+        data++;
+        elsewhere += bsearch(&sp, busy, (size_t)nbusy, sizeof *busy, by_address) != NULL;
+    }
+    fprintf(stderr, "recomp: national fill: %s%s had %d players it can field, now %d (squad slots %d, players of the nation "
+                    "in the data %d, in another national squad %d, nation +0x88 %d)\n", name, u21 ? " (under-21)" : "",
+            before, n, slots, data, elsewhere, (int)rd32(g_mem, nation + 0x88));
+    free(busy);
 }
 
 /* Before the top-up: a national side whose nation has no squad sizes in NationalTeams (the byte pairs at
@@ -184,4 +198,127 @@ void season_national_fill(uint32_t fixture)
     if (!readable(fixture)) return;
     fill_side(rd32(g_mem, fixture + 0x1c));
     if (!rt_unwinding) fill_side(rd32(g_mem, fixture + 0x20));
+}
+
+/* ---- The under-21 squad keeps out the senior squad (rule O304, season games) ----
+ *
+ * NationalTeams::select_squad 0x76c120, thiscall (Nation *nation, slot, Date *, Fixture *, forced), ret 0x14, picks
+ * the squad of one national side of the nation (slot 0 senior, 1 B, 2 under-21; get_squad_limits 0x76d430) into
+ * its squad slots +0xd7. The under-21 pick does not avoid the senior squad, and the senior and under-21 sides
+ * often play in the same window: then the team pick drops the players of both squads for international duty
+ * (get_international_duty_club 0x7757d0), and the under-21 side fields too few. In a 2023 start (October 2023
+ * database, the July 2024 save) Holland U21 had 15 squad slots and 10 players it could field, 32 of its eligible
+ * players in another national squad; Sweden U21 7 and 25. A log of the picks showed the cause: the original
+ * pick gives many under-21 squads few players (same save: Uruguay 11, Mali 9, Senegal 6, Morocco 5, several 0),
+ * and the top-up 0x90dae0 gives a nation with +0x88 above 500 no virtual players (0x90dd5d), so the strong
+ * nations reach the squad check short (Belgium 11, Denmark 12, Republic of Ireland 13 squad slots). After the original picks
+ * either squad, the under-21 squad of the nation loses every player of the senior squad and is made up to
+ * U21_SQUAD at once (u21_without_seniors), so it never reaches its match short. */
+
+static uint32_t side_of(uint32_t nation, int u21)
+{
+    int clubs = (int)rd32(g_mem, CLUB_COUNT), nations = (int)rd32(g_mem, NATION_COUNT);
+    uint32_t base = rd32(g_mem, CLUBS);
+    int from = u21 ? clubs - nations : clubs - 2 * nations, to = u21 ? clubs : clubs - nations;
+    for (int i = from; i >= 0 && i < to; i++) {
+        uint32_t c = base + (uint32_t)i * CLUB_SIZE;
+        if (rd32(g_mem, c + CLUB_NATION) == nation) return c;
+    }
+    return 0;
+}
+
+static int in_squad(uint32_t club, uint32_t sp)
+{
+    for (uint32_t j = 0; j < SQUAD; j++)
+        if (rd32(g_mem, club + CLUB_SQUAD + 4 * j) == sp) return 1;
+    return 0;
+}
+
+/* The rule O304 acts in a season game: a start after 2001/02, or a 2001 start with changing rules on from the
+ * 2002/03 season (the date's year, less one before 1 July: in 2001/02 the rules of that game are the original's,
+ * so its first season plays as the base game). */
+static int u21_rule_on(void)
+{
+    if (!season_code_on()) return 0;
+    if (season_start_year() != SEASON_FIRST_YEAR) return 1;
+    if (!season_changing_rules()) return 0;
+    int day = (int16_t)rd16(g_mem, GAME_YEAR - 2u), year = (int16_t)rd16(g_mem, GAME_YEAR);
+    return (day >= 181 ? year : year - 1) > SEASON_FIRST_YEAR;   /* day 181 is 1 July */
+}
+
+#define U21_SQUAD 22                /* the second limit of get_squad_limits 0x76d430 for slot 2 (0x76d4e2) */
+
+/* The under-21 squad of the nation: the players of the senior squad leave it, and it takes players up to
+ * U21_SQUAD: players of the nation (first or second nationality) born in the year 21 before the game year or
+ * later, by current ability, not injured and in no other national squad. */
+static void u21_without_seniors(uint32_t nation)
+{
+    uint32_t senior = side_of(nation, 0), u21 = side_of(nation, 1);
+    if (!readable(senior) || !readable(u21)) return;
+    int out = 0, have = 0;
+    for (uint32_t j = 0; j < SQUAD; j++) {
+        uint32_t sp = rd32(g_mem, u21 + CLUB_SQUAD + 4 * j);
+        if (sp && in_squad(senior, sp)) {
+            wr32(g_mem, u21 + CLUB_SQUAD + 4 * j, 0);
+            out++;
+        } else if (sp)
+            have++;
+    }
+    if (have >= U21_SQUAD) return;
+    uint32_t *busy = NULL;
+    int nbusy = called_up(u21, &busy), in = 0, born_from = (int)rd16(g_mem, GAME_YEAR) - 21;
+    uint32_t staff = rd32(g_mem, STAFF), count = rd32(g_mem, STAFF_COUNT);
+    while (have + in < U21_SQUAD && !rt_unwinding) {
+        uint32_t best = 0;
+        int best_ca = -1;
+        for (uint32_t i = 0; readable(staff) && i < count; i++) {
+            uint32_t sp = staff + i * STAFF_SIZE, pr = rd32(g_mem, sp + 0x61);
+            if (!readable(pr) || (rd32(g_mem, sp + 0x1a) != nation && rd32(g_mem, sp + 0x1e) != nation)) continue;
+            if ((int16_t)rd16(g_mem, sp + 0x12) < born_from) continue;
+            int ca = (int16_t)rd16(g_mem, pr + 5);
+            if (ca <= best_ca || in_squad(u21, sp)) continue;
+            if (bsearch(&sp, busy, (size_t)nbusy, sizeof *busy, by_address) || injured(sp)) continue;
+            best = sp, best_ca = ca;
+        }
+        if (!best) break;
+        uint32_t j = 0;
+        while (j < SQUAD && rd32(g_mem, u21 + CLUB_SQUAD + 4 * j)) j++;
+        if (j == SQUAD) break;
+        wr32(g_mem, u21 + CLUB_SQUAD + 4 * j, best);
+        in++;
+    }
+    free(busy);
+    if (out || in)
+        fprintf(stderr, "recomp: national fill: %.50s under-21 squad: %d players of the senior squad leave, %d others "
+                        "join (now %d)\n", (char *)(g_mem + u21 + 4), out, in, have + in);
+}
+
+/* Called by the wrap of NationalTeams::select_squad 0x76c120 (season_intl_euro.c) after the original. */
+void season_national_after_pick(uint32_t nation, int slot)
+{
+    if (rt_unwinding || (slot != 0 && slot != 2) || !readable(nation) || !u21_rule_on()) return;
+    Cpu saved = cpu;
+    u21_without_seniors(nation);
+    if (!rt_unwinding) cpu = saved;
+}
+
+/* NationalTeams::select_squads_for_fixture 0x76bab0, thiscall (Fixture *), ret 4: a squad still picked for a
+ * window that ends at most 14 days before this fixture stays and its window grows (0x76bb9e..0x76bc09), with no
+ * call of select_squad, so an under-21 squad picked short (or before a load) would play short. After the
+ * original, each national side of the fixture gets the same treatment as after a pick (u21_without_seniors). */
+void o_0076bab0(void);
+
+RT_WRAP(0076bab0, u21_squads_for_fixture)
+{
+    uint32_t fixture = rt_arg(0);
+    o_0076bab0();
+    if (rt_unwinding || !readable(fixture) || !u21_rule_on()) return;
+    Cpu saved = cpu;
+    int clubs = (int)rd32(g_mem, CLUB_COUNT), nations = (int)rd32(g_mem, NATION_COUNT);
+    for (uint32_t k = 0; k < 2 && !rt_unwinding; k++) {
+        uint32_t club = rd32(g_mem, fixture + 0x1c + 4 * k);
+        int id = readable(club) ? (int)rd32(g_mem, club) : -1;
+        if (id >= clubs - 2 * nations && id < clubs) u21_without_seniors(rd32(g_mem, club + CLUB_NATION));
+    }
+    if (!rt_unwinding) cpu = saved;
 }

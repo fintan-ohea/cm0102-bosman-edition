@@ -1117,9 +1117,8 @@ static void concacaf_fill_seeds(uint32_t self)
         if (!best) return;
         wr32(g_mem, list + 4u * (uint32_t)i, best);
         have++;
-        if (logging())
-            fprintf(stderr, "recomp: season intl: wc qualifying %d: CONCACAF semi-final seed %s\n", year_of(self) + 2,
-                    team_name(best));
+        fprintf(stderr, "recomp: season intl: wc qualifying %d: CONCACAF semi-final seed %s (the pool gave too few)\n",
+                year_of(self) + 2, team_name(best));     /* always: the rule acts (O302) */
     }
 }
 
