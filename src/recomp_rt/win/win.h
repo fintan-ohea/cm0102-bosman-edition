@@ -63,6 +63,10 @@ int win_save_end(void);
  * of the file on disk. The caller keeps the buffer until win_memory_files_clear. */
 void win_memory_file(const char *host_path, const uint8_t *data, size_t size);
 void win_memory_files_clear(void);
+/* The .lng files fitted to the database (season_lng.c): at the end of the data load of a new game. fitted: 1 when
+ * that load wrote them. */
+void season_lng_fit_temp(void);
+int season_lng_fitted(void);
 
 /* Memory that the runtime owns and never frees, zeroed (kernel32.c). */
 uint32_t win_static_alloc(uint32_t size);

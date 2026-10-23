@@ -1148,13 +1148,31 @@ void o_005267c0(void);
 
 /* database_trim_club_table 0x5267c0 (create_game, at 0x828395): after it, [0xae23fc][row] holds the row of each
  * club before the trim (table users doc, section 1 step 6), and the language names 0x5339a0 read that row of the
- * .lng club names. In the merged data a national team stood loaded_records rows later than in the .lng file, and a
- * new club has no .lng row: the entries become the .lng row of each national team and row 0 for a new club, so a
- * language change never reads past the .lng block (inference: the port keeps the language at 0, table users 4). */
+ * .lng club names. When the .lng files were written in the rows of the merged data at its load (season_lng.c,
+ * guard review row A25), those rows are right as they are. Else (no file could be written) the original .lng rows
+ * stand: in the merged data a national team stood loaded_records rows later than in the .lng file, and a new club
+ * has no .lng row, so the entries become the .lng row of each national team and row 0 for a new club, and a
+ * language change never reads past the .lng block. */
+static void trim_rows(void);
+
 RT_WRAP(005267c0, trim_club_table)
 {
     o_005267c0();
-    if (rt_unwinding || !loaded_records) return;
+    if (rt_unwinding) return;
+    if (!season_lng_fitted()) trim_rows();
+    else if (getenv("RECOMP_LNG_LOG")) {                /* test only: the .lng row of each added club */
+        uint32_t index = rd32(g_mem, 0xae23fcu), n = rd32(g_mem, 0xae235cu), clubs = rd32(g_mem, 0xae23b4u);
+        for (uint32_t i = 0; index && i < n; i++) {
+            int32_t v = (int32_t)rd32(g_mem, index + 4 * i);
+            if (v >= loaded_file_clubs && v < loaded_file_clubs + loaded_records)
+                fprintf(stderr, "recomp: lng: added club %s has .lng row %d\n", win_str(clubs + 0x245u * i + 4), v);
+        }
+    }
+}
+
+static void trim_rows(void)
+{
+    if (!loaded_records) return;
     uint32_t index = rd32(g_mem, 0xae23fcu), n = rd32(g_mem, 0xae235cu);
     if (!index) return;
     int fixed = 0;

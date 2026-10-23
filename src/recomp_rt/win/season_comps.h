@@ -110,6 +110,8 @@ extern const int season_comp_def_count;
 
 /* 1 in a season game (see above). */
 int season_comps_on(void);
+/* The comp records that the module added to the data (they come last, before the friendly records). */
+int season_comps_added_records(void);
 
 /* The rules of a competition of the table by its `comp` (any comp_file): 1 when the table holds it in season s,
  * 0 when it is not held, -1 with no row. After the last row the rule stays (Q248). */
