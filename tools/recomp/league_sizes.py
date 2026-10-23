@@ -158,6 +158,11 @@ CUP_INSNS = {
     # ItaCup::select_entrants 0x63faf0: the first position of its second loop (C1 clubs by last position). The
     # first loop already takes C1 clubs of last position 3 to 5, so a season game starts the second loop at 6.
     0x63FB16: ("mov byte ptr [esp + 0x13], 5", "W8(esp + 0x13u, rt_ita_cup_first_position(5u));"),
+    # ItaSerA::process_promotion_relegation_chain 0x642410: the expected counts of Serie A and B for
+    # league_promote_and_relegate 0x689c80 (call 0x64248e), down then up, the places of the base game. In a season
+    # game the places of the season: Serie A ([0x9cf570]) down, Serie B ([0x9cf574]) up.
+    0x642476: ("push 4", "esp -= 4; W32(esp, rt_promote_expected(R32(R32(0xadadfcu) + R32(0x9cf570u) * 4u), 0u, 4u));"),
+    0x642478: ("push 4", "esp -= 4; W32(esp, rt_promote_expected(R32(R32(0xadadfcu) + R32(0x9cf574u) * 4u), 1u, 4u));"),
 }
 
 # address: (the instruction in the original, C code). The store keeps its width (W16) and its object register.
