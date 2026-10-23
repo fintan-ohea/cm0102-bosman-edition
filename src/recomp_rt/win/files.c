@@ -511,6 +511,21 @@ void win_memory_file(const char *host_path, const uint8_t *data, size_t size)
     mem_files++;
 }
 
+void win_memory_file_remove(const char *host_path)
+{
+    for (int m = 0; m < mem_files; m++) {
+        if (strcmp(mem_file[m].path, host_path)) continue;
+        for (uint32_t i = 0; i < MAX_FILES; i++) {
+            if (!fd_used[i] || fds[i] != MEM_FD) continue;
+            if (mem_of[i] == m) fd_used[i] = 0;
+            else if (mem_of[i] > m) mem_of[i]--;
+        }
+        memmove(&mem_file[m], &mem_file[m + 1], sizeof mem_file[0] * (size_t)(mem_files - m - 1));
+        mem_files--;
+        return;
+    }
+}
+
 void win_memory_files_clear(void)
 {
     for (uint32_t i = 0; i < MAX_FILES; i++)

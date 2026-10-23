@@ -727,5 +727,17 @@ static void hidden(void (*fn)(void))
 }
 
 RT_WRAP(00601a40, set_key_ids) { hidden(o_00601a40); }
-RT_WRAP(005339a0, database_load_language_names) { hidden(o_005339a0); }
-RT_WRAP(00544fc0, eng_lng_load_tables) { hidden(o_00544fc0); }
+/* The .lng file that each of the two reads is fitted to the database (season_lng.c, guard review row A25). */
+RT_WRAP(005339a0, database_load_language_names)
+{
+    season_lng_begin(0);
+    hidden(o_005339a0);
+    season_lng_end();
+}
+
+RT_WRAP(00544fc0, eng_lng_load_tables)
+{
+    season_lng_begin(1);
+    hidden(o_00544fc0);
+    season_lng_end();
+}

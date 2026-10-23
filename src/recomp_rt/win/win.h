@@ -63,6 +63,11 @@ int win_save_end(void);
  * of the file on disk. The caller keeps the buffer until win_memory_files_clear. */
 void win_memory_file(const char *host_path, const uint8_t *data, size_t size);
 void win_memory_files_clear(void);
+void win_memory_file_remove(const char *host_path);   /* one memory file; its open handles close */
+/* The .lng files fitted to the database (season_lng.c): around database_load_language_names (english 0) and
+ * eng_lng_load_tables (english 1). */
+void season_lng_begin(int english);
+void season_lng_end(void);
 
 /* Memory that the runtime owns and never frees, zeroed (kernel32.c). */
 uint32_t win_static_alloc(uint32_t size);
