@@ -441,8 +441,8 @@ void rt_wcq_africa_format(uint32_t self, uint32_t pool)
  * sections ended in mid-October before the play-offs of 2005, 2009, 2013 and 2017 (CONMEBOL 10 to 15 October,
  * the CONCACAF hexagonal 10 to 15 October; https://en.wikipedia.org/wiki/2014_FIFA_World_Cup_qualification and
  * the pages of 2006, 2010, 2018). So in a season game the rounds of both templates move earlier by whole weeks
- * (the weekday stays) until the last one is on or before 10 October of the year before the finals, as the real
- * ends. The Asian tie (from about 16 October) then finds its partner. The Oceania tie is built when the Oceania
+ * (the weekday stays) until the last one is on or before the real last matchday of the cycle (real_end below).
+ * The Asian tie (from about 16 October) then finds its partner. The Oceania tie is built when the Oceania
  * final ends, which falls from mid-September (2014 cycle) to mid-November, so it waits for its partners below
  * (wcq_oceania_advance). A round
  * record of a League template (league_round_set_date 0x68a160) is 0x41 bytes: the day of the year at +0 (s16,
@@ -457,11 +457,32 @@ static long day_number(int y, int doy)       /* days from 1 January 1970 to day 
 
 static int days_of_year(int y) { return (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? 366 : 365; }
 
+/* The real last matchday of the South American league and of the CONCACAF final round, the same day in each
+ * cycle (O323; read 2026-10-23): 12 October 2005, 14 October 2009, 15 October 2013, 10 October 2017
+ * (https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_qualification_(CONMEBOL) and the pages of 2010, 2014 and
+ * 2018, the matchday 18 section; the CONCACAF pages of the same years, the last round). The 2002 cycle (14
+ * November 2001, the play-off on 20 and 25 November) keeps the original's template: wc_year starts at 2006. The
+ * 2022 cycle ended on 29 and 30 March 2022 with the play-offs in June, but the game keeps the original's tie dates
+ * of November 2021 for it, so its partners end by 10 October 2021 (a data default). Day of the year from 0. */
+static int real_end(int y)
+{
+    static const struct { int year, month, day; } ends[] = {
+        {2006, 10, 12}, {2010, 10, 14}, {2014, 10, 15}, {2018, 10, 10}, {2022, 10, 10},
+    };
+    static const int before[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+    for (size_t i = 0; i < sizeof ends / sizeof ends[0]; i++)
+        if (ends[i].year == y) {
+            int py = y - 1, leap = py % 4 == 0 && (py % 100 != 0 || py % 400 == 0);
+            return before[ends[i].month - 1] + (ends[i].month > 2 ? leap : 0) + ends[i].day - 1;
+        }
+    return -1;
+}
+
 static void end_by_october(uint32_t self, uint32_t tpl, int rounds, const char *what)
 {
-    int y = wc_year(self), base = (int16_t)rd16(g_mem, self + 0x40u);
-    if (!y || y > 2022 || !readable(tpl) || rounds <= 0 || rounds > 64) return;
-    long last = 0, target = day_number(y - 1, 282);         /* 10 October (day 283 of a common year, from 0) */
+    int y = wc_year(self), base = (int16_t)rd16(g_mem, self + 0x40u), end = real_end(y);
+    if (!y || end < 0 || !readable(tpl) || rounds <= 0 || rounds > 64) return;
+    long last = 0, target = day_number(y - 1, end);
     for (int r = 0; r < rounds; r++) {
         uint32_t rec = tpl + (uint32_t)r * 0x41u;
         long d = day_number(base + (int16_t)rd16(g_mem, rec + 2u), (int16_t)rd16(g_mem, rec));
@@ -478,8 +499,8 @@ static void end_by_october(uint32_t self, uint32_t tpl, int rounds, const char *
         wr16(g_mem, rec + 2u, (uint16_t)(yr - base));
     }
     if (logging())
-        fprintf(stderr, "recomp: season intl: wc qualifying %d: %s ends %ld days earlier (by 10 October %d)\n", y,
-                what, shift, y - 1);
+        fprintf(stderr, "recomp: season intl: wc qualifying %d: %s ends %ld days earlier (by day %d of %d)\n", y,
+                what, shift, end + 1, y - 1);
 }
 
 void o_00920590(void);
