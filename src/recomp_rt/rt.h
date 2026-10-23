@@ -331,6 +331,7 @@ uint32_t rt_ita_cup_first_position(uint32_t original);   /* ItaCup second loop s
 uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2_end_clubs(uint32_t obj, uint32_t original);
+uint32_t rt_ita_c2_none(uint32_t group);
 uint32_t rt_ita_tier_c2(uint32_t c2a);
 uint32_t rt_ita_tier_last(uint32_t obj);
 uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b);

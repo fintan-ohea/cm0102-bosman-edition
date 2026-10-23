@@ -36,6 +36,12 @@ INSNS = {
     0x653AA2: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2a_clubs(edi, 0x12u));"),
     # C2/B and C2/C end in the era; with the flag their objects exist and keep one club (create_fixtures needs one).
     # In the two-group Serie C2 (2011/12 to 2013/14, Q529) C2/B takes the clubs of its division and C2/C ends.
+    # create_italian_comps 0x835320 with the flag: no league for an ended C2/B or C2/C division (no clubs, O259 A23):
+    # its operator new gives 0, so the slot is 0 (0x8356d5, 0x835728) and the wrap of 0x835320 drops it.
+    0x835696: ("call 0x944cf1", "if (rt_ita_c2_none(1u)) eax = 0; else { esp -= 4; W32(esp, 0x83569bu); SYNC(); "
+               "f_00944cf1(); LOAD(); RT_AFTER_CALL(); }"),
+    0x8356E9: ("call 0x944cf1", "if (rt_ita_c2_none(2u)) eax = 0; else { esp -= 4; W32(esp, 0x8356eeu); SYNC(); "
+               "f_00944cf1(); LOAD(); RT_AFTER_CALL(); }"),
     0x657F62: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2_end_clubs(edi, 0x12u));"),
     0x65C0F2: ("mov word ptr [edi + 0x3e], 0x12", "W16(edi + 0x3eu, rt_ita_c2_end_clubs(edi, 0x12u));"),
     0x6418D5: ("mov ecx, dword ptr [eax + edx*4]", "ecx = rt_ita_tier_c2(R32(eax + edx * 4u));"),

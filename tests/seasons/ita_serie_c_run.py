@@ -104,8 +104,22 @@ def run_season(name, extra):
             fails.append(f"{name}: no regroup into 2015/16")
         if not re.search(r"serie c: \d+ up to Serie B", log):
             fails.append(f"{name}: no line of the clubs that go up to Serie B")
+        fails += check_no_league(name, log, extra)
         return fails + check_moves(name, log)
     return run
+
+
+def check_no_league(name, log, extra):
+    """O259 row A23: a new game of the era with the extra division makes no league for C2/B and C2/C (their
+    divisions hold no clubs), so no league of one club ends at the start."""
+    fails = []
+    if extra:
+        for div in ("Italian Serie C2/B", "Italian Serie C2/C"):
+            if f"no league for {div}" not in log:
+                fails.append(f"{name}: a league was made for {div}, which has no clubs")
+    if re.search(r"serie c: Italian Serie C2/[BC] ends \(year 2999\)", log):
+        fails.append(f"{name}: a C2 league made at the start ended at once")
+    return fails
 
 
 def run_change(name, extra):
@@ -159,6 +173,8 @@ def run_load(name, extra):
             fails.append(f"{name}: no regroup into 2015/16 after the load")
         if len(re.findall(r"serie c: .* 2015: 20 clubs, 38 match days", out)) < 3:
             fails.append(f"{name}: fewer than 3 groups of 20 with 38 match days after the load")
+        if extra:
+            fails += [f"{name} (load): " + f.split(": ", 1)[1] for f in check_no_league(name, out, extra)]
         return fails + check_moves(name, out)
     return run
 

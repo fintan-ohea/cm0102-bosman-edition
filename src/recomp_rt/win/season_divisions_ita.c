@@ -229,14 +229,14 @@ int season_ita_division_size(const char *name, int season)
                                        "Italian Serie C2/B", "Italian Serie C2/C"};
     if (name && two_c2_of_year(season)) {
         for (int k = 0; k < GROUPS; k++)
-            if (!strcmp(name, div[GROUPS - 1 + k])) return k < 2 ? c2_clubs(rules_season(season), k) : 1;
+            if (!strcmp(name, div[GROUPS - 1 + k])) return k < 2 ? c2_clubs(rules_season(season), k) : 0;
         return -1;
     }
     if (!name || !era_of_year(season)) return -1;
     for (int k = 0; k < 5; k++)
         if (!strcmp(name, div[k])) {
             const SeasonRule *r = k < GROUPS ? group_row(rules_season(season), k) : NULL;
-            if (k >= GROUPS) return extra_division_flag() ? 1 : 0;     /* one club with the flag (see below) */
+            if (k >= GROUPS) return 0;          /* the division ends (Q290): no league is built for it (below) */
             return r ? r->clubs : 0;
         }
     return -1;
@@ -437,35 +437,14 @@ static void unlink_ended(void)
     }
 }
 
-/* C2/B or C2/C ends: the year 2999, so it makes no fixtures and the chain never starts it again (0x641986). Its
- * table keeps its last season (the rules report shows that edition with year 2999). It leaves the links.
- *
- * A table of one club (a new game of the era with the flag) holds no result blocks. Each row's block at +9 holds
- * +0xa7 bytes, the matches of a club, which is 0 with one club. League::save_to_temp_file writes the blocks when
- * row 0 has one (0x689762..0x6897e3), and League::load_from_temp_file reads each with fread of +0xa7 bytes and wants
- * a count of 1 (0x688c59..0x688c98): fread of 0 bytes gives 0, so the load of a 2014 game with the extra division
- * stopped at its box (line 0x12e4, 0x688cea). With no block in row 0 the save writes 0 and the load gives each row
- * none (0x688d1f..0x688d3d), a state that the load itself makes. */
-static void drop_results(uint32_t obj)
-{
-    uint32_t rows = rd32(g_mem, obj + 0xb1);
-    int n = (int16_t)rd16(g_mem, obj + 0x3e);
-    if (!readable(rows) || n > 1) return;
-    for (int k = 0; k < n && !rt_unwinding; k++) {
-        uint32_t at = rows + ROW_SIZE * (uint32_t)k + 9u, block = rd32(g_mem, at);
-        if (!block) continue;
-        uint32_t f[1] = {block};
-        call_cdecl(F_FREE, 1, f);
-        wr32(g_mem, at, 0);
-    }
-}
-
+/* C2/B or C2/C ends while the game runs: the year 2999, so it makes no fixtures and the chain never starts it again
+ * (0x641986). Its table keeps its last season (the rules report shows that edition with year 2999). It leaves the
+ * links. At the next load no league is made for it (rt_ita_c2_none). */
 static void idle(uint32_t obj)
 {
     if (!obj) return;
     wr16(g_mem, obj + 0x40, IDLE_YEAR);
     ita_unlink(obj);
-    drop_results(obj);
     fprintf(stderr, "recomp: serie c: %.50s ends (year %d)\n", win_str(rd32(g_mem, obj + 4) + 4), IDLE_YEAR);
 }
 
@@ -1003,8 +982,8 @@ uint32_t rt_ita_tier_c2(uint32_t c2a)
 uint32_t rt_ita_tier_last(uint32_t obj)
 {
     uint32_t serie_a = object_of(KEY_A), c2b = object_of(KEY_C2B);
-    if (!serie_a || !c2b || c2_group(obj) != 2 || !two_c2_of_year((int16_t)rd16(g_mem, serie_a + 0x40))) return obj;
-    return c2b;
+    if (!serie_a || !c2b || !two_c2_of_year((int16_t)rd16(g_mem, serie_a + 0x40))) return obj;
+    return obj && c2_group(obj) != 2 ? obj : c2b;          /* no C2/C object after a load of such a season */
 }
 
 #define F_FREE_TABLE 0x00687970u        /* League::free_table, thiscall (0: its own table) ret 4 */
@@ -1133,38 +1112,6 @@ static void kind_season(int s)
                        "clubs.", a->clubs, b->clubs, c->clubs);
 }
 
-/* An ended league of one club at a new game: it ends, and its club (the one its constructor needs) goes to the
- * Serie D, so it is in the pool that fills the groups (else it kept a division with no league for the whole game:
- * review of Q529). The table keeps the row. */
-static void end_new(uint32_t obj)
-{
-    if (!obj || (int16_t)rd16(g_mem, obj + 0x3e) > 1) return;
-    idle(obj);
-    uint32_t rec = rd32(g_mem, obj + 4), serie_d = record_of(KEY_SERIE_D), serie_a = object_of(KEY_A);
-    uint32_t table = rd32(g_mem, CLUBS);
-    int count = (int)rd32(g_mem, CLUB_COUNT);
-    for (int i = 0; rec && serie_d && serie_a && readable(table) && i < count && !rt_unwinding; i++) {
-        uint32_t club = table + CLUB_SIZE * (uint32_t)i;
-        if (rd32(g_mem, club + 0x57) != rec) continue;
-        uint32_t r[3] = {club, serie_d, 1};
-        call_this(F_RELEGATE_TO, serie_a, 3, r);
-        fprintf(stderr, "recomp: serie c: %.50s: its club goes to the Serie D\n", win_str(rec + 4));
-    }
-}
-
-/* A new game of the era: C2/B and C2/C (made with the extra division flag, one club each) end now; in a two-group
- * C2 season C2/C (Q529). */
-static void kind_new_game(int y)
-{
-    if (two_c2_of_year(y)) {
-        end_new(object_of(KEY_C2C));
-        return;
-    }
-    if (!era_of_year(y)) return;
-    end_new(object_of(KEY_C2B));
-    end_new(object_of(KEY_C2C));
-}
-
 /* A load: the constructors and set_up_rules give C2/A, C2/B and C2/C their links again (0x653bf5..0x653c0c). */
 static void kind_loaded(int y)
 {
@@ -1172,26 +1119,78 @@ static void kind_loaded(int y)
     unlink_ended();
 }
 
-const SeasonRuleKind season_kind_ita_serie_c = {"ita_serie_c", kind_new_game, kind_loaded, kind_season, NULL, NULL,
-                                                NULL};
+const SeasonRuleKind season_kind_ita_serie_c = {"ita_serie_c", NULL, kind_loaded, kind_season, NULL, NULL, NULL};
 
-/* ---- C2/B and C2/C at a new game of the era ----
+/* ---- No league for an ended C2 division (O259, row A23) ----
  *
- * With the extra division flag the original makes C2/B and C2/C (0x8356ce, 0x835721). League::create_fixtures
- * 0x6835c0 cannot make a league of 0 clubs (its first block, n + n mod 2 pointers, at 0x683615..0x683638: box
- * league.cpp 1020 in a 2014 game), and create_table wants its whole count (0x64b755..0x64b763 in C1/A). So in the
- * era each keeps one club (season_ita_division_size gives 1 with the flag): its count store (0x657f62, 0x65c0f2)
- * gives 1, the round robin of one club and a rest place has no match (0x683ac9 on), check_complete counts 0
- * matches ((1 - 1) x 2, 0x689b1d..0x689b36), and the new game hook ends the object (year 2999). */
+ * With the extra division flag create_italian_comps 0x835320 makes C2/A, C2/B and C2/C (operator new 0x944cf1 at
+ * 0x835640, 0x835696, 0x8356e9; constructors 0x652e90, 0x657350, 0x65b4e0 at 0x835678, 0x8356ce, 0x835721; entry
+ * slots 4 to 6, 0x835693..0x835736), at a new game and at each load. A C2 division that has ended holds no clubs:
+ * at a new game the club moves give it none (season_ita_division_size, Q290), after the change into the era or into
+ * two C2 groups the chain and the regroup move its clubs out. A league of 0 clubs cannot be made:
+ * League::create_fixtures 0x6835c0 stops at league.cpp 1020 (its first block, n + n mod 2 pointers, 0x683615..
+ * 0x683638), and create_table wants its whole count (0x64b755..0x64b763 in C1/A). So in a season game the operator
+ * new of C2/B and C2/C gives 0 when the division has no clubs (rt_ita_c2_none, tools/recomp/new_divisions.py): the
+ * original then stores 0 in the slot (0x8356d5, 0x835728), and the wrap below takes the empty slots out of the
+ * entry's array. The base game always has clubs there. A C2 league that ends while the game runs keeps its object
+ * until the next load, as a competition that never returns (year 2999, Q395, idle). */
+uint32_t rt_ita_c2_none(uint32_t group)
+{
+    uint32_t key = group == 1 ? KEY_C2B : group == 2 ? KEY_C2C : 0;
+    int none = key && season_game_changes() && clubs_of(key) == 0;
+    if (none) fprintf(stderr, "recomp: serie c: no league for %.50s (its division has no clubs)\n",
+                      win_str(record_of(key) + 4));
+    return (uint32_t)none;
+}
+
+/* create_italian_comps, cdecl (entry) ret: the entry's competitions +0x10 (count +0xc, 0xb with the flag at
+ * 0x835410) lose the empty slots that rt_ita_c2_none left; the cups after them (0x835739 on) move up. */
+void o_00835320(void);
+
+RT_WRAP(00835320, ita_create_comps)
+{
+    uint32_t entry = rt_arg(0);
+    o_00835320();
+    if (rt_unwinding || !readable(entry)) return;
+    uint32_t eax = cpu.eax, arr = rd32(g_mem, entry + 0x10);
+    int n = (int32_t)rd32(g_mem, entry + 0xc), k = 0;
+    for (int i = 0; readable(arr) && i < n && i < 64; i++) {
+        uint32_t obj = rd32(g_mem, arr + 4u * (uint32_t)i);
+        if (obj) wr32(g_mem, arr + 4u * (uint32_t)k++, obj);
+    }
+    if (readable(arr) && k < n) {
+        for (int i = k; i < n; i++) wr32(g_mem, arr + 4u * (uint32_t)i, 0);
+        wr32(g_mem, entry + 0xc, (uint32_t)k);
+    }
+    cpu.eax = eax;
+}
+
+/* The links below of the C2 groups: set_up_rules writes +0x20 = [0x9cf584] in C2/A (0x653bf5..0x653c0c) and the next
+ * group's id in C2/B, at every start and at a load. The season change pass follows +0x20 from the top league and
+ * reads the object of each id (0x48ce37..0x48ce46), so a link to a division with no clubs (no league, or one that has
+ * ended) ends the chain there (-1). At a new game the object table is not filled yet, so the test is the clubs. */
+static void c2_link(uint32_t obj)
+{
+    int32_t below = (int32_t)rd32(g_mem, obj + 0x20);
+    for (int k = 1; k < GROUPS && !rt_unwinding; k++)
+        if (below >= 0 && below == (int32_t)rd32(g_mem, C2_KEY[k]) && season_game_changes() && clubs_of(C2_KEY[k]) == 0)
+            wr32(g_mem, obj + 0x20, 0xffffffffu);
+}
+
+void o_00653b90(void);
+void o_00658050(void);
+void o_0065c1e0(void);
+
+RT_WRAP(00653b90, c2a_set_up_rules) { uint32_t o = cpu.ecx; o_00653b90(); if (!rt_unwinding) { uint32_t a = cpu.eax; c2_link(o); cpu.eax = a; } }
+RT_WRAP(00658050, c2b_set_up_rules) { uint32_t o = cpu.ecx; o_00658050(); if (!rt_unwinding) { uint32_t a = cpu.eax; c2_link(o); cpu.eax = a; } }
+RT_WRAP(0065c1e0, c2c_set_up_rules) { uint32_t o = cpu.ecx; o_0065c1e0(); if (!rt_unwinding) { uint32_t a = cpu.eax; c2_link(o); cpu.eax = a; } }
+
+/* The count store of C2/B's create_table (0x657f62) in a two-group C2 season: the clubs of its division (C2/C's store
+ * 0x65c0f2 keeps the original's: C2/C is not made in those seasons). */
 uint32_t rt_ita_c2_end_clubs(uint32_t obj, uint32_t original)
 {
     if (c2_group(obj) == 1 && two_c2(obj)) return own_clubs(obj, KEY_C2B, original);
-    if (c2_group(obj) == 2 && two_c2_of_year((int16_t)rd16(g_mem, obj + 0x40)))
-        return clubs_of(KEY_C2C) == 1 ? 1u : original;
-    if (!era_of_year((int16_t)rd16(g_mem, obj + 0x40))) return original;
-    int32_t id = (int32_t)rd32(g_mem, rd32(g_mem, obj + 4));
-    uint32_t key = id == (int32_t)rd32(g_mem, KEY_C2B) ? KEY_C2B : id == (int32_t)rd32(g_mem, KEY_C2C) ? KEY_C2C : 0;
-    return key && clubs_of(key) == 1 ? 1u : original;
+    return original;
 }
 
 /* The fixed fixture lists of C2/B and C2/C (0x658750, 0x65c8e0, called by the constructors before create_fixtures,
@@ -1333,11 +1332,20 @@ RT_WRAP(0063faf0, ita_cup_entrants)
  * award of a league with the year of an ended group is not given. */
 void o_00768940(void);
 
+/* An ended C2 group: its object waits for year 2999, or it has none (no league for an ended division, A23): the
+ * award functions read the object of the id (0x768944..0x768950: no object gives a box at 0x76895a;
+ * 0x768cfd..0x768d05 with no test). */
+static int ended_c2(int32_t id, uint32_t obj)
+{
+    if (readable(obj)) return c2_group(obj) >= 1 && (int16_t)rd16(g_mem, obj + 0x40) == IDLE_YEAR;
+    return id >= 0 && (id == (int32_t)rd32(g_mem, KEY_C2B) || id == (int32_t)rd32(g_mem, KEY_C2C));
+}
+
 RT_WRAP(00768940, ita_manager_award)
 {
     int32_t id = (int32_t)rt_arg(2);
     uint32_t table = rd32(g_mem, COMP_OBJECTS), obj = id >= 0 && readable(table) ? rd32(g_mem, table + 4u * (uint32_t)id) : 0;
-    if (readable(obj) && c2_group(obj) >= 1 && (int16_t)rd16(g_mem, obj + 0x40) == IDLE_YEAR) {
+    if (ended_c2(id, obj)) {
         rt_ret_stdcall(cpu.eax, 3);
         return;
     }
@@ -1354,7 +1362,7 @@ RT_WRAP(00768cf0, ita_player_award)
 {
     int32_t id = (int32_t)rt_arg(0);
     uint32_t table = rd32(g_mem, COMP_OBJECTS), obj = id >= 0 && readable(table) ? rd32(g_mem, table + 4u * (uint32_t)id) : 0;
-    if (readable(obj) && c2_group(obj) >= 1 && (int16_t)rd16(g_mem, obj + 0x40) == IDLE_YEAR) {
+    if (ended_c2(id, obj)) {
         rt_ret_stdcall(cpu.eax, 10);
         return;
     }
