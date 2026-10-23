@@ -814,19 +814,30 @@ RT_WRAP(0056b2b0, groups_auto_fate_news)
      * at 0x63f134: its groups are stages 0 to 6) and writes a tie only for the knockout. So an EFL Trophy item of a
      * group stage takes Comp's text 0x48c6d0 (the version of ScoLgeCup, TurCup and Cup_Stage), and the knockout
      * stage (number groups) keeps EngAutoCup's own text with its tie. */
-    /* RECOMP_TEST_GROUP_FATE=original turns the routing and the safety net off (the retest of the old box); =log logs
-     * every call. */
-    static int original = -1, logged, every;
+    /* RECOMP_TEST_GROUP_FATE (tests only): "original" turns the routing and the safety net off; "log" logs every call;
+     * "full" and "full-original" also ask for the full text (argument 9, here the headline text of argument 10) of
+     * each group stage item, as the news screen does when it opens one (the retest of the old box, O277). */
+    static int original = -1, logged, every, full;
     if (original < 0) {
         const char *v = getenv("RECOMP_TEST_GROUP_FATE");
-        original = v && !strcmp(v, "original");
+        original = v && (!strcmp(v, "original") || !strcmp(v, "full-original"));
         every = v && !strcmp(v, "log");
+        full = v && !strncmp(v, "full", 4);
     }
     if (every)
-        fprintf(stderr, "recomp: cup groups: fate text call: stages %d of %d, stage %d, fate %d, fixture %08x, full %08x\n",
+        fprintf(stderr, "recomp: cup groups: fate text call: stages %d of %d, stage %d, fate %d, fixture %08x, "
+                "full %08x\n",
                 (int32_t)rd32(g_mem, cpu.ecx + CUP_STAGE_COUNT), layout(cpu.ecx) ? layout(cpu.ecx)->groups : -1,
                 (int8_t)g_mem[cpu.esp + 0xcu], (int8_t)g_mem[cpu.esp + 8u], rd32(g_mem, cpu.esp + 0x14u),
                 rd32(g_mem, cpu.esp + 0x24u));
+    if (full && layout(cpu.ecx) && (int8_t)g_mem[cpu.esp + 0xcu] < layout(cpu.ecx)->groups &&
+        !rd32(g_mem, cpu.esp + 0x24u)) {
+        wr32(g_mem, cpu.esp + 0x24u, rd32(g_mem, cpu.esp + 0x28u));
+        fprintf(stderr, "recomp: cup groups: test: full text of a group stage %d item (fate %d, fixture %08x), %s "
+                "path\n",
+                (int8_t)g_mem[cpu.esp + 0xcu], (int8_t)g_mem[cpu.esp + 8u], rd32(g_mem, cpu.esp + 0x14u),
+                original ? "old" : "new");
+    }
     if (original) {
         o_0056b2b0();
         return;
