@@ -635,6 +635,22 @@ static void move_clubs(int season)
                     now, d->want);
         }
     }
+    /* Slice 20: a club that leaves a group division of a tier in its new form (Liga 3, Primera Federación) goes to the
+     * tier's division of relegated clubs, as the season change sends it (season_divisions_leaver_division), not to
+     * no division (O260 A24: the Portuguese Cup stopped at por_cup.cpp 74). A club with no nation stays out (the
+     * shells above). */
+    int to_lower = 0;
+    for (int i = 0; i < count; i++) {
+        Club *c = &club[i];
+        if (c->div || !c->db_div || c->national || !c->nation) continue;
+        uint32_t d = season_divisions_leaver_division(c->db_div, season);
+        if (!d) continue;
+        c->div = d;
+        to_lower++;
+    }
+    if (to_lower)
+        fprintf(stderr, "recomp: club moves: %d clubs that leave a group division of a new form go to its lower division\n",
+                to_lower);
     /* Write the moves. */
     int moved = 0;
     for (int i = 0; i < count; i++) {

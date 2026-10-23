@@ -36,6 +36,9 @@ int season_divisions_new_record(const char *division);
 #define SEASON_DIV_GRE_RECORD "Greek Second Division Group 2"
 /* 1 when the club list of a division in a season applies (the 3. Liga list only with the extra division flag). */
 int season_divisions_list_on(const char *division, int season);
+/* The division that a club of database division db_division goes to when the club moves of a new game leave it out of
+ * its division (a group division of a tier in its new form: the tier's division of relegated clubs), or 0 for none. */
+uint32_t season_divisions_leaver_division(uint32_t db_division, int season);
 
 #include "season_change.h"
 extern const SeasonRuleKind season_kind_divisions;
