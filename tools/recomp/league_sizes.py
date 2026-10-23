@@ -163,6 +163,9 @@ CUP_INSNS = {
     # game the places of the season: Serie A ([0x9cf570]) down, Serie B ([0x9cf574]) up.
     0x642476: ("push 4", "esp -= 4; W32(esp, rt_promote_expected(R32(R32(0xadadfcu) + R32(0x9cf570u) * 4u), 0u, 4u));"),
     0x642478: ("push 4", "esp -= 4; W32(esp, rt_promote_expected(R32(R32(0xadadfcu) + R32(0x9cf574u) * 4u), 1u, 4u));"),
+    # EngFaCup::collect_entrants 0x56fab0: the National League places that its clubs cannot fill go to the clubs
+    # below it, and no copy takes more than its stack array holds (O294, season_sizes.c rt_fa_cup_takes).
+    0x56FFE4: ("movsx di, byte ptr [esp + 0x1b]", "edi = (edi & 0xffff0000u) | (rt_fa_cup_takes(esp) & 0xffffu);"),
 }
 
 # address: (the instruction in the original, C code). The store keeps its width (W16) and its object register.
