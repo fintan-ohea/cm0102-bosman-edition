@@ -19,10 +19,10 @@ or when the log of the runtime does not name the skipped box.
 The Italian runs play in the language Italian (game.cfg, see italian_cfg). There the title of the box is
 "CD Non Richiesto". A player with any database other than 3.9.68 also saw the box "Database..cpp 7784" of
 database_load_language_names 0x5339a0 at each load and new game (call 0x5358b7), because the .lng files fit the
-3.9.68 data only. The runtime now gives that function a .lng file fitted to the database (season_lng.c), so the
-box does not come, and the names of a season database are Italian where the 3.9.68 data has the same English name.
-The runs log each box that shows (RECOMP_SCREEN_LOG); any box, a skipped box 7784 and a log without the fitted
-ita.lng fail the run (load-italian-3965 reads no .lng: its save is in Italian already):
+3.9.68 data only. The runtime now writes the copied .lng files in the rows of a database that they do not fit, at
+the data load of a new game (season_lng.c; tests/smoke/lng_fit_run.py tests it), so the box does not come. The runs
+log each box that shows (RECOMP_SCREEN_LOG); any box and a skipped box 7784 fail the run, and so does a written
+file in a run whose files fit, or no written file in the season run:
     load-italian         start.sav (3.9.68) in Italian, to the first news screen
     new-italian-3965     a new game on 3.9.65 in Italian, to the first news screen, then Save Game "Ita65"
     load-italian-3965    then a load of Ita65 in Italian, to the first news screen
@@ -47,7 +47,7 @@ import smoke_run  # noqa: E402
 SKIPPED = "recomp: skipped the box CD Not Required"
 SHOWN = "recomp: message box from"
 SKIPPED_LNG = "recomp: skipped the box Database..cpp 7784"
-FITTED_LNG = "recomp: ita.lng fitted to the database"
+FITTED_LNG = "recomp: .lng files fitted to the database"
 SEASON_DB = "April 2022"
 DATA_3965 = "/Users/max/Projects/cm0102/data-3965"
 ITALIAN = 4                 # the language Italian: database_language_file_exists 0x535930 gives it ita.lng
@@ -126,10 +126,11 @@ def play_italian(program, game, folder, data_3965):
                 problems.append("the log does not name the skipped box")
             if SKIPPED_LNG in r.stderr:
                 problems.append("the box Database..cpp 7784 came (the runtime skipped it)")
-            # A save made in Italian holds its names in Italian and its data language (index.dat's language block,
-            # [0x9b5984]), so its load reads no .lng (0x5339dd); the other runs read a fitted one.
-            if name != "load-italian-3965" and FITTED_LNG not in r.stderr:
-                problems.append("the log does not name the fitted ita.lng")
+            # Only the season database needs the .lng files written in its rows: the 3.9.68 save and the 3.9.65
+            # data set have files that fit.
+            if (name == "new-italian-season") != (FITTED_LNG in r.stderr):
+                problems.append("the .lng files were written" if FITTED_LNG in r.stderr else
+                                "the log does not name the written .lng files")
             out.append((name, took, problems))
     return out
 

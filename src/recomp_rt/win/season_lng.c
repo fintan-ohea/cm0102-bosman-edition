@@ -1,19 +1,27 @@
 /* The .lng files fitted to the database (O260, guard review row A25).
  *
- * In a language other than English the game reads CM3_TEMP\<lang>.lng (database_load_language_names 0x5339a0) and
- * CM3_TEMP\eng.lng (eng_lng_load_tables 0x544fc0, the English names). Both compare the counts in the header with
- * the database (0x533e6a..0x533ec5, 0x545193..0x5451ed) and give the box "Database..cpp 7784" on a difference. The
- * .lng files of the game fit the 3.9.68 data only. The data sets 3.9.60 and 3.9.65 have their own (make_clean_files.py),
- * but a season database, a custom database and every database with added club rows (season_records.c) have none:
- * their names stayed English, and a new club read the translation of .lng row 0.
+ * The game keeps the translated names in CM3_TEMP\<lang>.lng, one file for each of the ten languages. A data load
+ * of a new game copies them from Data (database_load 0x528540: the copy loop 0x528618..0x5286c8, through the data
+ * set's swap of Data, files.c), a save stores them (0x53158a) and a load extracts them from the save (0x5285f7).
+ * Three functions read them by row: database_load_language_names 0x5339a0 writes the names of .lng row i into
+ * record i (row [0xae23fc][club] for a club), eng_lng_load_tables 0x544fc0 makes the English name table, and
+ * set_key_ids 0x601a40 matches the key records by the English names of eng.lng when the names of the data are in
+ * another language (a load of a save made in one, 0x603c52..0x603c89). All three compare the counts in the header
+ * with the database and give the box "Database..cpp 7784" (0x5339a0) or no names on a difference. The files of
+ * the game fit the 3.9.68 data, and those of the data sets 3.9.60 and 3.9.65 fit those (make_clean_files.py). A
+ * season or custom database has other counts and other rows, so its names stayed English; a club that the club
+ * records add (season_records.c) has a row past the file.
  *
- * The fix: while one of the two functions runs, the open of its .lng file (fopen 0x945b00) gets a file made for the
- * database in memory (win_memory_file). Its header holds the database's counts. Each record of the database gets the
- * entry of the source .lng row whose English name (eng.lng) equals the record's name (the source: the .lng files of
- * the data set when it has them, else the game's Data, 3.9.68); a record with no such row gets
- * its own names. For eng.lng every record gets its own names. The record names at +4 are the English names of the
- * data (the data language [0x9b5984] is 0 for every database). A record with no row is saved before the original
- * function and written back after it, so the function changes nothing in it.
+ * The fix: at the end of the data load of a new game (season_comps.c), while the records hold the English names
+ * of the data and before the language names read the files (Config::apply_and_save 0x5d8480), each
+ * CM3_TEMP\<lang>.lng that does not fit the database is written again in the database's row order. A club's row is
+ * then its own index (+0x00; [0xae23fc] is made by the club trim later, database_trim_club_table 0x5267c0, which
+ * gives each kept club its row before the trim, so the rows stay right: season_records.c then leaves them). The source of a row is the row of the copied file whose eng.lng name equals the record's name: the same
+ * row number first, then the first row with that name that no record took. A record with no such row gets its own
+ * names (it stays English in every language): a club that the club records add, for example. The new files then go into the save and come back at its load, so
+ * every later read (a language change during a career, a load in another language, the key ids) reads rows that
+ * fit the records. When the files fit (the 3.9.68 game, the data sets) nothing is written: the base game reads
+ * the original files.
  *
  * The layout (found from the 3.9.68 data: each eng.lng entry equals fields of its record; sizes from the reads
  * 0x533eff..0x5350ad and 0x54521c..0x545355): a header of 8 s32 counts (clubs, continents, nation comps, nations,
@@ -21,12 +29,14 @@
  * comps 0x53, nations 0x6d, stadiums 0x34, cities 0x34, staff comps 0x4f, club comps 0x53. An entry holds the name
  * (record +4, 51 bytes) and the byte after it (record +0x37); the 0x4f and larger entries then the short name
  * (record +0x38, 26 bytes) and the byte after it (record +0x52); a comp entry then the abbreviation (record +0x53,
- * 4 bytes); a nation entry then 30 bytes from record +0x53. A continent entry is not made from its record: a
- * continent with no row keeps the 3.9.68 eng.lng entry of its index and is written back.
+ * 4 bytes); a nation entry then 30 bytes from record +0x53. A continent with no row gets the eng.lng entry of its
+ * index. The 0x5339a0 write of a comp entry whose short name is empty gives the record its long name as short
+ * name (0x5355eb..0x535617), so a record with no short name of its own shows its long name there.
  *
- * The club entries are indexed by the .lng row of each club: [0xae23fc][club], or the club's +0x00 when the table is
- * NULL (club_get_english_name 0x545880, docs/research/2026-10-19-club-table-users.md). */
+ * The comp counts leave out the records that the new competitions module adds (season_comps_added_records): the
+ * three readers run with them hidden (season_comps.c), and they have no translation in any file. */
 #include "win.h"
+#include "season_comps.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -60,16 +70,27 @@ static const Section sections[SECTIONS] = {
     {"club comps", 0xae23d0u, 0, 0x6bu, 0x53u, 5},
 };
 
-/* A .lng file of the game's Data (3.9.68), read once. */
+/* The ten files (database_language_file_exists 0x535930). */
+static const char *const files[] = {"eng.lng", "fra.lng", "ger.lng", "ita.lng", "esp.lng",
+                                    "dan.lng", "hol.lng", "nor.lng", "por.lng", "swe.lng"};
+#define FILES ((int)(sizeof files / sizeof files[0]))
+
+/* ---- A .lng file ---- */
+
 typedef struct {
     uint8_t *data;
     size_t size;
     int32_t count[8];
     size_t at[SECTIONS];        /* offset of each section */
+    int *sorted[SECTIONS];      /* the rows of each section sorted by name */
 } Lng;
 
-static Lng eng68, lang68;
-static char lang68_name[32];
+static void lng_free(Lng *l)
+{
+    free(l->data);
+    for (int s = 0; s < SECTIONS; s++) free(l->sorted[s]);
+    memset(l, 0, sizeof *l);
+}
 
 /* The file in a folder, matched without regard to case; 0 when it is not there. */
 static int find_in(const char *dir, const char *file, char *path, size_t room)
@@ -84,45 +105,97 @@ static int find_in(const char *dir, const char *file, char *path, size_t room)
     return path[0] != 0;
 }
 
-/* The source of the fit: the .lng of the data set when it has one (its rows fit its own database), else the
- * game's Data (3.9.68). */
-static char source_dir[1100];
-
-static int read_game_lng(const char *file, Lng *l)
+static void name_of(const uint8_t *src, char *out)
 {
-    free(l->data);
+    memcpy(out, src, 51);
+    out[51] = 0;
+}
+
+static const Lng *sort_lng;
+static int sort_section;
+
+static int by_name(const void *a, const void *b)
+{
+    const uint8_t *e = sort_lng->data + sort_lng->at[sort_section];
+    uint32_t size = sections[sort_section].entry;
+    char x[52], y[52];
+    name_of(e + (size_t)*(const int *)a * size, x);
+    name_of(e + (size_t)*(const int *)b * size, y);
+    int c = strcmp(x, y);
+    return c ? c : *(const int *)a - *(const int *)b;
+}
+
+static int lng_read(const char *path, Lng *l, int sort)
+{
     memset(l, 0, sizeof *l);
-    char path[1400];
-    if (!find_in(source_dir, file, path, sizeof path)) return 0;
-    FILE *f = path[0] ? fopen(path, "rb") : NULL;
+    FILE *f = fopen(path, "rb");
     if (!f) return 0;
     fseek(f, 0, SEEK_END);
     long n = ftell(f);
     fseek(f, 0, SEEK_SET);
     l->data = n > (long)LNG_HEADER ? malloc((size_t)n) : NULL;
-    if (!l->data || fread(l->data, 1, (size_t)n, f) != (size_t)n) { fclose(f); free(l->data); l->data = NULL; return 0; }
+    if (!l->data || fread(l->data, 1, (size_t)n, f) != (size_t)n) { fclose(f); lng_free(l); return 0; }
     fclose(f);
     l->size = (size_t)n;
     memcpy(l->count, l->data, sizeof l->count);
     size_t at = LNG_HEADER;
     for (int s = 0; s < SECTIONS; s++) {
         l->at[s] = at;
-        if (l->count[sections[s].header] < 0) { free(l->data); l->data = NULL; return 0; }
+        if (l->count[sections[s].header] < 0) { lng_free(l); return 0; }
         at += (size_t)l->count[sections[s].header] * sections[s].entry;
     }
-    if (at != l->size) { free(l->data); l->data = NULL; return 0; }
+    if (at != l->size) { lng_free(l); return 0; }
+    for (int s = 0; sort && s < SECTIONS; s++) {
+        int c = l->count[sections[s].header];
+        l->sorted[s] = malloc(sizeof(int) * (size_t)(c ? c : 1));
+        for (int j = 0; j < c; j++) l->sorted[s][j] = j;
+        sort_lng = l;
+        sort_section = s;
+        qsort(l->sorted[s], (size_t)c, sizeof(int), by_name);
+    }
     return 1;
 }
 
-/* The database side of a section: the record of each .lng row (0 for a row with no record). */
+/* The eng.lng row of a name: the same row number first, then the first row with that name that no record took.
+ * -1 for none. An empty name matches its own row only. */
+static int row_of(const Lng *l, int s, int row, const char *name, const uint8_t *taken)
+{
+    uint32_t size = sections[s].entry;
+    int n = l->count[sections[s].header];
+    const uint8_t *e = l->data + l->at[s];
+    char other[52];
+    if (row < n && !taken[row]) {
+        name_of(e + (size_t)row * size, other);
+        if (!strcmp(other, name)) return row;
+    }
+    if (!name[0]) return -1;
+    int lo = 0, hi = n;
+    while (lo < hi) {
+        int mid = (lo + hi) / 2;
+        name_of(e + (size_t)l->sorted[s][mid] * size, other);
+        if (strcmp(other, name) < 0) lo = mid + 1; else hi = mid;
+    }
+    for (; lo < n; lo++) {
+        int j = l->sorted[s][lo];
+        name_of(e + (size_t)j * size, other);
+        if (strcmp(other, name)) break;
+        if (!taken[j]) return j;
+    }
+    return -1;
+}
+
+/* ---- The database side ---- */
+
+/* The record of each .lng row of a section, 0 for none; extras: clubs that share a row with another club. */
 typedef struct {
-    int rows;
+    int rows, extras;
     uint32_t *record;
 } Rows;
 
 static int comp_counts(int32_t *clubs, int32_t *nations)
 {
-    int32_t total = (int32_t)rd32(g_mem, COMP_TOTAL) - 0x7f, n = (int32_t)rd32(g_mem, NATION_COMP_COUNT);
+    int32_t total = (int32_t)rd32(g_mem, COMP_TOTAL) - 0x7f - season_comps_added_records();
+    int32_t n = (int32_t)rd32(g_mem, NATION_COMP_COUNT);
     if (total < 0 || n < 0 || n > total) return 0;
     *clubs = total - n;
     *nations = n;
@@ -134,6 +207,7 @@ static int rows_of(int s, Rows *r)
     const Section *sec = &sections[s];
     uint32_t base = rd32(g_mem, sec->array);
     int32_t n, first = 0;
+    memset(r, 0, sizeof *r);
     if (s == S_CLUB_COMPS || s == S_NATION_COMPS) {
         int32_t c, nc;
         if (!comp_counts(&c, &nc)) return 0;
@@ -145,7 +219,7 @@ static int rows_of(int s, Rows *r)
     if (n < 0 || n > 400000 || (n && !base)) return 0;
     if (s != S_CLUBS) {
         r->rows = n;
-        r->record = malloc(sizeof *r->record * (size_t)(n ? n : 1));
+        r->record = calloc((size_t)(n ? n : 1), sizeof *r->record);
         for (int32_t i = 0; i < n; i++) r->record[i] = base + sec->record * (uint32_t)(first + i);
         return 1;
     }
@@ -153,14 +227,16 @@ static int rows_of(int s, Rows *r)
     int32_t rows = 0;
     for (int32_t i = 0; i < n; i++) {
         int32_t row = (int32_t)(map ? rd32(g_mem, map + 4u * (uint32_t)i) : rd32(g_mem, base + sec->record * (uint32_t)i));
-        if (row >= rows && row < 400000) rows = row + 1;
+        if (row < 0 || row >= 400000) return 0;
+        if (row >= rows) rows = row + 1;
     }
     r->rows = rows;
     r->record = calloc((size_t)(rows ? rows : 1), sizeof *r->record);
     for (int32_t i = 0; i < n; i++) {
         uint32_t rec = base + sec->record * (uint32_t)i;
         int32_t row = (int32_t)(map ? rd32(g_mem, map + 4u * (uint32_t)i) : rd32(g_mem, rec));
-        if (row >= 0 && row < rows && !r->record[row]) r->record[row] = rec;
+        if (!r->record[row]) r->record[row] = rec;
+        else r->extras++;
     }
     return 1;
 }
@@ -180,210 +256,108 @@ static void own_entry(int s, uint32_t rec, uint8_t *e)
     if (sec->entry == 0x6d) memcpy(e + 79, g_mem + rec + 0x53, 30);
 }
 
-static void name_of(const uint8_t *src, char *out)
-{
-    memcpy(out, src, 51);
-    out[51] = 0;
-}
+/* ---- The fit ---- */
 
-/* eng.lng's rows of each section sorted by name, made once. */
-static int *sorted[SECTIONS];
-static int sort_section;
+/* The source row of each record of each section (-1: its own names), from the copied eng.lng. */
+static int *source_rows[SECTIONS];
 
-static int by_name(const void *a, const void *b)
+static int match_rows(const Lng *eng, const Rows *rows)
 {
-    const Section *sec = &sections[sort_section];
-    const uint8_t *e = eng68.data + eng68.at[sort_section];
-    char x[52], y[52];
-    name_of(e + (size_t)*(const int *)a * sec->entry, x);
-    name_of(e + (size_t)*(const int *)b * sec->entry, y);
-    int c = strcmp(x, y);
-    return c ? c : *(const int *)a - *(const int *)b;
-}
-
-static void sort_names(void)
-{
+    int matched = 0;
     for (int s = 0; s < SECTIONS; s++) {
-        int n = eng68.count[sections[s].header];
-        free(sorted[s]);
-        sorted[s] = malloc(sizeof(int) * (size_t)(n ? n : 1));
-        for (int j = 0; j < n; j++) sorted[s][j] = j;
-        sort_section = s;
-        qsort(sorted[s], (size_t)n, sizeof(int), by_name);
-    }
-}
-
-/* The 3.9.68 row of a record: its English name equals eng.lng's name of that row. The same row number comes first,
- * then the first row with that name that no record took. -1 for none. */
-static int row68(int s, int row, const char *name, const uint8_t *taken)
-{
-    const Section *sec = &sections[s];
-    int n = eng68.count[sec->header];
-    const uint8_t *e = eng68.data + eng68.at[s];
-    char other[52];
-    if (row < n && !taken[row]) {
-        name_of(e + (size_t)row * sec->entry, other);
-        if (!strcmp(other, name)) return row;
-    }
-    if (!name[0]) return -1;                /* an empty name matches its own row only */
-    int lo = 0, hi = n;                     /* the first sorted row whose name is not below name */
-    while (lo < hi) {
-        int mid = (lo + hi) / 2;
-        name_of(e + (size_t)sorted[s][mid] * sec->entry, other);
-        if (strcmp(other, name) < 0) lo = mid + 1; else hi = mid;
-    }
-    for (; lo < n; lo++) {
-        int j = sorted[s][lo];
-        name_of(e + (size_t)j * sec->entry, other);
-        if (strcmp(other, name)) break;
-        if (!taken[j]) return j;
-    }
-    return -1;
-}
-
-/* Saved records (a record with no 3.9.68 row) and the memory file. */
-typedef struct { uint32_t at, size; uint8_t *bytes; } Saved;
-static Saved *saved;
-static int saved_count, saved_room;
-static uint8_t *fitted;
-static size_t fitted_size;
-static char fitted_path[1400];
-static int pending;             /* 1: database_load_language_names runs, 2: eng_lng_load_tables runs */
-
-static void save_record(uint32_t at, uint32_t size)
-{
-    if (saved_count == saved_room) {
-        saved_room = saved_room ? saved_room * 2 : 256;
-        saved = realloc(saved, sizeof *saved * (size_t)saved_room);
-    }
-    saved[saved_count].at = at;
-    saved[saved_count].size = size;
-    saved[saved_count].bytes = malloc(size);
-    memcpy(saved[saved_count].bytes, g_mem + at, size);
-    saved_count++;
-}
-
-/* Builds the fitted file for the .lng named file. Returns 0 when it cannot (the game then reads the file as is). */
-static int fit(const char *file, int english)
-{
-    char dir[1100], probe[1400];
-    const char *set = win_data_set_dir();
-    if (set && *set && find_in(set, "eng.lng", probe, sizeof probe) && find_in(set, file, probe, sizeof probe))
-        snprintf(dir, sizeof dir, "%s", set);
-    else
-        snprintf(dir, sizeof dir, "%s/Data", win_game_dir);
-    if (strcmp(dir, source_dir)) {                  /* another source: read both files again */
-        snprintf(source_dir, sizeof source_dir, "%s", dir);
-        free(eng68.data);
-        eng68.data = NULL;
-        lang68_name[0] = 0;
-    }
-    if (!eng68.data) {
-        if (!read_game_lng("eng.lng", &eng68)) return 0;
-        sort_names();
-    }
-    if (!english && strcasecmp(lang68_name, file)) {
-        lang68_name[0] = 0;
-        if (!read_game_lng(file, &lang68)) return 0;
-        for (int i = 0; i < 8; i++) if (lang68.count[i] != eng68.count[i]) return 0;
-        snprintf(lang68_name, sizeof lang68_name, "%s", file);
-    }
-    Rows rows[SECTIONS];
-    memset(rows, 0, sizeof rows);
-    size_t size = LNG_HEADER;
-    int ok = 1;
-    for (int s = 0; s < SECTIONS && ok; s++) {
-        ok = rows_of(s, &rows[s]);
-        size += (size_t)rows[s].rows * sections[s].entry;
-    }
-    int32_t header[8] = {0};
-    for (int s = 0; s < SECTIONS && ok; s++) header[sections[s].header] = rows[s].rows;
-    free(fitted);
-    fitted = ok ? calloc(1, size) : NULL;
-    fitted_size = size;
-    int own = 0, matched = 0;
-    if (fitted) {
-        memcpy(fitted, header, sizeof header);
-        size_t at = LNG_HEADER;
-        for (int s = 0; s < SECTIONS; s++) {
-            const Section *sec = &sections[s];
-            uint8_t *taken = calloc((size_t)eng68.count[sec->header] + 1, 1);
-            for (int i = 0; i < rows[s].rows; i++, at += sec->entry) {
-                uint32_t rec = rows[s].record[i];
-                uint8_t *e = fitted + at;
-                if (!rec) continue;                      /* a row with no club: never read */
+        free(source_rows[s]);
+        source_rows[s] = malloc(sizeof(int) * (size_t)(rows[s].rows ? rows[s].rows : 1));
+        uint8_t *taken = calloc((size_t)eng->count[sections[s].header] + 1, 1);
+        for (int i = 0; i < rows[s].rows; i++) {
+            uint32_t rec = rows[s].record[i];
+            int j = -1;
+            if (rec) {
                 char name[52];
                 name_of(g_mem + rec + 4, name);
-                int j = row68(s, i, name, taken);
-                if (j >= 0) taken[j] = 1;
-                if (j >= 0) matched++; else own++;
-                if (!english && j >= 0) {
-                    memcpy(e, lang68.data + lang68.at[s] + (size_t)j * sec->entry, sec->entry);
-                    continue;
-                }
-                if (s == S_CONTINENTS) {
-                    /* No layout from the record: the 3.9.68 English entry of its row (or of its index). */
-                    int k = j >= 0 ? j : (i < eng68.count[sec->header] ? i : -1);
-                    if (k >= 0) memcpy(e, eng68.data + eng68.at[s] + (size_t)k * sec->entry, sec->entry);
-                } else {
-                    own_entry(s, rec, e);
-                }
-                if (!english) save_record(rec, sec->record);
+                j = row_of(eng, s, i, name, taken);
+                if (j >= 0) taken[j] = 1, matched++;
             }
-            free(taken);
+            source_rows[s][i] = j;
         }
+        free(taken);
+    }
+    return matched;
+}
+
+/* The fitted copy of one file: the source rows of the file, a record's own names for a record with no row, and
+ * for a row with no record the file's own entry of that row (it is never read). */
+static uint8_t *fitted_file(const Lng *file, const Lng *eng, const Rows *rows, size_t *size)
+{
+    size_t n = LNG_HEADER;
+    for (int s = 0; s < SECTIONS; s++) n += (size_t)rows[s].rows * sections[s].entry;
+    uint8_t *out = calloc(1, n);
+    if (!out) return NULL;
+    int32_t header[8] = {0};
+    for (int s = 0; s < SECTIONS; s++) header[sections[s].header] = rows[s].rows;
+    memcpy(out, header, sizeof header);
+    size_t at = LNG_HEADER;
+    for (int s = 0; s < SECTIONS; s++) {
+        const Section *sec = &sections[s];
+        int have = file->count[sec->header];
+        for (int i = 0; i < rows[s].rows; i++, at += sec->entry) {
+            uint32_t rec = rows[s].record[i];
+            int j = source_rows[s][i];
+            uint8_t *e = out + at;
+            if (j >= 0) memcpy(e, file->data + file->at[s] + (size_t)j * sec->entry, sec->entry);
+            else if (!rec) { if (i < have) memcpy(e, file->data + file->at[s] + (size_t)i * sec->entry, sec->entry); }
+            else if (s == S_CONTINENTS) {
+                if (i < eng->count[sec->header]) memcpy(e, eng->data + eng->at[s] + (size_t)i * sec->entry, sec->entry);
+            } else own_entry(s, rec, e);
+        }
+    }
+    *size = n;
+    return out;
+}
+
+static int written_now;          /* 1 when the last data load wrote the files */
+
+int season_lng_fitted(void) { return written_now; }
+
+void season_lng_fit_temp(void)
+{
+    written_now = 0;
+    char eng_path[1400];
+    if (!find_in(win_user_dir, "eng.lng", eng_path, sizeof eng_path)) return;    /* CM3_TEMP: the user folder */
+    Lng eng;
+    if (!lng_read(eng_path, &eng, 1)) return;
+    Rows rows[SECTIONS];
+    int ok = 1, fits = 1;
+    for (int s = 0; s < SECTIONS; s++) {
+        if (ok) ok = rows_of(s, &rows[s]);
+        else memset(&rows[s], 0, sizeof rows[s]);
+        if (ok && (rows[s].rows != eng.count[sections[s].header] || rows[s].extras)) fits = 0;
+    }
+    const char *always = getenv("RECOMP_LNG_FIT");     /* test only: "always" writes the files that fit too */
+    if (ok && (!fits || (always && !strcmp(always, "always")))) {
+        int matched = match_rows(&eng, rows), records = 0, written = 0;
+        for (int s = 0; s < SECTIONS; s++)
+            for (int i = 0; i < rows[s].rows; i++) records += rows[s].record[i] != 0;
+        for (int k = 0; k < FILES; k++) {
+            char path[1400];
+            Lng file;
+            if (!find_in(win_user_dir, files[k], path, sizeof path) || !lng_read(path, &file, 0)) continue;
+            int same = 1;
+            for (int i = 0; i < 8; i++) same &= file.count[i] == eng.count[i];
+            size_t size = 0;
+            uint8_t *out = same ? fitted_file(&file, &eng, rows, &size) : NULL;
+            lng_free(&file);
+            if (!out) continue;
+            FILE *f = fopen(path, "wb");
+            if (f) {
+                written += fwrite(out, 1, size, f) == size;
+                fclose(f);
+            }
+            free(out);
+        }
+        written_now = written > 0;
+        fprintf(stderr, "recomp: .lng files fitted to the database: %d files, %d of %d records with a row of the "
+                        "copied files\n", written, matched, records);
     }
     for (int s = 0; s < SECTIONS; s++) free(rows[s].record);
-    if (!fitted) return 0;
-    fprintf(stderr, "recomp: %s fitted to the database: %d records with a 3.9.68 row, %d with their own names\n", file,
-            matched, own);
-    const char *dump = getenv("RECOMP_LNG_DUMP");     /* test only: a copy of the fitted file in that folder */
-    if (dump && *dump) {
-        char out[1400];
-        snprintf(out, sizeof out, "%s/%s", dump, file);
-        FILE *f = fopen(out, "wb");
-        if (f) { fwrite(fitted, 1, fitted_size, f); fclose(f); }
-    }
-    return 1;
-}
-
-static void end_fit(void)
-{
-    if (fitted_path[0]) win_memory_file_remove(fitted_path);
-    fitted_path[0] = 0;
-    for (int i = 0; i < saved_count; i++) {
-        memcpy(g_mem + saved[i].at, saved[i].bytes, saved[i].size);
-        free(saved[i].bytes);
-    }
-    saved_count = 0;
-    pending = 0;
-}
-
-void season_lng_begin(int english)
-{
-    end_fit();
-    pending = english ? 2 : 1;
-}
-void season_lng_end(void) { end_fit(); }
-
-void o_00945b00(void);
-
-/* fopen: the open of the .lng file while one of the two functions runs. */
-RT_WRAP(00945b00, crt_fopen)
-{
-    if (pending && !fitted_path[0]) {
-        const char *path = (const char *)(g_mem + rt_arg(0)), *mode = (const char *)(g_mem + rt_arg(1));
-        size_t n = strlen(path);
-        const char *base = strrchr(path, '\\');
-        base = base ? base + 1 : path;
-        if (n > 4 && !strcasecmp(path + n - 4, ".lng") && mode[0] == 'r' && strlen(base) < sizeof lang68_name) {
-            char host[1400];
-            if ((win_existing_file(path, host, sizeof host) || win_host_path(path, host, sizeof host)) &&
-                fit(base, pending == 2)) {
-                snprintf(fitted_path, sizeof fitted_path, "%s", host);
-                win_memory_file(fitted_path, fitted, fitted_size);
-            }
-        }
-    }
-    o_00945b00();
+    lng_free(&eng);
 }

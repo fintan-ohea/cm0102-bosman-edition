@@ -682,11 +682,14 @@ void o_00544fc0(void);
 /* database_load, cdecl (path, mode, stream): stream 0 is the files of a new game (0x524d50), 1 a save (0x524d10). */
 RT_WRAP(00528540, database_load)
 {
-    int was = loading_files;
-    loading_files = rt_arg(2) == 0;
+    int was = loading_files, files = rt_arg(2) == 0;
+    loading_files = files;
     grown = 0;
     o_00528540();
     loading_files = was;
+    /* The .lng files that the load copied, in the rows of the new game's data (season_lng.c). The names are still
+     * English here: the language names read the files after the load (Config::apply_and_save 0x5d8480). */
+    if (!rt_unwinding && files && cpu.eax) season_lng_fit_temp();
 }
 
 /* The id pass of the records (called at 0x52d1aa in the load, and by the writer at each save). */
@@ -716,6 +719,8 @@ RT_WRAP(00528080, database_free_all_tables)
     }
 }
 
+int season_comps_added_records(void) { return added_in_data(); }
+
 /* Three functions take [0xae2378] - 0x7f as C + N: the key id matcher loop 0x604241 and the language checks
  * 0x533e94 and 0x5451c1. They run with the added records hidden, as the original sees the data (doc 2.1, 2.4). */
 static void hidden(void (*fn)(void))
@@ -726,23 +731,19 @@ static void hidden(void (*fn)(void))
     if (k) wr32(g_mem, COMP_RECORD_COUNT, rd32(g_mem, COMP_RECORD_COUNT) + (uint32_t)k);
 }
 
-RT_WRAP(00601a40, set_key_ids) { hidden(o_00601a40); }
-/* The .lng file that each of the two reads is fitted to the database (season_lng.c, guard review row A25). The
- * language names call themselves first with language 0 (0x5339f6 and the next cases of the jump table at
- * 0x5339ec), which returns at once (0x5339dd): only the outer call hides the records and fits the file. */
+
+/* The language names call themselves first with language 0 (0x5339f6 and the next cases of the jump table at
+ * 0x5339ec). When the names are in another language that inner call reads eng.lng and checks the counts too, so
+ * only the outer call hides the added records: a hide in both took them off twice. */
 static int lng_depth;
 
-static void lng_read(void (*fn)(void), int english)
+static void hidden_once(void (*fn)(void))
 {
-    if (lng_depth++) {
-        fn();
-    } else {
-        season_lng_begin(english);
-        hidden(fn);
-        season_lng_end();
-    }
-    lng_depth--;
+    if (lng_depth++) fn();
+    else hidden(fn);
+    lng_depth = rt_unwinding ? 0 : lng_depth - 1;
 }
 
-RT_WRAP(005339a0, database_load_language_names) { lng_read(o_005339a0, 0); }
-RT_WRAP(00544fc0, eng_lng_load_tables) { lng_read(o_00544fc0, 1); }
+RT_WRAP(00601a40, set_key_ids) { hidden_once(o_00601a40); }
+RT_WRAP(005339a0, database_load_language_names) { hidden_once(o_005339a0); }
+RT_WRAP(00544fc0, eng_lng_load_tables) { hidden_once(o_00544fc0); }
