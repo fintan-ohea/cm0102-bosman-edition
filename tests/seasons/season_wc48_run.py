@@ -131,7 +131,8 @@ def check(name, start, last, rules, work):
         for host in HOSTS.get(year, []):
             if host in teams:
                 fails.append(f"{name}: the host {host} qualifies for {year} through qualifying")
-        for x in log:
+        # The 2030 shape only (O265): two paths, no host in qualifying, no fill. 2026 keeps its four paths A to D.
+        for x in log if year in HOSTS else []:
             if f"world_cup {year}: " in x and "filled" in x and not x.rstrip().endswith(" 0 filled"):
                 fails.append(f"{name}: the {year} draw takes teams from the fill: {x.strip()}")
             if "is in already" in x or "world_cup is full" in x or f"wc qualifying {year}: path C" in x:
