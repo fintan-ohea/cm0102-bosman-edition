@@ -17,17 +17,18 @@ A run fails when a wait does not end (code 3; the box loop has no input poll, so
 or when the log of the runtime does not name the skipped box.
 
 The Italian runs play in the language Italian (game.cfg, see italian_cfg). There the title of the box is
-"CD Non Richiesto", and a player with any database other than 3.9.68 also saw the box "Database..cpp 7784"
-of database_load_language_names 0x5339a0 at each load and new game (call 0x5358b7). The runs log each
-box that shows (RECOMP_SCREEN_LOG), and any box fails the run:
+"CD Non Richiesto". A player with any database other than 3.9.68 also saw the box "Database..cpp 7784" of
+database_load_language_names 0x5339a0 at each load and new game (call 0x5358b7), because the .lng files fit the
+3.9.68 data only. The runtime now gives that function a .lng file fitted to the database (season_lng.c), so the
+box does not come, and the names of a season database are Italian where the 3.9.68 data has the same English name.
+The runs log each box that shows (RECOMP_SCREEN_LOG); any box, a skipped box 7784 and a log without the fitted
+ita.lng fail the run (load-italian-3965 reads no .lng: its save is in Italian already):
     load-italian         start.sav (3.9.68) in Italian, to the first news screen
     new-italian-3965     a new game on 3.9.65 in Italian, to the first news screen, then Save Game "Ita65"
     load-italian-3965    then a load of Ita65 in Italian, to the first news screen
     new-italian-season   a new game on the season database April 2022 (no .lng files of its own, other
-                         counts) in Italian, to the Select Leagues screen: the names stay English, and
-                         the runtime skips the box (lng_count_box in waits.c)
-Since the .lng files of 3.9.65 are in its data set (make_clean_files.py), the 3.9.65 runs show no box
-at all. The season run needs the skip. It copies <fixtures folder>/databases/April 2022 to Databases.
+                         counts) in Italian, to the Select Leagues screen
+The season run copies <fixtures folder>/databases/April 2022 to Databases.
 The 3.9.65 runs use a game folder of links to the given one, with Data-3.9.65 (--data-3965, by default
 /Users/max/Projects/cm0102/data-3965). Their game.cfg comes from a first start in English.
 """
@@ -46,6 +47,7 @@ import smoke_run  # noqa: E402
 SKIPPED = "recomp: skipped the box CD Not Required"
 SHOWN = "recomp: message box from"
 SKIPPED_LNG = "recomp: skipped the box Database..cpp 7784"
+FITTED_LNG = "recomp: ita.lng fitted to the database"
 SEASON_DB = "April 2022"
 DATA_3965 = "/Users/max/Projects/cm0102/data-3965"
 ITALIAN = 4                 # the language Italian: database_language_file_exists 0x535930 gives it ita.lng
@@ -122,8 +124,12 @@ def play_italian(program, game, folder, data_3965):
                 problems.append(f"code {r.returncode}")
             if save and SKIPPED not in r.stderr:
                 problems.append("the log does not name the skipped box")
-            if name == "new-italian-season" and SKIPPED_LNG not in r.stderr:
-                problems.append("the log does not name the skipped box Database..cpp 7784")
+            if SKIPPED_LNG in r.stderr:
+                problems.append("the box Database..cpp 7784 came (the runtime skipped it)")
+            # A save made in Italian holds its names in Italian and its data language (index.dat's language block,
+            # [0x9b5984]), so its load reads no .lng (0x5339dd); the other runs read a fitted one.
+            if name != "load-italian-3965" and FITTED_LNG not in r.stderr:
+                problems.append("the log does not name the fitted ita.lng")
             out.append((name, took, problems))
     return out
 

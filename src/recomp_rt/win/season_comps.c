@@ -727,17 +727,22 @@ static void hidden(void (*fn)(void))
 }
 
 RT_WRAP(00601a40, set_key_ids) { hidden(o_00601a40); }
-/* The .lng file that each of the two reads is fitted to the database (season_lng.c, guard review row A25). */
-RT_WRAP(005339a0, database_load_language_names)
+/* The .lng file that each of the two reads is fitted to the database (season_lng.c, guard review row A25). The
+ * language names call themselves first with language 0 (0x5339f6 and the next cases of the jump table at
+ * 0x5339ec), which returns at once (0x5339dd): only the outer call hides the records and fits the file. */
+static int lng_depth;
+
+static void lng_read(void (*fn)(void), int english)
 {
-    season_lng_begin(0);
-    hidden(o_005339a0);
-    season_lng_end();
+    if (lng_depth++) {
+        fn();
+    } else {
+        season_lng_begin(english);
+        hidden(fn);
+        season_lng_end();
+    }
+    lng_depth--;
 }
 
-RT_WRAP(00544fc0, eng_lng_load_tables)
-{
-    season_lng_begin(1);
-    hidden(o_00544fc0);
-    season_lng_end();
-}
+RT_WRAP(005339a0, database_load_language_names) { lng_read(o_005339a0, 0); }
+RT_WRAP(00544fc0, eng_lng_load_tables) { lng_read(o_00544fc0, 1); }

@@ -9,7 +9,8 @@
  *
  * The fix: while one of the two functions runs, the open of its .lng file (fopen 0x945b00) gets a file made for the
  * database in memory (win_memory_file). Its header holds the database's counts. Each record of the database gets the
- * entry of the 3.9.68 .lng row whose English name (eng.lng) equals the record's name; a record with no such row gets
+ * entry of the source .lng row whose English name (eng.lng) equals the record's name (the source: the .lng files of
+ * the data set when it has them, else the game's Data, 3.9.68); a record with no such row gets
  * its own names. For eng.lng every record gets its own names. The record names at +4 are the English names of the
  * data (the data language [0x9b5984] is 0 for every database). A record with no row is saved before the original
  * function and written back after it, so the function changes nothing in it.
@@ -70,19 +71,29 @@ typedef struct {
 static Lng eng68, lang68;
 static char lang68_name[32];
 
-static int read_game_lng(const char *file, Lng *l)
+/* The file in a folder, matched without regard to case; 0 when it is not there. */
+static int find_in(const char *dir, const char *file, char *path, size_t room)
 {
-    free(l->data);
-    memset(l, 0, sizeof *l);
-    char dir[1100], path[1400];
-    snprintf(dir, sizeof dir, "%s/Data", win_game_dir);
     DIR *d = opendir(dir);
     if (!d) return 0;
     struct dirent *e;
     path[0] = 0;
     while ((e = readdir(d)))
-        if (!strcasecmp(e->d_name, file)) { snprintf(path, sizeof path, "%s/%s", dir, e->d_name); break; }
+        if (!strcasecmp(e->d_name, file)) { snprintf(path, room, "%s/%s", dir, e->d_name); break; }
     closedir(d);
+    return path[0] != 0;
+}
+
+/* The source of the fit: the .lng of the data set when it has one (its rows fit its own database), else the
+ * game's Data (3.9.68). */
+static char source_dir[1100];
+
+static int read_game_lng(const char *file, Lng *l)
+{
+    free(l->data);
+    memset(l, 0, sizeof *l);
+    char path[1400];
+    if (!find_in(source_dir, file, path, sizeof path)) return 0;
     FILE *f = path[0] ? fopen(path, "rb") : NULL;
     if (!f) return 0;
     fseek(f, 0, SEEK_END);
@@ -214,6 +225,7 @@ static int row68(int s, int row, const char *name, const uint8_t *taken)
         name_of(e + (size_t)row * sec->entry, other);
         if (!strcmp(other, name)) return row;
     }
+    if (!name[0]) return -1;                /* an empty name matches its own row only */
     int lo = 0, hi = n;                     /* the first sorted row whose name is not below name */
     while (lo < hi) {
         int mid = (lo + hi) / 2;
@@ -254,6 +266,18 @@ static void save_record(uint32_t at, uint32_t size)
 /* Builds the fitted file for the .lng named file. Returns 0 when it cannot (the game then reads the file as is). */
 static int fit(const char *file, int english)
 {
+    char dir[1100], probe[1400];
+    const char *set = win_data_set_dir();
+    if (set && *set && find_in(set, "eng.lng", probe, sizeof probe) && find_in(set, file, probe, sizeof probe))
+        snprintf(dir, sizeof dir, "%s", set);
+    else
+        snprintf(dir, sizeof dir, "%s/Data", win_game_dir);
+    if (strcmp(dir, source_dir)) {                  /* another source: read both files again */
+        snprintf(source_dir, sizeof source_dir, "%s", dir);
+        free(eng68.data);
+        eng68.data = NULL;
+        lang68_name[0] = 0;
+    }
     if (!eng68.data) {
         if (!read_game_lng("eng.lng", &eng68)) return 0;
         sort_names();
@@ -290,7 +314,7 @@ static int fit(const char *file, int english)
                 if (!rec) continue;                      /* a row with no club: never read */
                 char name[52];
                 name_of(g_mem + rec + 4, name);
-                int j = name[0] ? row68(s, i, name, taken) : -1;
+                int j = row68(s, i, name, taken);
                 if (j >= 0) taken[j] = 1;
                 if (j >= 0) matched++; else own++;
                 if (!english && j >= 0) {
@@ -310,12 +334,16 @@ static int fit(const char *file, int english)
         }
     }
     for (int s = 0; s < SECTIONS; s++) free(rows[s].record);
-    if (!fitted) {
-        if (getenv("RECOMP_LNG_DEBUG")) fprintf(stderr, "recomp: lng debug: no fit (ok %d)\n", ok);
-        return 0;
-    }
+    if (!fitted) return 0;
     fprintf(stderr, "recomp: %s fitted to the database: %d records with a 3.9.68 row, %d with their own names\n", file,
             matched, own);
+    const char *dump = getenv("RECOMP_LNG_DUMP");     /* test only: a copy of the fitted file in that folder */
+    if (dump && *dump) {
+        char out[1400];
+        snprintf(out, sizeof out, "%s/%s", dump, file);
+        FILE *f = fopen(out, "wb");
+        if (f) { fwrite(fitted, 1, fitted_size, f); fclose(f); }
+    }
     return 1;
 }
 
@@ -335,7 +363,6 @@ void season_lng_begin(int english)
 {
     end_fit();
     pending = english ? 2 : 1;
-    if (getenv("RECOMP_LNG_DEBUG")) fprintf(stderr, "recomp: lng debug: begin %d\n", english);
 }
 void season_lng_end(void) { end_fit(); }
 
@@ -344,12 +371,8 @@ void o_00945b00(void);
 /* fopen: the open of the .lng file while one of the two functions runs. */
 RT_WRAP(00945b00, crt_fopen)
 {
-    if (getenv("RECOMP_LNG_DEBUG"))
-        fprintf(stderr, "recomp: lng debug: fopen called, pending %d, back 0x%x, %s\n", pending, rd32(g_mem, cpu.esp),
-                (const char *)(g_mem + rt_arg(0)));
     if (pending && !fitted_path[0]) {
         const char *path = (const char *)(g_mem + rt_arg(0)), *mode = (const char *)(g_mem + rt_arg(1));
-        if (getenv("RECOMP_LNG_DEBUG")) fprintf(stderr, "recomp: lng debug: fopen %s %s\n", path, mode);
         size_t n = strlen(path);
         const char *base = strrchr(path, '\\');
         base = base ? base + 1 : path;
