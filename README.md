@@ -35,14 +35,14 @@ Each download is ready to play. It holds the game files of the free release that
 
 - Runs on macOS 11 or later (Apple silicon and Intel), Windows 10 and 11 (64-bit), and 64-bit Linux. The Linux AppImage also runs on the Steam Deck in desktop mode.
 - Widescreen at 1280 × 800 in a window you can resize, with sharp scaling. The original 800 × 600 layout is one setting away.
-- Three official databases for each new game: the original 2001/02 data (3.9.60), its December 2001 update (3.9.65) and the 2002/03 data (3.9.68).
+- Any season from 2001/02 to 2025/26, with a database for every season in the download, and that season's leagues, cups and rules. In a long game the rules change each July as they did in real life.
 - An Assistant menu on the squad screen picks the best team, the fittest team or an under-21 team, scored by the key attributes of each position.
 - Clickable player and club names, coloured attributes, condition and morale.
 - Holiday until the next match, faster days on holiday and a Fastest commentary speed.
 - Save names with your club and the date, and the last three copies of each save in a backups folder.
 - Keyboard shortcuts, and a window that opens where you left it.
 
-Each feature is a line in `settings.txt` in the save folder and can be switched off. No feature changes a match result. The [site](https://maxevans60.github.io/cm0102-bosman-edition/#questions) lists every setting with its default.
+Each feature is a line in `settings.txt` in the save folder and can be switched off. In the base game (2001/02, 3.9.68, changing rules off) no feature changes a match result. The [site](https://maxevans60.github.io/cm0102-bosman-edition/#questions) lists every setting with its default.
 
 ## Install
 
@@ -56,11 +56,7 @@ Saved games are in `~/Library/Application Support/cm0102` on a Mac, `%APPDATA%\c
 
 ## Roadmap
 
-0.4.0 (released 2026-10-16) added Team views with best XI and squad depth, a player comparison with a polygon, attribute groups, print to PDF, an HD layout and the CM 01/02 Update Team's databases.
-
-Planned for 0.5.0 ([milestone](https://github.com/maxevans60/cm0102-bosman-edition/milestone/6)): fixes for rare crashes in the original game, a mark for players with a foreign player restriction, positions on the tactics screen and faster transfer and discipline screens.
-
-Planned for 0.6.0 ([milestone](https://github.com/maxevans60/cm0102-bosman-edition/milestone/5)): choose your season, from 2001/02 to 2025/26. Each season starts in its own year and plays with the rules, league sizes, European cups and international competitions of its time.
+0.6.0 (released TODO-DATE) added Choose Season: any season from 2001/02 to 2025/26 with its own squads, leagues, cups and rules, and rules that change each July in a long game.
 
 Planned for 0.7.0 ([#45](https://github.com/maxevans60/cm0102-bosman-edition/issues/45)): easy online play with friends. The host gets a short join code and friends type it in, with no extra patch or VPN.
 
@@ -85,7 +81,7 @@ The first command checks each file against [`tools/clean_files/manifest.tsv`](to
 
 Open an [issue](https://github.com/maxevans60/cm0102-bosman-edition/issues/new/choose). For a problem, say which computer you use, which version of the game, and what you clicked before it happened.
 
-For a problem with the picture or the window, such as blurred text or a picture that stays small, add the display report (0.6.0 and later). Press Ctrl+Shift+D in the game (Cmd+Shift+D on a Mac). The game copies the report to the clipboard, so you can paste it into the issue or a forum post. It also saves it as `display-report.txt` in the save folder. The report lists your system, your screens and their scale, and how the game scales its picture. It does not include your account name. Many features came from players on Reddit, and the release notes credit each one.
+For a problem with the picture or the window, such as blurred text or a picture that stays small, add the display report. Press Ctrl+Shift+D in the game (Cmd+Shift+D on a Mac). The game copies the report to the clipboard, so you can paste it into the issue or a forum post. It also saves it as `display-report.txt` in the save folder. The report lists your system, your screens and their scale, and how the game scales its picture. It does not include your account name. Many features came from players on Reddit, and the release notes credit each one.
 
 ## Credits
 

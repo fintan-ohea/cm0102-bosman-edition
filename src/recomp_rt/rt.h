@@ -306,6 +306,9 @@ uint32_t rt_discipline_oceania_body(void);
 /* The ruling body's held ban (win/discipline_ban.c, tools/recomp/discipline_ban.py at 0x7e833c): 1 goes on without
  * the box ruling_body..cpp 661, 0 when the fix is off. */
 uint32_t rt_ruling_body_held(uint32_t body, uint32_t staff);
+/* The loan's ban hold and restore (win/season_new_cups.c, tools/recomp/discipline_ban.py at 0x55647d, 0x55671e): 1
+ * when a domestic body of one nation applies at a club of the other through the All-Ireland cup. */
+uint32_t rt_ban_nation_applies(uint32_t club, uint32_t body);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);
@@ -327,6 +330,7 @@ uint32_t rt_cup_add(uint32_t original, uint32_t base, uint32_t entrants, uint32_
 uint32_t rt_fra_lge_first(uint32_t original, uint32_t edx);   /* FraLgeCup first loop limit (0x5bd244) */
 uint32_t rt_fra_cfa_lower_cap(uint32_t original);              /* FraCfa lower club cap (0x5b92e8) */
 uint32_t rt_ita_cup_first_position(uint32_t original);   /* ItaCup second loop start (0x63fb16) */
+uint32_t rt_promote_expected(uint32_t league, uint32_t up, uint32_t original);  /* ItaSerA chain counts (0x642476) */
 /* Italy's Serie C of three groups (0.6.0 slice 20b, win/season_divisions_ita.c, tools/recomp/new_divisions.py). */
 uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);
@@ -435,7 +439,7 @@ void rt_euroq_log(uint32_t euro, uint32_t club, uint32_t stage, uint32_t playoff
 uint32_t rt_wcq_europe_playoff(uint32_t self, uint32_t exempt);
 uint32_t rt_wcq_europe_no_asia(uint32_t self);
 void rt_wcq_asia_format(uint32_t self);
-uint32_t rt_wcq_asia_partner(uint32_t self, uint32_t asian, uint32_t original);
+uint32_t rt_wcq_asia_partner(uint32_t self, uint32_t asian_at, uint32_t original);
 uint32_t rt_wcq_oceania_pair(uint32_t self, uint32_t teams, uint32_t found);
 uint32_t rt_wcq_concacaf_playoff(uint32_t self);
 uint32_t rt_wcq_south_america_hosts(uint32_t self, uint32_t hosts);

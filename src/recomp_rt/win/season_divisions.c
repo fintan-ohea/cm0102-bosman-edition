@@ -705,12 +705,35 @@ RT_WRAP(00857210, spa_group_build) { group_build(o_00857210, 0x24u); }
 void o_007d2870(void);
 RT_WRAP(007d2870, por_group_build) { group_build(o_007d2870, 8u); }
 
+/* The club moves of a new game in a season of the new form (season_clubs.c): a club of a group division of the tier
+ * that no list keeps goes to the division of the original's relegated clubs (out_key: Portugal's Third Division,
+ * 0x7d010f; Spain's A Lower Division, 0x8503e4), as the season change sends the clubs that leave the tier (the
+ * exchange below, 0x8503e4 and 0x7d010f). Before (O260 A24), the club moves left them with no division: a 2021/22
+ * start with Liga 3 had 23 more Portuguese clubs with no division, and the Portuguese Cup (PorCup::collect_entrants
+ * 0x7ce220, 164 entrants at 0x7ce234; its second pass takes the Third Division [0x9cf620] and the Portuguese clubs
+ * of A Lower Division [0x9cf764], 0x7ce381..0x7ce3a2) stopped at por_cup.cpp 74. 0 else (no division). */
+uint32_t season_divisions_leaver_division(uint32_t db_division, int season)
+{
+    if (!divisions_on() || !db_division) return 0;
+    const GroupTier *tiers[2] = {&SPAIN, &PORTUGAL};
+    for (int t = 0; t < 2; t++) {
+        const GroupTier *g = tiers[t];
+        if (!group_row(g, season) || !nation_flag(g->nation_key)) continue;
+        for (int k = 0; k < 2; k++)
+            if (g->groups[k] && db_division == record_of(g->groups[k])) return record_of(g->out_key);
+    }
+    return 0;
+}
+
 /* The Portuguese Cup's lower clubs (PorCup::collect_entrants 0x7ce220, second pass 0x7ce378..0x7ce3ed): the Third
- * Division and Portuguese clubs of A Lower Division. With Liga 3 the club moves leave the clubs that the real Liga 3
- * and the lower series hold with no division, so the cup also takes Portuguese clubs with no division (Q528). Only
- * in a game whose Liga 3 object plays the new form; else the original's jump. */
+ * Division and Portuguese clubs of A Lower Division. The club moves now send the clubs that leave Liga 3 to the Third
+ * Division (season_divisions_leaver_division), so this is a safety net only: in a game whose Liga 3 object plays
+ * the new form the cup also takes Portuguese clubs with no division (Q528), and each such club is logged. The test
+ * switch RECOMP_BOX_FIXES=off turns the net off. Else the original's jump. */
 uint32_t rt_por_cup_none(uint32_t club)
 {
+    const char *off = getenv("RECOMP_BOX_FIXES");
+    if (off && !strcmp(off, "off")) return 0;
     if (!divisions_on() || !nation_flag(PORTUGAL.nation_key)) return 0;
     /* The season of the cup's draw: the start season with changing rules off (Q232) or at a new game (the cup is
      * made before [0xadadfc] is filled, so the Liga 3 object is not found there); else the game date's season
@@ -726,8 +749,12 @@ uint32_t rt_por_cup_none(uint32_t club)
     int count = (int)rd32(g_mem, CLUB_COUNT) - 2 * (int)rd32(g_mem, NATION_COUNT);
     if (club < table || (club - table) / CLUB_SIZE >= (uint32_t)(count > 0 ? count : 0)) return 0;
     uint32_t nation = rd32(g_mem, club + CLUB_NATION);
-    return group_row(&PORTUGAL, season) && readable(nation) &&
-           (int32_t)rd32(g_mem, nation) == (int32_t)rd32(g_mem, PORTUGAL.nation_key);
+    int take = group_row(&PORTUGAL, season) && readable(nation) &&
+               (int32_t)rd32(g_mem, nation) == (int32_t)rd32(g_mem, PORTUGAL.nation_key);
+    if (take)
+        fprintf(stderr, "recomp: new divisions: Portuguese Cup %d takes %.40s with no division (safety net)\n", season,
+                win_str(club + 4));
+    return (uint32_t)take;
 }
 
 /* The set_up_rules of the two classes (SpaSecondB 0x856ef0: +0xbe 0, +0xbf 4, +0xc0 1, +0xc1 4 at
