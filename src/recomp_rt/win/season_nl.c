@@ -202,12 +202,20 @@ int season_nl_nation_of_club(uint32_t club)
  * database; NationalTeams gives them no squad sizes (0x775520 reads 0 for each kind), so the top-up 0x90dae0 gives
  * their national team no players and init_match 0x6b7f20 stops at match_eng.cpp 612 or 652 (fewer than 11 at
  * 0x6b89be): Martinique in its first CONCACAF Nations League match of 2023/24 in a 2022 start. The field is a
- * pointer after the load's id pass and an id before it (the draw at game creation). */
+ * pointer after the load's id pass and an id before it (the draw at game creation). The first form of this test
+ * took NULL for continent id 0, so after the pass the nations with no continent still played: Bonaire, French
+ * Guiana, Guadeloupe, Martinique and Saint-Martin in the 2019-20 CONCACAF Nations League (gate (a) run 7, 2018
+ * start, where the national fill gave them squad sizes). */
 int season_nl_nation_can_play(int id)
 {
     if (id < 0 || id >= nation_count()) return 0;
     uint32_t c = rd32(g_mem, nation_at(id) + NATION_CONTINENT);
-    return readable(c) || (int32_t)c >= 0;
+    if (readable(c)) return 1;
+    /* After the id pass a continent id below 0 is NULL (0x5315a0), so NULL is no continent; before it the field is
+     * the id, and 0 is a continent. The pass has run when any nation holds a pointer there. */
+    for (int k = 0; k < nation_count(); k++)
+        if (readable(rd32(g_mem, nation_at(k) + NATION_CONTINENT))) return 0;
+    return (int32_t)c >= 0;
 }
 
 /* The national team of a nation: national_team 0x53b3d0 gives the club of the nation's row, which in some
