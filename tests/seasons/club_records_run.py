@@ -150,7 +150,8 @@ def main(argv):
         for line in log.split("\n"):
             cells = line.split("\t")
             if line.startswith("recomp: club moves: list: ") and len(cells) > 14:
-                real, cls = int(cells[3].split()[1]), int(cells[13].split()[1])
+                named = {c.split()[0]: c.split()[-1] for c in cells[3:] if c.split()}
+                real, cls = int(named["real"]), int(named["class"])
                 if real > cls:
                     short[cells[1]] = (real, cls)
         for rec in records:
