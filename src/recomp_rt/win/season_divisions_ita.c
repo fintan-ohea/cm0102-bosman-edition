@@ -1239,15 +1239,23 @@ RT_WRAP(0065c8e0, c2c_fixed_list) { if (!no_fixed_list()) o_0065c8e0(); }
 #define F_SHUFFLE_LIST 0x004afb40u      /* comp_util_shuffle_pointer_array, cdecl (list, count), as 0x63e1ae */
 #define F_LONGITUDE 0x0053fe50u         /* database_compare_clubs_by_longitude, as 0x63e1b9 */
 
-static const uint32_t CCUP_KEY[5] = {KEY_C1A, KEY_C1B, KEY_C2A, KEY_C2B, KEY_C2C};
+static const uint32_t CCUP_KEY[4] = {KEY_C1A, KEY_C1B, KEY_C2A, KEY_C2B};
 
-/* The clubs of the cup (N) in the Serie C era or a two-group C2 season, or 0 (the original's cup). */
-static int ccup_clubs(uint32_t cup)
+/* The divisions that play (the cup's clubs): the three groups in the era, C1 and the two C2 groups in a two-group
+ * season; 0 for the original's cup. Not every C1 and C2 division: in a game without the flag the C2 divisions keep
+ * clubs that no league plays (the original's cup takes them, 0x63e094..0x63e107), so a change into the era gave 96. */
+static int ccup_divisions(uint32_t cup)
 {
     if (!readable(cup)) return 0;
-    int y = (int16_t)rd16(g_mem, cup + 0x40), n = 0;
-    if (!era_of_year(y) && !two_c2_of_year(y)) return 0;
-    for (int k = 0; k < 5; k++) n += clubs_of(CCUP_KEY[k]);
+    int y = (int16_t)rd16(g_mem, cup + 0x40);
+    return era_of_year(y) ? 3 : two_c2_of_year(y) ? 4 : 0;
+}
+
+/* The clubs of the cup (N), or 0 (the original's cup). */
+static int ccup_clubs(uint32_t cup)
+{
+    int d = ccup_divisions(cup), n = 0;
+    for (int k = 0; k < d; k++) n += clubs_of(CCUP_KEY[k]);
     return n >= CCUP_GROUPS * 3 && n <= CCUP_GROUPS * 6 ? n : 0;      /* groups of 3 to 5 */
 }
 
@@ -1279,14 +1287,15 @@ RT_WRAP(0063dfe0, ita_ccup_entrants)
         return;
     }
     static uint32_t clubs[96];
-    uint32_t rec[5];
-    for (int k = 0; k < 5; k++) rec[k] = record_of(CCUP_KEY[k]);
+    uint32_t rec[4];
+    int d = ccup_divisions(cup);
+    for (int k = 0; k < 4; k++) rec[k] = k < d ? record_of(CCUP_KEY[k]) : 0;
     uint32_t table = rd32(g_mem, CLUBS);
     int count = (int)rd32(g_mem, CLUB_COUNT), m = 0;
     for (int i = 0; readable(table) && i < count && m < n; i++) {
-        uint32_t c = table + CLUB_SIZE * (uint32_t)i, d = rd32(g_mem, c + 0x57);
-        for (int k = 0; k < 5 && d; k++)
-            if (d == rec[k]) {
+        uint32_t c = table + CLUB_SIZE * (uint32_t)i, dv = rd32(g_mem, c + 0x57);
+        for (int k = 0; k < 4 && dv; k++)
+            if (dv == rec[k]) {
                 clubs[m++] = c;
                 break;
             }
@@ -1341,7 +1350,17 @@ uint32_t rt_ita_ccup_seconds(uint32_t cup, uint32_t original)
 uint32_t rt_ita_ccup_first_seed(uint32_t cup, uint32_t original)
 {
     int n = ccup_clubs(cup);
-    return n ? (uint32_t)(CCUP_KO - (n - CCUP_GROUPS * ccup_group(n))) : original;
+    if (!n) return original;
+    uint32_t list = rd32(g_mem, cup + 0xee), stages = rd32(g_mem, cup + 0xc);
+    int left = 0, sizes = (int16_t)rd16(g_mem, cup + 0x3e);
+    for (int i = 0; readable(list) && i < (int)rd32(g_mem, cup + 0xf2); i++) left += rd32(g_mem, list + 4u * (uint32_t)i) != 0;
+    for (int i = 0; readable(stages) && i < CCUP_GROUPS - 1; i++) {
+        uint32_t st = rd32(g_mem, stages + 4u * (uint32_t)i);
+        sizes += readable(st) ? (int16_t)rd16(g_mem, st + 0x3e) : 0;
+    }
+    fprintf(stderr, "recomp: serie c: Coppa Italia Serie C knockout: %d clubs in the groups, %d seeds left, %d best "
+                    "runners-up\n", sizes, left, CCUP_GROUPS - (n - CCUP_GROUPS * ccup_group(n)));
+    return (uint32_t)(CCUP_KO - (n - CCUP_GROUPS * ccup_group(n)));
 }
 
 /* ItaCup::select_entrants 0x63faf0, the two compares with the C1/B id (0x63fc79, 0x63fcf9): in the Serie C era the id
