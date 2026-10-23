@@ -265,7 +265,12 @@ static int add_team(uint32_t *teams, int n, uint32_t nation)
  * hosts first and kept in front (so the first host is the first seed and plays in group A, as the United
  * States in 2016 and 2024), then the CONMEBOL nations, then the guests by name. A guest that the data lacks is
  * replaced by the CONCACAF nation with the highest reputation that is not in, and a missing CONMEBOL nation
- * by the next CONMEBOL nation, then CONCACAF. The rest is sorted by strength as the original. */
+ * by the next CONMEBOL nation, then CONCACAF. The rest is sorted by strength as the original.
+ * The replacement is only a logged net (O259 row A29): the seven guest names and the ten CONMEBOL nations are
+ * key nations of match_nation_key_id 0x60d810, so a database without one stops at load in the original's own
+ * check (box "index.cpp 5809", 0x60d7f0; a copy of October 2015 with Haiti renamed). The 51 databases of the
+ * season tiles and the 3.9.68 data hold all of them (the O188 nation sweep, 2026-10-22). Only a database that
+ * moves a CONMEBOL nation to another continent reaches the CONMEBOL fill. */
 static uint32_t entrants16(int e, uint32_t self)
 {
     uint32_t teams[TEAMS] = {0};
@@ -306,8 +311,12 @@ static uint32_t entrants16(int e, uint32_t self)
             }
         if (rt_unwinding) return 0;
         if (!found && logging())
-            fprintf(stderr, "recomp: season intl: goldcup %d: no nation %s\n", year_of(self), editions[e].guests[g]);
+            fprintf(stderr, "recomp: season intl: copa %d: no nation %s, a CONCACAF nation plays\n", year_of(self),
+                    editions[e].guests[g]);
     }
+    if (conmebol < 10 && logging())
+        fprintf(stderr, "recomp: season intl: copa %d: %d CONMEBOL nations in the data, the strongest others play\n",
+                year_of(self), conmebol);
     for (int k = conmebol; k < 10 && n < TEAMS; k++) {
         n = add_team(teams, n, strongest(CONTINENT_SOUTH_AMERICA, teams, n));
         if (rt_unwinding) return 0;
