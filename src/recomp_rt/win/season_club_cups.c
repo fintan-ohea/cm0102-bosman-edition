@@ -606,6 +606,8 @@ static int fill_clubs(const ClubCup *k, uint32_t obj, int again)
     uint32_t out[MAX_CLUBS] = {0};
     int m = k->pick(k, obj, year, out, n);
     if (rt_unwinding) return 0;
+    if (m < n)
+        fprintf(stderr, "recomp: club cup %s %d: the pick gave %d of %d clubs\n", k->def->file, year, m, n);
     for (uint32_t cont = CONT_SOUTH_AMERICA; m < n;) {         /* never fewer clubs than the tree holds */
         uint32_t c = season_comps_top_club(cont, out, m);
         if (!c) { if (cont == CONT_EUROPE) break; cont = CONT_EUROPE; continue; }
@@ -913,6 +915,10 @@ RT_WRAP(004c11a0, con_champ_pick)
     if (rt_unwinding || !is_con_champ(obj)) return;
     int n = (int16_t)rd16(g_mem, obj + CLUB_COUNT_AT);
     uint32_t list = rd32(g_mem, obj + CLUB_LIST_AT);
+    for (int i = 0; list && i < CON_CHAMP_ORIGINAL; i++)             /* A27 research log */
+        if (!rd32(g_mem, list + 6u * (uint32_t)i))
+            fprintf(stderr, "recomp: concacaf champions %d: the original's place %d has no club\n",
+                    (int16_t)rd16(g_mem, obj + YEAR_AT), i);
     if (n <= CON_CHAMP_ORIGINAL || n > MAX_CLUBS || !list || !concacaf_count((int16_t)rd16(g_mem, obj + YEAR_AT)))
         return;
     uint32_t out[MAX_CLUBS] = {0};
