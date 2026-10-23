@@ -382,7 +382,7 @@ INSNS = {
     # A2: Asia stage 12 (0x913d50, this in esi, the two teams at [ebp]) takes its partner from the European
     # section (0x91def0, ecx the Europe object). The partner of the cycle replaces it; the European runner-up
     # stays the fallback.
-    0x913E42: ("call 0x91def0", "esp -= 4; W32(esp, 0x913e47u); SYNC(); f_0091def0(); LOAD(); RT_AFTER_CALL(); eax = rt_wcq_asia_partner(esi, R32(ebp), eax);"),
+    0x913E42: ("call 0x91def0", "esp -= 4; W32(esp, 0x913e47u); SYNC(); f_0091def0(); LOAD(); RT_AFTER_CALL(); eax = rt_wcq_asia_partner(esi, ebp, eax);"),
     # O1: Oceania stage 2 (0x91f800, this in esi) found ebp teams in the array ebx: the OFC winner and the
     # South American play-off team. The pair of the cycle replaces them, then the compare with 2.
     0x91F8E9: ("cmp ebp, 2", "ebp = rt_wcq_oceania_pair(esi, ebx, ebp); t0 = ebp; t1 = 0x2u; t2 = t0 - t1; SETF(K_SUB | SZ4, t0, t1, t2, 0);"),

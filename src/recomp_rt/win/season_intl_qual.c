@@ -318,11 +318,33 @@ int season_intl_wc_ties(int year, uint32_t *teams, int max)
     return n;
 }
 
-/* A2 (0x913e42): the partner of the Asian team in stage 12. original is the European runner-up of 0x91def0. */
-uint32_t rt_wcq_asia_partner(uint32_t self, uint32_t asian, uint32_t original)
+/* The team of a real tie (O259 A16): in a start after the qualifying began, the tie of the real draw
+ * (season_intl_real_tie) when the data holds its team, else 0. */
+static uint32_t real_tie_team(int y, int k)
+{
+    if (!season_intl_late_start("world_cup", y)) return 0;
+    const char *name = season_intl_real_tie(y, k);
+    return name ? season_intl_team_named(name) : 0;
+}
+
+/* A2 (0x913e42): the partner of the Asian team in stage 12. asian_at holds the Asian team (ebp, stored at
+ * 0x913e31), original is the European runner-up of 0x91def0. In a start after the qualifying began both teams
+ * are the real tie's: the sections that the game plays from its start did not decide them (O259 A16). */
+uint32_t rt_wcq_asia_partner(uint32_t self, uint32_t asian_at, uint32_t original)
 {
     int y = wc_year(self), t = tie_index(y);
     if (t < 0) return original;
+    uint32_t real_afc = real_tie_team(y, 0), real_partner = rt_unwinding ? 0 : real_tie_team(y, 1);
+    if (rt_unwinding) return original;
+    if (real_afc && real_partner) {
+        wr32(g_mem, asian_at, real_afc);
+        note_tie(y, real_afc, real_partner);
+        if (logging())
+            fprintf(stderr, "recomp: season intl: wc play-off %d: %s v %s (the real tie)\n", y, team_name(real_afc),
+                    team_name(real_partner));
+        return real_partner;
+    }
+    uint32_t asian = rd32(g_mem, asian_at);
     uint32_t p = playoff_team(ties[t].afc_partner);
     if (!p) {
         if (logging())
@@ -344,6 +366,18 @@ uint32_t rt_wcq_oceania_pair(uint32_t self, uint32_t teams, uint32_t found)
     int y = wc_year(self), t = tie_index(y);
     if (t < 0 || !readable(teams)) return found;
     uint32_t pick[2];
+    pick[0] = real_tie_team(y, 2);
+    pick[1] = rt_unwinding ? 0 : real_tie_team(y, 3);
+    if (rt_unwinding) return found;
+    if (pick[0] && pick[1]) {
+        wr32(g_mem, teams, pick[0]);
+        wr32(g_mem, teams + 4u, pick[1]);
+        note_tie(y, pick[0], pick[1]);
+        if (logging())
+            fprintf(stderr, "recomp: season intl: wc play-off %d: %s v %s (the real tie)\n", y, team_name(pick[0]),
+                    team_name(pick[1]));
+        return 2u;
+    }
     for (int i = 0; i < 2; i++) {
         int conf = ties[t].other[i];
         pick[i] = playoff_team(conf);

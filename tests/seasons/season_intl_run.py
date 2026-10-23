@@ -32,6 +32,8 @@ The checks (each run):
     - no draw after a full qualifying is short (log "short after a full qualifying"; a tie that ends after the
       World Cup draw is not a fault), and the draws of NO_FILL take no team from the fill
     - no inter-confederation play-off is built without a team (log "wc play-off ... v none")
+    - a start after the qualifying began takes the real draw and the real play-offs (LINES; O259 A9, A16), and
+      every finalist of the real draw is in the data
     - the nation renames of RENAMES and the date moves of MOVES are in the log
     - on: each host row that the runtime writes names the hosts of the table, up to six (log "host")
 A run takes about 6 to 8 minutes. --jobs (default 2) runs that many at the same time. --reuse checks the
@@ -69,12 +71,15 @@ RUNS = {
 RENAMES = {
     "2005": [("Yugoslavia", "Serbia and Montenegro"), ("Serbia and Montenegro", "Serbia")],
     "2017": [("Czech Republic", "Czechia"), ("Swaziland", "Eswatini"), ("FYR of Macedonia", "North Macedonia")],
-    "2019": [("Czech Republic", "Czechia"), ("Swaziland", "Eswatini")],
-    "2021": [("Czech Republic", "Czechia"), ("Swaziland", "Eswatini"), ("Turkey", "T\xfcrkiye")],
+    "2019": [("Czech Republic", "Czechia")],
+    "2021": [("Czech Republic", "Czechia"), ("Turkey", "T\xfcrkiye")],
     "off": [("Czech Republic", "Czechia"), ("Swaziland", "Eswatini")],
 }
 # Renames that must not happen: the database holds Serbia, so the record Yugoslavia stays.
 UNRENAMED = {r: [("Yugoslavia", "Serbia and Montenegro")] for r in ("2017", "2019", "2021", "off")}
+# The databases from 2019 hold a live "eSwatini" beside a dead "Swaziland" (O188): no rename.
+for r in ("2019", "2021"):
+    UNRENAMED[r].append(("Swaziland", "Eswatini"))
 # The finals that each run must move to the table's first day (log "moves by").
 MOVES = {"2021": [("world_cup", 2022, 161)]}
 # Log lines each run must hold (season_intl_euro.c: the Euro of 24 teams).
@@ -82,7 +87,15 @@ LINES = {"2015": ["euro_champ 2016 draw of 24 teams in 6 groups", "euro_champ 20
          "2018": ["asia_nations 2019 round of 16", "african_nations 2019 round of 16"],
          "2023": ["goldcup 2024: 16 teams", "goldcup 2024 quarter-finals of 16 teams"],
          "2008": ["wc play-off 2010:"],
-         "2014": ["euro_champ 2016 draw of 24 teams in 6 groups"]}
+         "2014": ["euro_champ 2016 draw of 24 teams in 6 groups"],
+         # A start after the qualifying began takes the real draw and the real play-offs (O259 A9, A16).
+         "2003": ["euro_champ 2004: the real draw, 16 of 16 teams"],
+         # (These starts build no Oceania tie, as the main build: its teams come in by the real draw.)
+         "2005": ["world_cup 2006: the real draw, 32 of 32 teams", "wc play-off 2006: Bahrain v Trinidad"],
+         "2017": ["world_cup 2018: the real draw, 32 of 32 teams", "wc play-off 2018: Australia v Honduras"],
+         "2019": ["euro_champ 2020: the real draw, 24 of 24 teams"],
+         "2021": ["world_cup 2022: the real draw, 32 of 32 teams", "wc play-off 2022: Australia v Peru"],
+         "2023": ["euro_champ 2024: the real draw, 24 of 24 teams"]}
 # Finals whose draw must take no team from the fill: the qualifying ran in full in the game.
 NO_FILL = {"2008": ["world_cup 2010"], "2014": ["euro_champ 2016"]}
 STEPS = {"world_cup": 4, "euro_champ": 4, "fifa_confed": 2, "olympics": 4, "goldcup": 2, "african_nations": 2,
@@ -156,6 +169,9 @@ def check(name, start, rules, work):
     for x in log:
         if "season intl: wc play-off" in x and (" v none" in x or x.rstrip().endswith("none v")):
             fails.append(f"{name}: a play-off without a team: {x.strip()}")
+    for x in log:
+        if "is not in the data" in x and "the finalist" in x:
+            fails.append(f"{name}: a finalist of the real draw is missing: {x.strip()}")
     for x in log:
         if "short after a full qualifying" in x:
             fails.append(f"{name}: a short list after a full qualifying: {x.strip()}")
