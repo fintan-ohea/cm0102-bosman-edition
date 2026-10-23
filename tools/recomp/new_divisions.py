@@ -57,6 +57,13 @@ INSNS = {
     0x63FCF9: ("cmp ecx, dword ptr [0x9cf57c]",
                "t0 = ecx; t1 = rt_ita_cup_c1b(ecx, R32(0x9cf57cu)); t2 = t0 - t1 - 0; SETF(K_SUB | SZ4, t0, t1, t2, 0);"),
     0x641986: ("mov ecx, dword ptr [ecx + edx*4]", "ecx = rt_ita_start_c2(R32(ecx + edx * 4u));"),
+    # The Coppa Italia Serie C in the era (O259 A21, Q628): groups of 3 with 3 match days, and the knockout's
+    # runners-up and seeds for the clubs of the three groups (rt_ita_ccup_*, season_divisions_ita.c).
+    0x63D5EE: ("mov word ptr [esi + 0x3e], 5", "W16(esi + 0x3eu, rt_ita_ccup_group(esi, 5u));"),
+    0x63CFD8: ("mov word ptr [ecx], 5", "W16(ecx, rt_ita_ccup_group(edi, 5u));"),
+    0x63DE55: ("cmp edx, 0x162",
+               "t0 = edx; t1 = rt_ita_ccup_seconds(ebp, 0x162u); t2 = t0 - t1 - 0; SETF(K_SUB | SZ4, t0, t1, t2, 0);"),
+    0x63DE7B: ("mov esi, 0x16", "esi = rt_ita_ccup_first_seed(ebp, 0x16u);"),
     # PorCup::collect_entrants 0x7ce220, second pass: a club with no division is passed over (je 0x7ce3ed at
     # 0x7ce37d). With Liga 3 the club moves leave more Portuguese clubs with no division, and the cup (164 entrants,
     # 0x7ce234) stopped at por_cup.cpp 74 in a 2021/22 start; rt_por_cup_none takes them then (Q528).
