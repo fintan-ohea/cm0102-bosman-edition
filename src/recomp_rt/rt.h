@@ -306,6 +306,9 @@ uint32_t rt_discipline_oceania_body(void);
 /* The ruling body's held ban (win/discipline_ban.c, tools/recomp/discipline_ban.py at 0x7e833c): 1 goes on without
  * the box ruling_body..cpp 661, 0 when the fix is off. */
 uint32_t rt_ruling_body_held(uint32_t body, uint32_t staff);
+/* The loan's ban hold and restore (win/season_new_cups.c, tools/recomp/discipline_ban.py at 0x55647d, 0x55671e): 1
+ * when a domestic body of one nation applies at a club of the other through the All-Ireland cup. */
+uint32_t rt_ban_nation_applies(uint32_t club, uint32_t body);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);

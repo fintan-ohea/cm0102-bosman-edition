@@ -464,3 +464,34 @@ static void new_after(const SeasonChange *c)
 }
 
 const SeasonRuleKind season_kind_new_cups = {"new_cups", NULL, NULL, NULL, NULL, new_before, new_after};
+
+/* ---- The ruling body of the All-Ireland cup ----
+ *
+ * The cup has the clubs of the Republic of Ireland and of Northern Ireland and one ruling body, that of the other
+ * objects of its entry (new_make): the Irish body. Discipline::hold_bans_for_loan 0x5563f0 holds the bans of a
+ * domestic body whose nation (+0x17) is not the loan club's (cmp at 0x55647b, je 0x55647d), and
+ * Discipline::restore_held_bans 0x556570 drops them by the same test (cmp at 0x55671c, je 0x55671e). So a player of
+ * an Irish club on loan at a Northern Irish club had his Irish bans held, met the Irish body in the cup, and the
+ * body found the held ban (the box ruling_body..cpp 661, 0x7e833c). While the cup is in the game, the two nations
+ * count as one for these tests: the bans of the cup's body stay with the player in both. The base game has no such
+ * cup, so its tests are the original's. */
+#define KEY_IRELAND 0x9cf2dcu
+#define KEY_NORTHERN_IRELAND 0x9cf3e4u
+
+static int all_ireland_in_game(void)
+{
+    uint32_t objs[1024];
+    int n = season_change_comps(objs, 1024);
+    for (int i = 0; i < n; i++)
+        if (!strcmp(season_change_file(objs[i]), "new_all_ireland")) return 1;
+    return 0;
+}
+
+/* 1 when a body of nation `body` applies at a club of nation `club` (nation ids) through the All-Ireland cup. */
+uint32_t rt_ban_nation_applies(uint32_t club, uint32_t body)
+{
+    if (!season_code_on() || club == body) return 0;
+    uint32_t ire = rd32(g_mem, KEY_IRELAND), ni = rd32(g_mem, KEY_NORTHERN_IRELAND);
+    if (!((club == ire && body == ni) || (club == ni && body == ire))) return 0;
+    return (uint32_t)all_ireland_in_game();
+}
