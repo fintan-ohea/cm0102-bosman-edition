@@ -334,7 +334,8 @@ static const struct { const char *file; int year; const char *teams; } real_draw
  * above, section "Inter-confederation play-offs". 2026 is the play-off tournament of six (season_wcq26.c,
  * tournament_six): the two seeds, then the semi-finals 2 v 5 and 3 v 4 (New Caledonia 0-1 Jamaica, Bolivia 2-1
  * Suriname, 26 March 2026; finals DR Congo 1-0 Jamaica, Iraq 2-1 Bolivia, 31 March 2026;
- * https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification_(inter-confederation_play-offs)). */
+ * https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification_(inter-confederation_play-offs), read
+ * 2026-10-23). */
 static const struct { int year; const char *teams[6]; } real_ties[] = {
     {2006, {"Bahrain", "Trinidad & Tobago/Trinidad and Tobago", "Australia", "Uruguay"}},
     {2010, {"Bahrain", "New Zealand", "Costa Rica", "Uruguay"}},
