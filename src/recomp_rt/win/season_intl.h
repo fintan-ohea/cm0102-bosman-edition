@@ -132,4 +132,8 @@ const char *season_intl_real_tie(int year, int k);
  * record, a continent; 0 when the data has none (season_intl.c). */
 uint32_t season_intl_team_named(const char *names);
 
+/* 1 while the Oceania section must not advance from its final to the play-off: the cycle's tie has a CONCACAF
+ * partner whose section is not complete (O259 A16; season_intl_qual.c, called by the wrap of 0x91f0d0). */
+int season_intl_oceania_wait(uint32_t self);
+
 #endif

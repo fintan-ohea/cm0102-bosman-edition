@@ -1006,6 +1006,12 @@ RT_WRAP(0091f0d0, wcq26_oceania_advance)
     uint32_t self = cpu.ecx;
     int now = readable(self) ? (int)rd32(g_mem, self + F_STAGE) : -1;
     if (!oceania_on(self) || (now != 1 && now != 2)) {
+        if (season_intl_oceania_wait(self)) {                  /* O259 A16: a CONCACAF partner not decided */
+            rt_ret_stdcall(0, 0);
+            return;
+        }
+        if (rt_unwinding) return;
+        cpu.ecx = self;
         o_0091f0d0();
         return;
     }
