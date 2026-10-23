@@ -239,27 +239,43 @@ def league_stalls(comps, rows=None):
     of the run, and at all of them. Argentina's leagues move on around 1 August (some starts hold the year before),
     so their start report is not read. A league
     that stops (Serie A at its 2015 edition from 2016/17 on) keeps its year. Objects with no year (1900 to 2200)
-    give no line, as in differences(). Returns lines "<season>: <file> (<name>) ..."."""
+    give no line, as in differences().
+    O324: the domestic cups too, the files of the rows with tier "cup" (each object of the file, league or cup kind).
+    A cup is checked in a season only when the table holds it in that season and the season before: a season where
+    its row says not held, or where it has no row (before its first or after its last edition), gives no line.
+    Returns lines "<season>: <file> (<name>) ..."."""
     if rows is None:
         rows = make_rules.read_rows()
     divisions = {f for r in rows if isinstance(r["tier"], int) for f in row_files(r)}
+    cup_held = collections.defaultdict(set)         # cup file: the seasons the table holds it
+    for r in rows:
+        if r["tier"] == "cup" and "not_held" not in (r["clubs"], r["format"]):
+            for f in row_files(r):
+                cup_held[f].add(r["season"])
     years = {"start": collections.defaultdict(dict), "end": collections.defaultdict(dict)}
     names = {}
     for c in comps:
-        if c["phase"] in years and c["kind"] == "league" and c["file"] in divisions and 1900 <= c["year"] <= 2200:
-            years[c["phase"]][(c["slot"], c["file"])].setdefault(c["season"], c["year"])
-            names[(c["slot"], c["file"])] = c["name"]
+        file = c["file"]
+        if c["phase"] not in years or not 1900 <= c["year"] <= 2200:
+            continue
+        if (c["kind"] == "league" and file in divisions) or (file in cup_held and file not in divisions):
+            years[c["phase"]][(c["slot"], file)].setdefault(c["season"], c["year"])
+            names[(c["slot"], file)] = c["name"]
+
+    def held(file, season):
+        return file not in cup_held or (season in cup_held[file] and season - 1 in cup_held[file])
+
     out = []
     for key in sorted(names):
         ends, starts = years["end"].get(key, {}), years["start"].get(key, {})
         for season in sorted(ends):
             before, now = ends.get(season - 1), ends[season]
-            if before is not None and before <= season - 1 and now <= before:
+            if before is not None and before <= season - 1 and now <= before and held(key[1], season):
                 out.append(f"{season}: {key[1]} ({names[key]}) holds edition {now} at the end of "
                            f"{season}/{(season + 1) % 100:02d}, as at the end of the season before: it did not move on")
         for season in sorted(starts):
             before = ends.get(season - 1)
-            if season in ends or before is None or before > season - 1:
+            if season in ends or before is None or before > season - 1 or not held(key[1], season):
                 continue
             # The object moved on by 1 August in this run: at two or more other season starts it holds the
             # season's own year, and at no other start an earlier one.

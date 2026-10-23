@@ -26,7 +26,8 @@ between starts. Each soak waits for room before each leg itself.
 The end of a start: when the last leg's log reaches day 244 (1 September) of the end year with no message box, the
 runner stops the soak and then its game, by PID. The result:
     FAIL  a leg that is not ok (a box, an exit code, no save), the first one
-    FAIL  a division whose edition does not move on (rules_report_check.league_stalls over the leg reports, O278;
+    FAIL  a division or a domestic cup held each season whose edition does not move on
+          (rules_report_check.league_stalls over the leg reports, O278, O324;
           the soak's own check does not run when the runner stops it)
     FAIL  a soak that ends before 1 September of the end year
     PASS  else
