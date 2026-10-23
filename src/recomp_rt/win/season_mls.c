@@ -125,3 +125,22 @@ RT_WRAP(0090a000, mls_club_conference)
     place(club, &group, &conference);
     rt_ret_cdecl((rd32(g_mem, club) & 0xffff0000u) | conference);
 }
+
+/* The MLS play-off rounds in a season game (rule O284, row arg-usa-218). UsaMls::create_schedule 0x9072d0 writes
+ * the play-off and final round records with flag 0x20 in the match flags (+0x0d 0x230 at 0x907fe7 and 0x908068,
+ * +0x0f 0x30 at 0x908003 and 0x90808b, +0x11 0x20 at 0x908009 and 0x908091, the final +0x0d 0x220 at 0x9081c2;
+ * cup round record doc, section 2). With 0x20, CM3_MATCH_ENGINE::period_completed 0x6bd930 starts the run-in
+ * shootout (state 1 at 0x6bdb1c) in place of penalties (flag 0x1, state 4 at 0x6bdaf7). In it both sides can miss
+ * every kick: Kansas City Wizards v Washington DC United (2021 start, October 2021 database, day 287 of 2023) was
+ * still 0-0 after 127 kicks a side, the signed kick counter (+0x8e9f) wrapped, kick % 11 read before the taker
+ * order (0x6be931..0x6be96a) and the taker became an object that is no player (match_pl.cpp 4885 at 0x6f4731). A
+ * run with three substitutes forced met the same 0-0 run-in (San Jose Earthquakes v Atlanta United FC, 40 kicks).
+ * MLS dropped the shootout for the 2000 season; from 2002/03 its play-offs go to extra time and then penalties
+ * (row arg-usa-218). In a season game the flag becomes 0x3; the base game keeps 0x20 (Q152). The seasons.py sites
+ * call this; the init_match wrap (season_match_grid.c) maps a fixture made before (an older save's table). */
+uint32_t rt_mls_round_flags(uint32_t flags)
+{
+    if (!(flags & 0x20u) || !season_code_on() || (season_start_year() == SEASON_FIRST_YEAR && !season_changing_rules()))
+        return flags;
+    return (flags & ~0x20u) | 0x3u;
+}
