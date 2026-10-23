@@ -73,10 +73,11 @@ void season_cup_fill_entrants(uint32_t cup)
     uint32_t list = rd32(g_mem, cup + CUP_TEAM_LIST), rec = rd32(g_mem, cup + 4);
     int count = (int16_t)rd16(g_mem, cup + CUP_TEAMS);
     if (!readable(list) || !readable(rec) || count < 2 || count > MAX_LIST) return;
-    int nation = -1, empty = 0, lowest = 1000000, other = 0;
+    int nation = -1, empty = 0, lowest = 1000000, other = 0, first_empty = -1;
     for (int i = 0; i < count; i++) {
         uint32_t club = rd32(g_mem, list + ENTRY * (uint32_t)i);
         if (!readable(club)) {
+            if (first_empty < 0) first_empty = i;
             empty++;
             continue;
         }
@@ -112,6 +113,7 @@ void season_cup_fill_entrants(uint32_t cup)
         g_mem[at + 5] = 0;
         filled++;
     }
-    fprintf(stderr, "recomp: cup entrants: %s (%.40s) %d: %d of %d places empty, %d filled\n", season_change_file(cup),
-            win_str(rec + 4), (int16_t)rd16(g_mem, cup + 0x40), empty, count, filled);
+    fprintf(stderr, "recomp: cup entrants: %s (%.40s) %d: %d of %d places empty (the first is place %d), %d filled\n",
+            season_change_file(cup), win_str(rec + 4), (int16_t)rd16(g_mem, cup + 0x40), empty, count, first_empty,
+            filled);
 }
