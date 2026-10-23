@@ -1160,6 +1160,14 @@ RT_WRAP(005267c0, trim_club_table)
     o_005267c0();
     if (rt_unwinding) return;
     if (!season_lng_fitted()) trim_rows();
+    else if (getenv("RECOMP_LNG_LOG")) {                /* test only: the .lng row of each added club */
+        uint32_t index = rd32(g_mem, 0xae23fcu), n = rd32(g_mem, 0xae235cu), clubs = rd32(g_mem, 0xae23b4u);
+        for (uint32_t i = 0; index && i < n; i++) {
+            int32_t v = (int32_t)rd32(g_mem, index + 4 * i);
+            if (v >= loaded_file_clubs && v < loaded_file_clubs + loaded_records)
+                fprintf(stderr, "recomp: lng: added club %s has .lng row %d\n", win_str(clubs + 0x245u * i + 4), v);
+        }
+    }
 }
 
 static void trim_rows(void)

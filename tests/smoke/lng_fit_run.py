@@ -18,12 +18,16 @@ time; each one fails on a message box (RECOMP_SCREEN_LOG) or on the box Database
     season-fra   then a load of LngSea in French: the load finds its key records (no box index.cpp 5809) and its
                  fra.lng, which comes from the save, holds "Allemagne". The load reads the names by row as a
                  language change in Game Options does (Config::apply_and_save 0x5d8480 calls 0x5339a0 both times)
-    added-clubs  a 2016 start (RECOMP_START_SEASON, October 2016 from <game folder>/Seasons) in Italian, to the first
-                 news screen: the club records add AO Kerkyra after the club trim, with a .lng row of its own after
-                 the national teams (not row 0); a row of the written ita.lng holds the club's own name. The run is
+    accent       the season database run to Select League(s) in a user folder whose name has an accent
+                 ("season-Jos\u00e9"): the files are found and written through the UTF-8 host paths
+    added-clubs  a 2016 start (RECOMP_START_SEASON, October 2016 from <game folder>/Seasons) in Italian, every
+                 league selected (the trim of a game of England alone takes the club out), to the first news screen: the club records add AO Kerkyra after the club trim, with a .lng row of its own after
+                 the national teams (not row 0): its [0xae23fc] row (RECOMP_LNG_LOG) holds its own name in the written
+                 ita.lng. The run is
                  left out when the game folder has no Seasons/October 2016.zip
 """
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -53,6 +57,16 @@ NEW_GAME = NEW_GAME[:NEW_GAME.index("wait first-news") + 1]
 SAVE_AS = (["2500 click 45 342", "4500 click 140 334"] + [f"{5000 + 50 * i} key 8" for i in range(40)] +
            [f"7500 type {SAVE}", "9500 click 705 572", "16500 quit"])
 LOAD = [s for s in fixtures.LOAD_STEPS if "box" not in s and "399 330" not in s and s not in SETTINGS] + ["2000 quit"]
+
+
+def all_leagues_steps():
+    """A new game of every league (rules_report_check.league_steps), to the first news screen. The club trim of a
+    game of England alone takes the added Greek club out again, so it has no .lng row there."""
+    sys.path.insert(0, os.path.join(HERE, "..", "seasons"))
+    import rules_report_check as rrc
+    steps = [s for s in rrc.league_steps(["all"], []) if " dump " not in s and s not in SETTINGS + [smoke_run.SETTINGS_WAIT]]
+    end = next(i for i, s in enumerate(steps) if s.startswith("wait first-news"))
+    return steps[:end + 1] + ["2000 quit"]
 
 
 def wait_room():
@@ -193,6 +207,18 @@ def main(argv):
         if not os.path.exists(os.path.join(season, "user", SAVE + ".sav")):
             problems.append(f"no {SAVE}.sav")
         results.append(("season-ita", problems))
+    if want("accent"):
+        work = os.path.join(keep, "season-Jos\u00e9")             # a user folder with an accent (host.h paths)
+        shutil.rmtree(work, ignore_errors=True)
+        ok = setup_user(program, game, work, ITALIAN, [("database", "folder:" + SEASON_DB)],
+                        os.path.join(folder, "databases", SEASON_DB))
+        err, problems = play(program, game, work, LEAGUES, {}) if ok else ("", ["no game.cfg"])
+        dump = os.path.join(work, "user", "ita.lng")
+        if FITTED not in err or not os.path.exists(dump):
+            problems.append("no written ita.lng")
+        elif "Germania" not in section_names(dump, 3):
+            problems.append("the written ita.lng has no nation Germania")
+        results.append(("accent", problems))
     if want("season-fra"):
         user = os.path.join(season, "user")
         problems = []
@@ -219,11 +245,12 @@ def main(argv):
             work = os.path.join(keep, "added")
             shutil.rmtree(work, ignore_errors=True)
             ok = setup_user(program, game, work, ITALIAN, [("changing_rules", "on")])
-            env = {"RECOMP_START_SEASON": "2016", "RECOMP_RULES_TABLE": os.path.join(game, "Seasons", "rules.tsv")}
+            env = {"RECOMP_START_SEASON": "2016", "RECOMP_RULES_TABLE": os.path.join(game, "Seasons", "rules.tsv"),
+                   "RECOMP_LNG_LOG": "1"}
             table = os.path.join(os.path.dirname(program), "seasons", "rules.tsv")
             if os.path.exists(table):
                 env["RECOMP_RULES_TABLE"] = table
-            err, problems = play(program, game, work, NEW_GAME + ["2000 quit"], env) if ok else ("", ["no game.cfg"])
+            err, problems = play(program, game, work, all_leagues_steps(), env) if ok else ("", ["no game.cfg"])
             dump = os.path.join(work, "user", "ita.lng")
             if "recomp: club records of 2016: 1 clubs" not in err:
                 problems.append("the club records added no club")
@@ -231,9 +258,11 @@ def main(argv):
                 problems.append("no written ita.lng")
             else:
                 clubs = section_names(dump, 0)
-                rows = [i for i, n in enumerate(clubs) if n == "AO Kerkyra"]
-                if not rows or rows == [0]:
-                    problems.append("no row of AO Kerkyra with its own name (an added club had row 0)")
+                m = re.search(r"recomp: lng: added club AO Kerkyra has \.lng row (\d+)", err)
+                if not m:
+                    problems.append("no .lng row of the added club AO Kerkyra in the log")
+                elif int(m.group(1)) == 0 or int(m.group(1)) >= len(clubs) or clubs[int(m.group(1))] != "AO Kerkyra":
+                    problems.append(f"the .lng row {m.group(1)} of AO Kerkyra ([0xae23fc]) does not hold its name")
             results.append(("added-clubs", problems))
     failed = 0
     for name, problems in results:

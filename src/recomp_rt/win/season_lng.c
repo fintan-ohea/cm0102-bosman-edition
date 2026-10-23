@@ -37,8 +37,8 @@
  * three readers run with them hidden (season_comps.c), and they have no translation in any file. */
 #include "win.h"
 #include "season_comps.h"
+#include "../host.h"
 
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,13 +95,13 @@ static void lng_free(Lng *l)
 /* The file in a folder, matched without regard to case; 0 when it is not there. */
 static int find_in(const char *dir, const char *file, char *path, size_t room)
 {
-    DIR *d = opendir(dir);
+    HostDir *d = host_opendir(dir);                     /* UTF-8 paths: a user folder with accents (host.h) */
     if (!d) return 0;
-    struct dirent *e;
+    const char *e;
     path[0] = 0;
-    while ((e = readdir(d)))
-        if (!strcasecmp(e->d_name, file)) { snprintf(path, room, "%s/%s", dir, e->d_name); break; }
-    closedir(d);
+    while ((e = host_readdir(d)))
+        if (!strcasecmp(e, file)) { snprintf(path, room, "%s/%s", dir, e); break; }
+    host_closedir(d);
     return path[0] != 0;
 }
 
@@ -128,7 +128,7 @@ static int by_name(const void *a, const void *b)
 static int lng_read(const char *path, Lng *l, int sort)
 {
     memset(l, 0, sizeof *l);
-    FILE *f = fopen(path, "rb");
+    FILE *f = host_fopen(path, "rb");
     if (!f) return 0;
     fseek(f, 0, SEEK_END);
     long n = ftell(f);
@@ -347,10 +347,20 @@ void season_lng_fit_temp(void)
             uint8_t *out = same ? fitted_file(&file, &eng, rows, &size) : NULL;
             lng_free(&file);
             if (!out) continue;
-            FILE *f = fopen(path, "wb");
+            /* A temporary file first, then the rename: a full disk cannot leave a cut-off file for the save. */
+            char temp[1500];
+            snprintf(temp, sizeof temp, "%s.fit", path);
+            FILE *f = host_fopen(temp, "wb");
+            int whole = 0;
             if (f) {
-                written += fwrite(out, 1, size, f) == size;
-                fclose(f);
+                whole = fwrite(out, 1, size, f) == size;
+                whole = (fclose(f) == 0) && whole;
+            }
+            if (whole && host_replace(temp, path) == 0) written++;
+            else {
+                host_unlink(temp);
+                fprintf(stderr, "recomp: %s could not be written in the rows of the database; it stays as copied\n",
+                        files[k]);
             }
             free(out);
         }
