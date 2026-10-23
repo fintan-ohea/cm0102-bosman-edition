@@ -82,7 +82,11 @@ int season_super_four_pick(const uint32_t in[5], uint32_t out[4])
 {
     uint32_t lw = in[0], lru = in[1], cw = in[2], cru = in[3], third = in[4];
     if (!lw || !lru || lw == lru) return 0;
-    int spare = third && third != lw && third != lru;
+    /* The league third is a spare only when it is not in the list yet: it can also be the cup winner. A spare that
+     * was the cup winner gave one club two places (O326, gate (a) run 5, the 2020/21 and 2022/23 Supercopa: the
+     * tie of the club with itself never ended, so the edition stayed open and no later edition came). The history
+     * rows give the first three places only, so with no spare left the two-club format plays. */
+    int spare = third && third != lw && third != lru && third != cw;
     if (!cw || cw == lw || cw == lru) {
         if (!spare) return 0;
         cw = third, spare = 0;

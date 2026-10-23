@@ -200,4 +200,6 @@ void season_cup_fill_entrants(uint32_t cup);
  * Schedule tab, scout duty), before the rules report writes its cupmore line (season_super_cups.c). */
 void season_cup_groups_read_test(uint32_t cup);
 
+void season_super_cups_trace(uint32_t cup, uint32_t today);   /* test log, RECOMP_SUPER_TRACE (O326) */
+
 #endif

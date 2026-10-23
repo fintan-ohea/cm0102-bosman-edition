@@ -65,6 +65,10 @@ static void picks(void)
     CHECK(!season_super_four_pick(d, out), "two places free and one league third: the two-club format");
     const uint32_t e[5] = {1, 2, 3, 0, 5};      /* no cup runner-up in the history */
     CHECK(season_super_four_pick(e, out) && out[1] == 5, "no cup runner-up");
+    const uint32_t h[5] = {1, 2, 3, 1, 3};      /* the cup winner came third, the champion lost the final */
+    CHECK(!season_super_four_pick(h, out), "the league third won the cup: no spare, the two-club format");
+    const uint32_t k[5] = {1, 2, 2, 4, 3};      /* the runner-up won the cup: the third takes its place once */
+    CHECK(season_super_four_pick(k, out) && out[1] == 4 && out[2] == 3 && out[3] == 2, "the league third once");
     const uint32_t g[5] = {0, 2, 3, 4, 5};
     CHECK(!season_super_four_pick(g, out), "no league winner");
 }

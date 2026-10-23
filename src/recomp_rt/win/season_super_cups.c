@@ -272,6 +272,41 @@ RT_WRAP(00858960, super_spa_rounds)
     if (!rt_unwinding) rounds_made(self, stage, count);
 }
 
+/* Test log (O326, RECOMP_SUPER_TRACE=1): for the Supercopa, at each Cup::update_for_date 0x51f890 whose state
+ * changed, the date, the cup head (+0x2c to +0x4c, +0xb1), the team list and each round's dates and counts. */
+void season_super_cups_trace(uint32_t cup, uint32_t today)
+{
+    static int on = -1;
+    static uint32_t last_sum;
+    if (on < 0) on = getenv("RECOMP_SUPER_TRACE") && *getenv("RECOMP_SUPER_TRACE");
+    if (!on || !readable(cup) || !readable(today) || strcmp(season_change_file(cup), "spa_super")) return;
+    char line[1600];
+    int n = snprintf(line, sizeof line, "head 2c=%d 30=%d 3c=%d 3e=%d 40=%d 44=%d 48=%08x 4c=%d b1=%d b2=%d",
+                     (int32_t)rd32(g_mem, cup + 0x2c), (int32_t)rd32(g_mem, cup + 0x30), (int16_t)rd16(g_mem, cup + 0x3c),
+                     (int16_t)rd16(g_mem, cup + 0x3e), (int16_t)rd16(g_mem, cup + 0x40), (int8_t)g_mem[cup + 0x44],
+                     rd32(g_mem, cup + 0x48), (int32_t)rd32(g_mem, cup + 0x4c), g_mem[cup + 0xb1], g_mem[cup + 0xb2]);
+    uint32_t list = rd32(g_mem, cup + CUP_TEAM_LIST);
+    for (int i = 0; i < 4 && readable(list); i++)
+        n += snprintf(line + n, sizeof line - (size_t)n, " t%d=%08x/%d/%d", i, rd32(g_mem, list + 6u * (uint32_t)i),
+                      g_mem[list + 6u * (uint32_t)i + 4], g_mem[list + 6u * (uint32_t)i + 5]);
+    uint32_t t = rd32(g_mem, cup + 0xa3);
+    int rounds = (int16_t)rd16(g_mem, cup + 0x3c);
+    for (int r = 0; r < rounds && r < 4 && readable(t); r++) {
+        uint32_t a = t + ROUND_SIZE * (uint32_t)r;
+        n += snprintf(line + n, sizeof line - (size_t)n, " r%d draw %d+%d match %d+%d code %d ties %d new %d first %d",
+                      r, (int16_t)rd16(g_mem, a), g_mem[a + 2], (int16_t)rd16(g_mem, a + 3), g_mem[a + 5],
+                      (int16_t)rd16(g_mem, a + 7), (int16_t)rd16(g_mem, a + 0x1a), (int16_t)rd16(g_mem, a + 0x1c),
+                      (int16_t)rd16(g_mem, a + 0x1e));
+    }
+    for (uint32_t o = 0x50; o < 0xa3 && n < (int)sizeof line - 12; o += 4)
+        n += snprintf(line + n, sizeof line - (size_t)n, "%s%08x", o == 0x50 ? " body " : ".", rd32(g_mem, cup + o));
+    uint32_t sum = 0;
+    for (const char *c = line; *c; c++) sum = sum * 31u + (uint8_t)*c;
+    if (sum == last_sum) return;
+    last_sum = sum;
+    fprintf(stderr, "recomp: super trace: day %08x %08x: %s\n", rd32(g_mem, today), rd32(g_mem, today + 4), line);
+}
+
 /* ---- The rules report (slice 21c) ----
  *
  * One line "cupmore" for each cup of this slice: season, phase, file, year (+0x40), clubs (+0x3e), rounds of its

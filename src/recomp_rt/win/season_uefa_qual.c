@@ -1127,6 +1127,7 @@ static void cup_dates_ahead(uint32_t cup)
 RT_WRAP(0051f890, cup_update_for_date)
 {
     uint32_t cup = cpu.ecx;
+    season_super_cups_trace(cup, rt_arg(0));
     int kind = season_uefa_cup_kind(cup);
     if (kind && access_row_of(cup)) {
         Cpu saved = cpu;
