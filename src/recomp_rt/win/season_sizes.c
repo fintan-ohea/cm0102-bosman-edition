@@ -261,6 +261,32 @@ uint32_t rt_fra_lge_first(uint32_t original, uint32_t edx)
     return (uint32_t)(limit - (int)edx);
 }
 
+/* EngFaCup::collect_entrants 0x56fab0 (O294) puts the National League clubs ([0x9cf69c]) in a stack array at
+ * [esp + 0x3c] (store at 0x56fd98, count [esp + 0x18]) and the English clubs below it in a stack array at
+ * [esp + 0x94] (store at 0x56fd7b, count [esp + 0x14], at most 300). It then copies byte [esp + 0x12] places from
+ * the first (22 at 0x56fade, one less for each FA Trophy finalist in it, copy at 0x570046..0x57008b) and byte
+ * [esp + 0x13] places from the second (38 at 0x56fae3, copy at 0x56fffc..0x57003e). Neither copy tests the
+ * array's count, and the frame is never cleared. With fewer National League clubs than places (a 2025/26 start
+ * with the December 2025 database, changing rules on) the cup took stack values: a NULL left an empty place, any
+ * other value a club at a garbage address with no players (record 351, round 10, match_eng..cpp 652 and 612).
+ * Here, at `movsx di, byte ptr [esp + 0x1b]` (0x56ffe4, two pushes after 0x56ffa6, so the counts are 8 bytes
+ * higher), the places the National League cannot fill go to the clubs below it, and no copy takes more than its
+ * array holds. Returns the count of the second copy. With enough clubs the counts are the original's. */
+uint32_t rt_fa_cup_takes(uint32_t esp)
+{
+    int league_take = (int8_t)rd8(g_mem, esp + 0x1au), lower_take = (int8_t)rd8(g_mem, esp + 0x1bu);
+    int league_have = (int16_t)rd16(g_mem, esp + 0x20u), lower_have = (int16_t)rd16(g_mem, esp + 0x1cu);
+    if (!season_game_changes() || (league_take <= league_have && lower_take <= lower_have)) return (uint32_t)lower_take;
+    int league = league_take < league_have ? league_take : (league_have > 0 ? league_have : 0);
+    int lower = lower_take + league_take - league;
+    if (lower > lower_have) lower = lower_have > 0 ? lower_have : 0;
+    fprintf(stderr, "recomp: league sizes: FA Cup takes %d National League clubs (has %d, places %d) and %d clubs "
+            "below it (has %d, places %d)\n", league, league_have, league_take, lower, lower_have, lower_take);
+    wr8(g_mem, esp + 0x1au, (uint8_t)league);
+    wr8(g_mem, esp + 0x1bu, (uint8_t)lower);
+    return (uint32_t)lower;
+}
+
 /* ItaCup::select_entrants 0x63faf0 fills a list of 32 Italian clubs (0x20 at 0x63fc21). Its first loop takes the
  * Serie A clubs, the clubs relegated from Serie A, and the clubs whose last division (+0x5b) is a Serie C1 group
  * ([0x9cf578], [0x9cf57c]) with last position (+0x5f) 3, 4 or 5 (0x63fc69..0x63fc9b). While the list is short, its

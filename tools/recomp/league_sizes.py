@@ -158,6 +158,9 @@ CUP_INSNS = {
     # ItaCup::select_entrants 0x63faf0: the first position of its second loop (C1 clubs by last position). The
     # first loop already takes C1 clubs of last position 3 to 5, so a season game starts the second loop at 6.
     0x63FB16: ("mov byte ptr [esp + 0x13], 5", "W8(esp + 0x13u, rt_ita_cup_first_position(5u));"),
+    # EngFaCup::collect_entrants 0x56fab0: the National League places that its clubs cannot fill go to the clubs
+    # below it, and no copy takes more than its stack array holds (O294, season_sizes.c rt_fa_cup_takes).
+    0x56FFE4: ("movsx di, byte ptr [esp + 0x1b]", "edi = (edi & 0xffff0000u) | (rt_fa_cup_takes(esp) & 0xffffu);"),
 }
 
 # address: (the instruction in the original, C code). The store keeps its width (W16) and its object register.
