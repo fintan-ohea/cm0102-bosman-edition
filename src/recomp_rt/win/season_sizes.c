@@ -358,6 +358,29 @@ static int rows_with(uint32_t league, int a, int b)
     return k;
 }
 
+/* The rows that the places of a league send up (up 1) or down at the season change. League::update_positions_and_
+ * status 0x684cd0 gives the +0xbe rows from the top status 5 or 0 and the +0xc1 rows from the bottom status 3
+ * (0x684e11..0x684ef5, 0x685149..0x68525e). A play-off of +0xbf (+0xc0) places sends its one winner up (its loser
+ * down), the reading of set_places. -1 for no league. */
+static int place_moves(uint32_t league, int up)
+{
+    if (!readable(league)) return -1;
+    int direct = (int8_t)g_mem[league + (up ? UP : DOWN)];
+    int playoff = (int8_t)g_mem[league + (up ? UP_PLAYOFF : DOWN_PLAYOFF)];
+    return direct < 0 ? -1 : direct + (playoff > 0 ? 1 : 0);
+}
+
+/* The expected count of a call of league_promote_and_relegate 0x689c80: up 1 the clubs that the lower league sends
+ * up, up 0 the clubs that the upper league sends down. ItaSerA's chain 0x642410 pushes 4 and 4 for Serie A and B
+ * (0x642476, 0x642478), the places of the base game. In a season game the places change (2003/04 Serie A 3 down
+ * and Serie B 4 up, 2016/17 3 and 3), so there the count comes from the places of the season. */
+uint32_t rt_promote_expected(uint32_t league, uint32_t up, uint32_t original)
+{
+    if (!sizes_on()) return original;
+    int n = place_moves(league, up != 0);
+    return n >= 0 ? (uint32_t)n : original;
+}
+
 void o_00689c80(void);
 
 /* league_promote_and_relegate 0x689c80, stdcall (upper, lower, expire_contracts, pairwise, expected_up,
@@ -403,11 +426,24 @@ RT_WRAP(00689c80, promote_relegate)
                 season_change_file(upper), record_name(upper), down, season_change_file(lower), record_name(lower), up,
                 pairwise, exp_up, exp_down, !change ? "" : single ? ": each club moves on its own" : ": in pairs");
     if (change) wr32(g_mem, cpu.esp + 4 + 4 * 3, single ? 0u : 1u);
-    /* The moves that the call makes: each row on its own, or pairs. An expected count that differs from them is
-     * dropped (Serie A and B pass 4 and 4 at 0x642476, the 2016/17 places are 3 and 3: league.cpp 5596). */
+    /* The moves that the call makes: each row on its own, or pairs. The callers with counts pass the moves of the
+     * places (rt_promote_expected). In pairs only as many clubs move as the smaller count, so when this wrap sets
+     * pairs for places that differ, both counts become the smaller one. */
     int pairs = rd32(g_mem, cpu.esp + 4 + 4 * 3) != 0, n = down < up ? down : up;
     int moved_up = pairs ? n : up, moved_down = pairs ? n : down;
-    if (down >= 0 && up >= 0) {
+    if (change && pairs && exp_up != -1 && exp_down != -1) {
+        exp_up = exp_down = exp_up < exp_down ? exp_up : exp_down;
+        wr32(g_mem, cpu.esp + 4 + 4 * 4, (uint32_t)exp_up);
+        wr32(g_mem, cpu.esp + 4 + 4 * 5, (uint32_t)exp_down);
+    }
+    /* A count that still differs from the rows is a fault: the statuses of the table do not match its places (a
+     * play-off with no result, a status set twice). The log names it and the check is dropped, so the season goes
+     * on (asserts league.cpp 5596 and 5602). */
+    if (down >= 0 && up >= 0 && ((exp_up != -1 && exp_up != moved_up) || (exp_down != -1 && exp_down != moved_down))) {
+        fprintf(stderr, "recomp: league sizes: fault: %s (%.50s) and %s (%.50s) expect %d up and %d down by their "
+                        "places, the rows move %d and %d; the check is dropped\n", season_change_file(upper),
+                record_name(upper), season_change_file(lower), record_name(lower), exp_up, exp_down, moved_up,
+                moved_down);
         if (exp_up != -1 && exp_up != moved_up) wr32(g_mem, cpu.esp + 4 + 4 * 4, 0xffu);
         if (exp_down != -1 && exp_down != moved_down) wr32(g_mem, cpu.esp + 4 + 4 * 5, 0xffu);
     }
