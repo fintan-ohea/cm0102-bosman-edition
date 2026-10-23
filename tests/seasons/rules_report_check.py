@@ -13,6 +13,10 @@ Usage:
         [--keep <folder>] [--timeout s] [--start-only] [--update-expected] [--changing-rules on|off]
         plays the season jump, then compares its report
 
+    python3 tests/seasons/rules_report_check.py --league-advance <report> [<report> ...]
+        the gate check of the divisions (league_stalls): at the end of each season every division's edition must
+        have moved on since the end of the season before; the reports of the legs of one soak read in leg order
+
 Runs:
     per slice   --year X --last X+1: two seasons from the start in X (about 6 minutes with England alone)
     release     the base game from 2001 with --last 2027: 27 seasons (about 65 minutes with England alone)
@@ -221,6 +225,52 @@ def league_playoffs():
             raise SystemExit("encode_leagues.py: " + problems[0])
         _LEAGUE_PLAYOFFS.update((e["id"], e) for e in rows)
     return _LEAGUE_PLAYOFFS
+
+
+
+def league_stalls(comps, rows=None):
+    """Gate check (O278, O282): the divisions whose edition does not move on from one season to the next. comps: the
+    comp lines of one or more reports, the legs of a soak in leg order. A division is a file of a table row with a
+    numbered tier. Each object (its slot) holds a year at the end of each season (1 June). It must be later than at
+    the end of the season before, unless the object waits for a later edition (its year is after the season). The
+    first value of a season is kept, because a loaded leg writes the state at the load under the season of the save.
+    A season with a start report (1 August) and no end report (the last season of a run that ends before June) is
+    checked at its start, but only for an object that holds the season's own year at two or more other season starts
+    of the run, and at all of them. Argentina's leagues move on around 1 August (some starts hold the year before),
+    so their start report is not read. A league
+    that stops (Serie A at its 2015 edition from 2016/17 on) keeps its year. Objects with no year (1900 to 2200)
+    give no line, as in differences(). Returns lines "<season>: <file> (<name>) ..."."""
+    if rows is None:
+        rows = make_rules.read_rows()
+    divisions = {f for r in rows if isinstance(r["tier"], int) for f in row_files(r)}
+    years = {"start": collections.defaultdict(dict), "end": collections.defaultdict(dict)}
+    names = {}
+    for c in comps:
+        if c["phase"] in years and c["kind"] == "league" and c["file"] in divisions and 1900 <= c["year"] <= 2200:
+            years[c["phase"]][(c["slot"], c["file"])].setdefault(c["season"], c["year"])
+            names[(c["slot"], c["file"])] = c["name"]
+    out = []
+    for key in sorted(names):
+        ends, starts = years["end"].get(key, {}), years["start"].get(key, {})
+        for season in sorted(ends):
+            before, now = ends.get(season - 1), ends[season]
+            if before is not None and before <= season - 1 and now <= before:
+                out.append(f"{season}: {key[1]} ({names[key]}) holds edition {now} at the end of "
+                           f"{season}/{(season + 1) % 100:02d}, as at the end of the season before: it did not move on")
+        for season in sorted(starts):
+            before = ends.get(season - 1)
+            if season in ends or before is None or before > season - 1:
+                continue
+            # The object moved on by 1 August in this run: at two or more other season starts it holds the
+            # season's own year, and at no other start an earlier one.
+            others = [starts[x] - x for x in starts if x != season]
+            if len(others) < 2 or any(d < 0 for d in others) or not all(d == 0 for d in others):
+                continue
+            if starts[season] <= before:
+                out.append(f"{season}: {key[1]} ({names[key]}) holds edition {starts[season]} at the start of "
+                           f"{season}/{(season + 1) % 100:02d}, as at the end of the season before, though it moved "
+                           f"on by 1 August in the other seasons of the run: it did not move on")
+    return out
 
 
 def differences(seasons, comps, rows):
@@ -737,6 +787,13 @@ def main(argv):
         print(__doc__)
         return 2
     update = "--update-expected" in argv
+    if argv[1] == "--league-advance":
+        comps = [c for path in argv[2:] for c in read_report(path)[1]]
+        stalls = league_stalls(comps)
+        for line in stalls:
+            print(f"FAIL  {line}")
+        print("PASS" if not stalls else f"FAILED: {len(stalls)}")
+        return 1 if stalls else 0
     if argv[1] != "--run":
         failed = check(argv[1], expected=arg(argv, "--expected"), update=update, data_dir=arg(argv, "--data"),
                        start_only="--start-only" in argv)
