@@ -814,12 +814,19 @@ RT_WRAP(0056b2b0, groups_auto_fate_news)
      * at 0x63f134: its groups are stages 0 to 6) and writes a tie only for the knockout. So an EFL Trophy item of a
      * group stage takes Comp's text 0x48c6d0 (the version of ScoLgeCup, TurCup and Cup_Stage), and the knockout
      * stage (number groups) keeps EngAutoCup's own text with its tie. */
-    /* RECOMP_TEST_GROUP_FATE=original turns the routing and the safety net off (the retest of the old box). */
-    static int original = -1, logged;
+    /* RECOMP_TEST_GROUP_FATE=original turns the routing and the safety net off (the retest of the old box); =log logs
+     * every call. */
+    static int original = -1, logged, every;
     if (original < 0) {
         const char *v = getenv("RECOMP_TEST_GROUP_FATE");
         original = v && !strcmp(v, "original");
+        every = v && !strcmp(v, "log");
     }
+    if (every)
+        fprintf(stderr, "recomp: cup groups: fate text call: stages %d of %d, stage %d, fate %d, fixture %08x, full %08x\n",
+                (int32_t)rd32(g_mem, cpu.ecx + CUP_STAGE_COUNT), layout(cpu.ecx) ? layout(cpu.ecx)->groups : -1,
+                (int8_t)g_mem[cpu.esp + 0xcu], (int8_t)g_mem[cpu.esp + 8u], rd32(g_mem, cpu.esp + 0x14u),
+                rd32(g_mem, cpu.esp + 0x24u));
     if (original) {
         o_0056b2b0();
         return;
