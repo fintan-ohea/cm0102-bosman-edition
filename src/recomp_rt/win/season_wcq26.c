@@ -900,6 +900,16 @@ static int cup_status(uint32_t cup, uint32_t team)
  * start_new_season of 25 July, so the finals take the same six again (no state of this file goes into a save). */
 static int tournament_six(uint32_t self, uint32_t six[6])
 {
+    /* A start after the qualifying began (O259 A9, O274): the real six, in the order of the real bracket. */
+    int y = year_of(self) + 2, real = 0;
+    if (season_intl_late_start("world_cup", y))
+        for (int k = 0; k < 6; k++) {
+            const char *name = season_intl_real_tie(y, k);
+            six[k] = name ? season_intl_team_named(name) : 0;
+            if (rt_unwinding) return 0;
+            real += six[k] != 0;
+        }
+    if (real == 6) return 1;
     static const uint32_t continent[6] = {0x9cfa18u, 0x9cfa1cu, 0x9cfa14u, 0x9cfa14u, 0x9cfa08u, 0x9cfa0cu};
     static const int direct[6] = {1, 6, 6, 6, 9, 8};    /* CONCACAF: 3 places and the 3 hosts */
     static const char *const conf[6] = {"OFC", "CONMEBOL", "CONCACAF", "CONCACAF", "CAF", "AFC"};

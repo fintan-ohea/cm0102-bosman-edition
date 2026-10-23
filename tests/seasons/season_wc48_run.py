@@ -58,6 +58,10 @@ LINES = {
              "wc qualifying 2026: path A", "wc qualifying 2026: Europe draws", "world_cup 2026 host",
              "wc qualifying 2026: Europe pool of 54 nations (Russia out"],
     "2025": ["world_cup 2026 draw of 48 teams in 12 groups", "world_cup 2026 round of 32",
+             # A start after the qualifying began: the real draw and play-off tournament (O259 A9, O274).
+             "world_cup 2026: the real draw, 48 of 48 teams",
+             "wc play-off 2026: seeds Democratic Republic of Congo, Iraq; semi-finals New Caledonia v Jamaica, "
+             "Bolivia v Surinam",
              "world_cup 2030 has 12 stages and 48 slots", "world_cup 2030 host Uruguay",
              "wc qualifying 2030: Europe draws"],
     "off": ["world_cup 2026 draw of 48 teams in 12 groups", "world_cup 2026 round of 32"],

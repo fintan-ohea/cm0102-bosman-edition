@@ -126,7 +126,8 @@ const char *season_intl_real_draw(const char *file, int year);
 /* 1 in a season game that starts in the finals' season or the one before, for an edition of that table. */
 int season_intl_late_start(const char *file, int year);
 /* The real inter-confederation play-off of a World Cup (O259 A16): k 0 the AFC team, 1 its partner, 2 and 3 the
- * other tie; NULL when the table has none. */
+ * other tie; for 2026 the six of the play-off tournament (k 0 to 5, season_wcq26.c); NULL when the table has
+ * none. */
 const char *season_intl_real_tie(int year, int k);
 /* The national team of the first nation that one of the names ('/' between them) gives: no case, not a dead
  * record, a continent; 0 when the data has none (season_intl.c). */
