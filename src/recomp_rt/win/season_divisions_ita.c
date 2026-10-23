@@ -1334,7 +1334,7 @@ void o_00768940(void);
 
 /* An ended C2 group: its object waits for year 2999, or it has none (no league for an ended division, A23): the
  * award functions read the object of the id (0x768944..0x768950: no object gives a box at 0x76895a;
- * 0x768cfd..0x768d05 with no test). */
+ * 0x768cfd..0x768d05 with no test; 0x7698f0 below). */
 static int ended_c2(int32_t id, uint32_t obj)
 {
     if (readable(obj)) return c2_group(obj) >= 1 && (int16_t)rd16(g_mem, obj + 0x40) == IDLE_YEAR;
@@ -1367,4 +1367,20 @@ RT_WRAP(00768cf0, ita_player_award)
         return;
     }
     o_00768cf0();
+}
+
+/* The team of the season of a division (NationAwards::award_team_of_season 0x7698f0, thiscall (comp id, award) ret 8;
+ * C2/B and C2/C at 0x6612f4, 0x66130c with the flag) stops at nation_awards.cpp 1624 when the id has no object
+ * (0x76990f, box at 0x769acc): no award for an ended C2 group either. */
+void o_007698f0(void);
+
+RT_WRAP(007698f0, ita_team_award)
+{
+    int32_t id = (int32_t)rt_arg(0);
+    uint32_t table = rd32(g_mem, COMP_OBJECTS), obj = id >= 0 && readable(table) ? rd32(g_mem, table + 4u * (uint32_t)id) : 0;
+    if (ended_c2(id, obj)) {
+        rt_ret_stdcall(cpu.eax, 2);
+        return;
+    }
+    o_007698f0();
 }
