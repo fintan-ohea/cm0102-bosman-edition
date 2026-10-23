@@ -21,9 +21,10 @@ The checks of each leg:
       script stops the game by its PID at the first one, so a box does not wait for the timeout
     - the program ends with code 0
     - a leg that must save leaves samesave.sav in its user folder
-At the end: the last leg's rules report holds the end of --last. The run folder holds one folder per leg (leg00,
-leg01, ...) with its stderr.txt, report.tsv and user folder, and soak.tsv with one line per leg (leg, the season
-it starts in, the result, seconds, the first box).
+At the end: the last leg's rules report holds the end of --last, and over the reports of all legs every
+division's edition moves on from the end of one season to the next (rules_report_check.league_stalls). The run
+folder holds one folder per leg (leg00, leg01, ...) with its stderr.txt, report.tsv and user folder, and soak.tsv
+with one line per leg (leg, the season it starts in, the result, seconds, the first box).
 
 A leg of Select All takes about 20 to 60 minutes on a loaded machine (a 2001 game to 2027/28: 27 legs). The script
 starts one game at a time and waits while /Users/max/Projects/cm0102/run-logs/HOLD exists, while 15 or more games
@@ -193,6 +194,10 @@ def main(argv):
         seasons, _ = rrc.read_report(os.path.join(o["keep"], f"leg{o['last'] - o['start']:02d}", "report.tsv"))
         if not seasons or seasons[-1]["season"] != o["last"] or seasons[-1]["phase"] != "end":
             fails.append(f"the last leg's report does not end with the end of {o['last']}/{(o['last'] + 1) % 100:02d}")
+    # Every division moves on from one season to the next (rules_report_check.league_stalls, O278), all legs.
+    reports = [os.path.join(o["keep"], f"leg{n:02d}", "report.tsv") for n in range(o["last"] - o["start"] + 1)]
+    comps = [c for r in reports if os.path.exists(r) for c in rrc.read_report(r)[1]]
+    fails += [f"league stall: {line}" for line in rrc.league_stalls(comps)]
     for f in fails:
         print(f"FAIL  {f}")
     print("PASS" if not fails else f"FAILED: {len(fails)}")
