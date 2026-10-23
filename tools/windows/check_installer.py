@@ -145,8 +145,9 @@ def folder_files(root):
 
 def nsis_game_files(log, game_dir):
     """{path: size} of the files that makensis -V4 adds under $INSTDIR\\game. The log has
-    'SetOutPath: "$INSTDIR\\game"', then 'File: "name" [compress] N bytes' lines, with 'File: Descending to:'
-    and 'File: Returning to:' lines for the folders."""
+    'SetOutPath: "$INSTDIR\\game"', then 'File: "name" [compress] N bytes' lines (makensis 3.x writes
+    'File: "name" N bytes', or 'File: "name" C/N bytes' for a compressed file: N is the size), with
+    'File: Descending to:' and 'File: Returning to:' lines for the folders."""
     root = os.path.realpath(game_dir)
     out, in_game, cur = {}, False, ""
     for line in open(log, encoding="utf-8", errors="replace"):
@@ -163,7 +164,7 @@ def nsis_game_files(log, game_dir):
             cur = os.path.relpath(os.path.realpath(m.group(1)), root).replace(os.sep, "/")
             cur = "" if cur == "." else cur
             continue
-        m = re.match(r'^File: "([^"]+)"(?:->"[^"]*")? \[[^\]]*\] (\d+) bytes', line)
+        m = re.match(r'^File: "([^"]+)"(?:->"[^"]*")?(?: \[[^\]]*\])? (?:\d+/)?(\d+) bytes', line)
         if m:
             out[(cur + "/" if cur else "") + m.group(1)] = int(m.group(2))
     return out
