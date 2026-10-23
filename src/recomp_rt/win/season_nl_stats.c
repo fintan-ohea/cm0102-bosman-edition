@@ -2,6 +2,7 @@
  * doc docs/research/2026-10-18-nations-league.md, section "National team stats in the club records". */
 #include "win.h"
 #include "season_comps.h"
+#include "season_nl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,4 +70,41 @@ RT_WRAP(0048dd70, nl_fixture_type_log)
     fprintf(stderr, "recomp: season nl: fixture of %.50s, %.50s v %.50s, gets type %d\n", (char *)(g_mem + rec + 4),
             home >= 0x10000u ? (char *)(g_mem + home + 4) : "", away >= 0x10000u ? (char *)(g_mem + away + 4) : "",
             (int8_t)cpu.eax);
+}
+
+/* Test log (RECOMP_SEASON_NL_LOG=1) for O322: a player who gets his first national team stats record
+ * (category 5) in a Finalissima match. PlayerStats::record_match 0x7c0d70, thiscall (fixture, ...), ret 8, finds
+ * the competition at [0xadadfc][fixture +0] (0x7c0ee5..0x7c0eef) and calls create_stats 0x7c5d80, thiscall
+ * (player, category), ret 8, for a player with no record of the category (0x7c10e6..0x7c10f9). Both only log. */
+void o_007c0d70(void);
+void o_007c5d80(void);
+static int in_finalissima;
+
+RT_WRAP(007c0d70, nl_record_match_log)
+{
+    uint32_t fixture = rt_arg(0), comp = 0;
+    if (logging() && fixture >= 0x10000u) {
+        int32_t id = (int32_t)rd32(g_mem, fixture);
+        uint32_t table = rd32(g_mem, 0xadadfcu);
+        if (id >= 0 && table >= 0x10000u) comp = rd32(g_mem, table + 4u * (uint32_t)id);
+    }
+    int was = in_finalissima;
+    in_finalissima = comp >= 0x10000u && season_finalissima_object(comp);
+    o_007c0d70();
+    in_finalissima = was;
+}
+
+RT_WRAP(007c5d80, nl_create_stats_log)
+{
+    uint32_t player = rt_arg(0);
+    int category = (int8_t)rd8(g_mem, cpu.esp + 8u);
+    if (in_finalissima && category == 5) {
+        uint32_t staff = rd32(g_mem, 0xae23bcu), n = rd32(g_mem, 0xae2364u), sp = 0;
+        for (uint32_t i = 0; staff >= 0x10000u && i < n && !sp; i++)
+            if (rd32(g_mem, staff + i * 0x6eu + 0x61u) == player) sp = staff + i * 0x6eu;
+        uint32_t nation = sp ? rd32(g_mem, sp + 0x1a) : 0;
+        fprintf(stderr, "recomp: season nl: finalissima: a player of %.30s gets his first national team stats record\n",
+                nation >= 0x10000u ? (char *)(g_mem + nation + 4) : "?");
+    }
+    o_007c5d80();
 }

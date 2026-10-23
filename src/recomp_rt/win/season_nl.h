@@ -167,6 +167,7 @@ int season_gold_cup_teams(uint32_t self);        /* its teams in the edition it 
 int season_gold_cup_date_shift(uint32_t self, int *shift);   /* 1 for the Gold Cup: *shift in days */
 uint32_t season_gold_cup_entrants(uint32_t self);            /* the entrants into +0xee; 1, or 0 */
 int season_gold_cup_record(uint32_t rec);
+int season_finalissima_object(uint32_t obj);     /* 1 for the Finalissima object in a season game */
 /* The Finalissima's round table in the wrap of 0x57a3c0 (season_uefa_super_cup.c): 1 when handled. */
 int season_finalissima_round_table(void (*original)(void));        /* 1 for the record of the Gold Cup or the Finalissima */
 /* 1 for the record of an object of slice 28 (season_nl.c): its fixtures are international (0x669ae0). */
