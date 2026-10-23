@@ -22,6 +22,8 @@ CALLBACK_FILES = ("picker.c", "assistant.c", "commentary.c", "holiday_next.c", "
 
 # address: (bytes of the first eight, name)
 CALLBACKS = {
+    # O260 A15 (call_up_news.c): the repeats of the national squads before the call-up news.
+    0x76C060: ("51535532c0565788", "national_teams_remove_duplicate_squad_entries (nation), ret 4"),
     # Slice 21c (season_super_cups.c): the clubs and rounds of the super cups.
     0x521E60: ("8b4c24148b442418", "cup_set_round_draw_date (table, round, day, month, year+, weekday, year), cdecl"),
     0x521EB0: ("8b4c24148b442418", "cup_set_round_match_date (table, round, day, month, year+, weekday, slot, year, venue)"),
