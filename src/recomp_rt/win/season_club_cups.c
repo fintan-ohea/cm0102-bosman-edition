@@ -606,8 +606,13 @@ static int fill_clubs(const ClubCup *k, uint32_t obj, int again)
     uint32_t out[MAX_CLUBS] = {0};
     int m = k->pick(k, obj, year, out, n);
     if (rt_unwinding) return 0;
+    /* Net (guard review row A27): the pickers give the edition's count from the clubs of the data, in every tested
+     * database (club_cups_check.py 2002-on, 2010-on, 2016-on, 2024-on: no short pick). Only a database with fewer
+     * clubs of a continent than the edition needs can reach the fill below, which takes the clubs of the highest
+     * reputation of South America, then Europe; the log names such a pick. */
     if (m < n)
-        fprintf(stderr, "recomp: club cup %s %d: the pick gave %d of %d clubs\n", k->def->file, year, m, n);
+        fprintf(stderr, "recomp: club cup %s %d: the pick gave %d of %d clubs, the net fills the rest\n",
+                k->def->file, year, m, n);
     for (uint32_t cont = CONT_SOUTH_AMERICA; m < n;) {         /* never fewer clubs than the tree holds */
         uint32_t c = season_comps_top_club(cont, out, m);
         if (!c) { if (cont == CONT_EUROPE) break; cont = CONT_EUROPE; continue; }
@@ -915,9 +920,13 @@ RT_WRAP(004c11a0, con_champ_pick)
     if (rt_unwinding || !is_con_champ(obj)) return;
     int n = (int16_t)rd16(g_mem, obj + CLUB_COUNT_AT);
     uint32_t list = rd32(g_mem, obj + CLUB_LIST_AT);
-    for (int i = 0; list && i < CON_CHAMP_ORIGINAL; i++)             /* A27 research log */
+    /* An original place stays empty when its list of ConChamp::select_qualified_clubs is shorter than its share
+     * (Mexico 2, the regional groups of nation +0x75 = 7 and 6, 3 and 1, the MLS 1; 0x4c12be..0x4c1309) or the MLS
+     * record has no placed club (0x4afd80, 0x4c13a6). No tested database leaves one empty (guard review row A27);
+     * the log names such a place, and the fill below gives it a club. */
+    for (int i = 0; list && i < CON_CHAMP_ORIGINAL; i++)
         if (!rd32(g_mem, list + 6u * (uint32_t)i))
-            fprintf(stderr, "recomp: concacaf champions %d: the original's place %d has no club\n",
+            fprintf(stderr, "recomp: concacaf champions %d: the original's place %d has no club, the net fills it\n",
                     (int16_t)rd16(g_mem, obj + YEAR_AT), i);
     if (n <= CON_CHAMP_ORIGINAL || n > MAX_CLUBS || !list || !concacaf_count((int16_t)rd16(g_mem, obj + YEAR_AT)))
         return;
