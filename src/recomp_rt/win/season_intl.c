@@ -70,6 +70,7 @@ static const struct { const char *file; uint32_t key; } host_comps[] = {
 };
 #define HOST_COMPS ((int)(sizeof host_comps / sizeof host_comps[0]))
 #define KEY_CONFED 0x9cf964u
+#define CONFED_ANY_YEAR 2200            /* the year that the Confederations Cup row of every year moves to */
 
 static int logging(void)
 {
@@ -250,7 +251,19 @@ static void hosts_apply(uint32_t self, int from_season, int sort)
     uint32_t rows = rd32(g_mem, self);
     int count = (int16_t)rd16(g_mem, self + 4);
     if (!readable(rows) || count <= 0 || count > 1000) return;
+    /* The Confederations Cup row of every year (year 0, host redrawn by 0x5fab70) would come first in find_hosts,
+     * before the rows of the table: it leaves for a year that no game reaches (2200, below). In its place each
+     * year from the start that has no edition in the table gets its own copy, so find_hosts still finds a host
+     * there: with changing rules off the original holds the cup every two years after 2017 (fifa_confed..cpp 870,
+     * 0x58c7b5, in a 2016 start on 5 January 2019). */
+    uint32_t confed = rd32(g_mem, KEY_CONFED), any = 0;
+    if (confed != 0xffffffffu) {
+        any = row_find(rows, count, confed, 0);
+        if (!any) any = row_find(rows, count, confed, CONFED_ANY_YEAR);
+    }
     int extra = 0;
+    for (int y = from_season; any && y <= SEASON_LAST_YEAR + 4; y++)
+        if (!season_intl_edition("fifa_confed", y) && !row_find(rows, count, confed, y)) extra++;
     for (int c = 0; c < HOST_COMPS; c++) {
         uint32_t key = rd32(g_mem, host_comps[c].key);
         if (key == 0xffffffffu) continue;
@@ -271,19 +284,23 @@ static void hosts_apply(uint32_t self, int from_season, int sort)
         uint32_t old[1] = {rows};
         call_cdecl(GAME_FREE, 1, old);
         if (rt_unwinding) return;
+        if (any) any = now + (any - rows);
         rows = now;
         wr32(g_mem, self, rows);
     }
     int used = count;
+    for (int y = from_season; any && y <= SEASON_LAST_YEAR + 4; y++) {
+        if (season_intl_edition("fifa_confed", y) || row_find(rows, used, confed, y)) continue;
+        uint32_t row = rows + (uint32_t)used++ * ROW_SIZE;
+        memcpy(g_mem + row, g_mem + any, ROW_SIZE);
+        wr16(g_mem, row + ROW_YEAR, (uint16_t)y);
+        wr8(g_mem, row + ROW_CYCLE, 0);
+    }
     for (int c = 0; c < HOST_COMPS; c++) {
         uint32_t key = rd32(g_mem, host_comps[c].key);
         if (key == 0xffffffffu) continue;
-        if (key == rd32(g_mem, KEY_CONFED)) {
-            /* The Confederations Cup row of every year (year 0, host redrawn by 0x5fab70) would come first in
-             * find_hosts: it leaves for the year that no game reaches. */
-            uint32_t any = row_find(rows, used, key, 0);
-            if (any) wr16(g_mem, any + ROW_YEAR, 2200);
-        }
+        if (key == confed && any && (int16_t)rd16(g_mem, any + ROW_YEAR) == 0)
+            wr16(g_mem, any + ROW_YEAR, CONFED_ANY_YEAR);       /* see the top of the function */
         for (int i = 0; i < season_intl_edition_count; i++) {
             const SeasonIntlEdition *e = &season_intl_editions[i];
             if (strcmp(e->file, host_comps[c].file) || e->season < from_season) continue;
@@ -807,8 +824,11 @@ RT_WRAP(0057c120, euro_add_qualified)
     if (season_intl_on()) season_euro_slots_after_load(self);    /* slice 28: no slot array after a load */
     if (rt_unwinding) return;
     cpu.ecx = self;
+    /* A safety net (O260 A12): the cause, the club addresses of the 24-team draw where the group builders take
+     * club indexes (0x57b5e4..0x57b5fd), is fixed in season_intl_euro.c. The line is always written, so a run
+     * shows any qualifier with no nation. */
     if (season_intl_on() && !team_nation(rt_arg(0))) {
-        if (logging()) fprintf(stderr, "recomp: season intl: euro_champ: a qualifier with no nation stays out\n");
+        fprintf(stderr, "recomp: season intl: euro_champ: a qualifier with no nation stays out\n");
         rt_ret_stdcall(0, 1);
         return;
     }

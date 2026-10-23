@@ -1043,7 +1043,16 @@ RT_WRAP(00519a90, cup_honours)
 
 /* Uefa_Cup slot 17 0x9030e0: the base 0x519890 does nothing for a cup with stages (+0x2c, 0x5198a3); here it
  * runs as for the original's UEFA Cup (the title holder of 0x519974, the staff records). A round index past the
- * round table is not read (0x5199e0..0x5199e6). */
+ * round table is not read (0x5199e0..0x5199e6).
+ *
+ * The club's European mark (O270). 0x9030e0 clears club +0x1db for the outcomes 1, 2 and -1 (0x9030e8..0x9030f4):
+ * in the original's UEFA Cup, a knockout from start to final, each of them ends the club's cup. With groups the
+ * round table ends at the last qualifying round, so its winners get outcome 1 there (the round codes of the access
+ * list, 220 to 270, as 0x4b0870 rounds them) and lost the mark, though they go on into the groups. The registration
+ * of 2 February (process_euro_registration 0x85a9b0, phase 3, at 0x85aa5c) then left them out, and in the knockout
+ * rounds only the players registered in August could play: Leeds United had 10 on 14 February 2012 and the match
+ * stopped at match_eng.cpp 652 (0x6b8aca). Such a winner keeps its mark; the group stage takes it off the clubs
+ * that go out (draw_knockout, draw_knockout_po). */
 RT_WRAP(009030e0, uc_result)
 {
     uint32_t uc = cpu.ecx;
@@ -1051,10 +1060,49 @@ RT_WRAP(009030e0, uc_result)
         o_009030e0();
         return;
     }
+    uint32_t club = rt_arg(0), fixture = rt_arg(4), mark = readable(club) ? rd32(g_mem, club + 0x1db) : 0;
+    int outcome = (int8_t)rt_arg(1), code = readable(fixture) ? (int16_t)rd16(g_mem, fixture + 0x30) : 0;
+    int base = code < 1000 ? code - code % 10 : code;
+    int keep = outcome == 1 && base >= 220 && base <= 270;
     uint32_t stages = rd32(g_mem, uc + 0x2c);
     wr32(g_mem, uc + 0x2c, 0);
     o_009030e0();
     wr32(g_mem, uc + 0x2c, stages);
+    if (keep && !rt_unwinding) wr32(g_mem, club + 0x1db, mark);
+}
+
+void o_00903120(void);
+
+/* Uefa_Cup slot 22 0x903120, collect_club_list (out, phase), ret 8: the clubs that the registration of each deadline
+ * registers (process_euro_registration 0x85a9b0 at 0x85aa47, phases 1 to 3 on 4 August, 1 September and
+ * 2 February, uefa_check_registration_deadlines 0x9058e0). It takes the clubs of one round of the round table: the
+ * round count +0x3c less 8, 7 or 4 (0x9031c2..0x9031f1), so in the original's UEFA Cup, a knockout of eight
+ * rounds, phase 3 lists the clubs of the round of 16 in February. With groups the round table holds only the
+ * qualifying rounds, so phase 3 listed qualifying clubs, and the clubs of the knockout rounds were not registered
+ * again (O270: Leeds United had 10 players to play on 14 February 2012, the box match_eng.cpp 612/652). Here
+ * phase 3 lists the clubs whose European mark +0x1db is the cup's record id: the clubs still in it (the group
+ * stage takes the mark off the clubs that go out, draw_knockout, and a Champions League third gets it,
+ * season_uefa.c). The array is the game's own (0x944e46), which the caller frees (0x85aaa9). */
+RT_WRAP(00903120, uc_registration_clubs)
+{
+    uint32_t uc = cpu.ecx, out = rt_arg(0), phase = rt_arg(1) & 0xffu, rec = rd32(g_mem, uc + 4);
+    if (phase != 3 || !groups_layout(uc) || !readable(out) || !readable(rec)) {
+        o_00903120();
+        return;
+    }
+    uint32_t id = rd32(g_mem, rec), table = rd32(g_mem, 0xae23b4u);
+    int32_t clubs = (int32_t)rd32(g_mem, 0xae235cu), n = 0;
+    for (int32_t i = 0; readable(table) && i < clubs; i++)
+        n += rd32(g_mem, table + (uint32_t)i * 0x245u + 0x1db) == id;
+    uint32_t list = game_malloc(4u * (uint32_t)(n ? n : 1));
+    if (rt_unwinding) return;
+    int32_t k = 0;
+    for (int32_t i = 0; readable(list) && i < clubs && k < n; i++) {
+        uint32_t club = table + (uint32_t)i * 0x245u;
+        if (rd32(g_mem, club + 0x1db) == id) wr32(g_mem, list + 4u * (uint32_t)k++, club);
+    }
+    wr32(g_mem, out, list);
+    rt_ret_stdcall(readable(list) ? (uint32_t)k : 0u, 2);
 }
 
 /* ---- The Intertoto Cup of 3 rounds, its 11 winners in the UEFA Cup Q2 (change point U3: 2006 to 2008) ----

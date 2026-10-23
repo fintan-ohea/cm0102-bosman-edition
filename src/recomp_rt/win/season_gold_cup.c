@@ -579,7 +579,22 @@ static uint32_t finalissima_make(const SeasonCompDef *d, uint32_t rec, int year,
     making_rec = 0;
     if (rt_unwinding || !readable(obj)) return 0;
     wr32(g_mem, obj, v);
+    /* O322 (A4): the competition kind +0x42 of a match of national sides. The class's ctor writes 2, the kind of
+     * a club cup (0x57a167), and the Cup load reads the saved byte back (0x51fc00). PlayerStats::record_match
+     * 0x7c0d70 gives a match of kind 4 the national team stats (category 5, 0x7c0f26..0x7c0f2f) and of kind 2
+     * the club cup stats (category 4, 0x7c0f34..0x7c0f38), and Club_Records::update_records_for_match 0x444930
+     * asks a national side's players for category 5 (0x445f7b..0x445f96), with the box "club_records.cpp 794"
+     * (0x44602d) when a player has none. With kind 2 a Finalissima player with no earlier national match had
+     * none. Kind 4 is the byte of the other national competitions (copa_america 0x5e06bc, WorldCup 0x92bfab).
+     * Written after the ctor, so a new object and a loaded one both have it. */
+    wr8(g_mem, obj + 0x42u, 4);
     return obj;
+}
+
+/* 1 for the Finalissima object (season_nl_stats.c test log). */
+int season_finalissima_object(uint32_t obj)
+{
+    return is_finalissima(obj);
 }
 
 /* Part b (Q368): the Finalissima on a new record with the ids of the Confederations Cup record (a competition of

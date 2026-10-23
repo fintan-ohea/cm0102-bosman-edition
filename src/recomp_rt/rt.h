@@ -306,6 +306,9 @@ uint32_t rt_discipline_oceania_body(void);
 /* The ruling body's held ban (win/discipline_ban.c, tools/recomp/discipline_ban.py at 0x7e833c): 1 goes on without
  * the box ruling_body..cpp 661, 0 when the fix is off. */
 uint32_t rt_ruling_body_held(uint32_t body, uint32_t staff);
+/* The loan's ban hold and restore (win/season_new_cups.c, tools/recomp/discipline_ban.py at 0x55647d, 0x55671e): 1
+ * when a domestic body of one nation applies at a club of the other through the All-Ireland cup. */
+uint32_t rt_ban_nation_applies(uint32_t club, uint32_t body);
 /* The club count of a league in a season game (0.6.0 slice 18, src/recomp_rt/win/season_sizes.c): the
  * patched stores of tools/recomp/league_sizes.py in create_table read it in place of the class's constant. */
 uint32_t rt_league_clubs(uint32_t obj, uint32_t original);
@@ -325,8 +328,10 @@ uint32_t rt_league_dates(uint32_t obj, uint32_t original);
 uint32_t rt_cup_room(uint32_t original, uint32_t entrants, uint32_t key_a, uint32_t key_b, uint32_t key_c);
 uint32_t rt_cup_add(uint32_t original, uint32_t base, uint32_t entrants, uint32_t key_a, uint32_t key_b);
 uint32_t rt_fra_lge_first(uint32_t original, uint32_t edx);   /* FraLgeCup first loop limit (0x5bd244) */
+uint32_t rt_fa_cup_takes(uint32_t esp);   /* EngFaCup places by pool (0x56ffe4) */
 uint32_t rt_fra_cfa_lower_cap(uint32_t original);              /* FraCfa lower club cap (0x5b92e8) */
 uint32_t rt_ita_cup_first_position(uint32_t original);   /* ItaCup second loop start (0x63fb16) */
+uint32_t rt_promote_expected(uint32_t league, uint32_t up, uint32_t original);  /* ItaSerA chain counts (0x642476) */
 /* Italy's Serie C of three groups (0.6.0 slice 20b, win/season_divisions_ita.c, tools/recomp/new_divisions.py). */
 uint32_t rt_ita_table_bytes(uint32_t obj, uint32_t original);
 uint32_t rt_ita_c2a_clubs(uint32_t obj, uint32_t original);
@@ -357,6 +362,7 @@ uint32_t rt_season_text_format(uint32_t original);
  * year, and the Copa Mercosur does not start itself while it waits. The sites of tools/recomp/seasons.py read
  * these. In the base game each gives the original's value. */
 uint32_t rt_club_world_annual(void);
+uint32_t rt_mls_round_flags(uint32_t flags);   /* season_mls.c */
 uint32_t rt_club_world_step(uint32_t original);
 uint32_t rt_oceania_step(uint32_t original);
 uint32_t rt_club_world_month(uint32_t original);

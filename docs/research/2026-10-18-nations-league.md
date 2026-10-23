@@ -61,6 +61,7 @@ No new field. The object saves and loads as every League object (League::save 0x
 - **No Nations League tables** (a game that started after the edition): the paths take the best of the nations that did not qualify, by group place and points.
 - **The Euro draw.** The Euro's seeding (+0x13e) and draw (+0xb6) days move to two and four days after the path finals, when the paths are built. Both are saved (0x57c5e9, 0x689411; class doc 12.2).
 - The real path rules of 2024 also used a draw for some places; the rule here is the ranking (an inference that matches the real Euro 2020 paths, test `season_nl`).
+- **Euro 2028** (O320): the real matchdays of 2027, two places for the best-ranked hosts that do not qualify, and a play-off of 2 or 3 paths of 4 or 4 two-leg ties by the host places in use. Sources and decisions: `2026-10-23-euro-2028-qualifying.md`.
 
 ## Decisions for Max to confirm
 
@@ -113,7 +114,7 @@ An object of the class `Eur_Super_Cup` (ctor 0x57a100) on its own record, made i
 15. **The Gold Cups of 2002 and 2003** (4 groups of 3) are not played: the first Gold Cup of a game is 2005 or later.
 16. **The Finalissima** plays only in 2022, with changing rules on or off (2026 was cancelled). It plays at the first team's ground (the Euro winner), not at Wembley: the class has no neutral ground by record. A winner missing from the history (a season database) is replaced by the strongest nation of its continent.
 17. **The Confederations Cup** keeps its CONCACAF place (the original's random pick, 0x58cd7c), not the Gold Cup winner.
-18. **Euro 2028** takes slice 27's fill for the places that its groups do not fill, not Nations League paths (section "Euro 2028 qualifying").
+18. **Euro 2028** (changed by O321): the real matchdays, the two host places and the Nations League play-off, as section "Euro 2028 qualifying" says. The first decision gave it slice 27's fill.
 19. **The Gold Cup's hosts**: the first two hosts of each edition from the table; the unknown 2027 host is the United States.
 20. **Gold Cup with changing rules off** follows Q398: only when the start season holds a Gold Cup.
 
@@ -129,7 +130,7 @@ The repair (`season_euro_slots_after_load`, season_nl_euro.c) runs in every seas
 
 ### Euro 2028 qualifying
 
-`season_nl_qualifying` holds Euro 2020, Euro 2024 and the 2022 World Cup. Euro 2028 qualifying plays the class's own calendar (from September of the campaign year, template 0x57d190), and its places that the groups do not fill come from slice 27's fill (`claude/fix-euro-2028`, every Euro from 2020): the strongest European nations not yet in, by reputation. Decision (for Max): Euro 2028 takes the fill, not Nations League paths. Why: the real Euro 2028 qualifying (groups from March 2027, play-offs in March 2028 from the 2026-27 Nations League) is announced only in outline, its matchdays are not in the table, and its five hosts (the four UK nations and Ireland) take places that the format of the table (no host places, row int-continental-287) does not give. A row with the real matchdays and paths can be added to `nations-league-dates.tsv` and `make_nl.py` QUALIFYING when the dates are known.
+`season_nl_qualifying` holds Euro 2020, Euro 2024, the 2022 World Cup and Euro 2028 (O321). The first decision for Euro 2028 was slice 27's fill for the places that its groups do not fill, because its format was only in outline. Under O151 and O259 a fill must not act in normal play, so Euro 2028 now has the announced format: the groups on the ten matchdays from March to November 2027, two places for the two best-ranked hosts (England, Republic of Ireland, Scotland, Wales) that do not qualify from the groups, and a play-off in March 2028 from the 2026-27 Nations League: 2 paths of 4, 3 paths of 4 or 4 two-leg ties, by the host places in use. The sources (with URLs and read dates), the decisions and the inferences: `2026-10-23-euro-2028-qualifying.md`.
 
 ### The Gold Cup's venue
 

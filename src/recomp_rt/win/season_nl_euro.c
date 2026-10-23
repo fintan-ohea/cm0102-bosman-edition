@@ -16,7 +16,12 @@
  * the list two by two (0x524a20) and bit 0x200 of the final's rule flags sends ties 2k and 2k + 1 to final tie
  * k (0x5245c3, class doc 12.1). Only a final winner gets status 1 (0x51af95), so only it goes into the Euro
  * through the class's slot 17 (add_qualified_team, 0x57d6a0). The Euro's seeding and draw then move to after
- * the path finals (+0x13e and +0xb6 of the Euro object, saved at 0x57c5e9 and 0x689411, class doc 12.2). */
+ * the path finals (+0x13e and +0xb6 of the Euro object, saved at 0x57c5e9 and 0x689411, class doc 12.2).
+ *
+ * Euro 2028 (docs/research/2026-10-23-euro-2028-qualifying.md, O320). Its four hosts (England, Republic of
+ * Ireland, Scotland, Wales) play the qualifying, and two places are kept for the two best-ranked hosts that do
+ * not qualify from the groups. The play-off then has the places that are left: with both host places in use 2
+ * paths of 4, with one 3 paths of 4 (single matches, as Euro 2024), with none 4 two-leg ties of 8. */
 #include "win.h"
 #include "season.h"
 #include "season_comps.h"
@@ -57,6 +62,10 @@
 #define EURO_SEED_DAY 0x13eu            /* words: day of the year and year offset (0x57b6ca, 0x57b6dd) */
 #define EURO_DRAW_DAY 0xb6u             /* (0x57b6f0, 0x57b709) */
 #define MAX_GROUPS 16
+#define EURO_ADD_TEAM 0x0057c120u       /* EuroChamp::add_qualified_team, thiscall (team), ret 4 (0x57d609) */
+#define NATIONS 0xae23a8u               /* the nation table, 0x122 bytes a nation, the name at +4 */
+#define NATION_ROW 0x122u
+#define NATION_COUNT 0xae2350u
 
 static int logging(void)
 {
@@ -113,6 +122,15 @@ static void game_free(uint32_t p)
     if (p) call_cdecl(GAME_FREE, 1, a);
 }
 
+/* The play-off shape of a campaign with paths 0 in the table (Euro 2028): build_paths sets it from the host
+ * places in use before it calls the template, so the template and the stage agree. Paths of four (2 or 3), or
+ * 0 for the 4 two-leg ties of 8 nations. */
+static int paths_by_hosts = 2;
+
+static int po_paths(const SeasonNlQualifying *q) { return q->paths > 0 ? q->paths : paths_by_hosts; }
+
+static int po_teams(const SeasonNlQualifying *q) { return po_paths(q) ? 4 * po_paths(q) : 8; }
+
 /* One round of the path play-off: its draw on the first day of the month of the matches, its match on the day
  * (weekday -1: no move, class doc 12.3), one leg with extra time and penalties (+0x0d 3, +0x21 1) and the fixed
  * bracket bit 0x200, the fields of the Euro's semi-final and final (0x57b0a2..0x57b194). */
@@ -145,6 +163,36 @@ void season_nl_path_round(uint32_t rec, int round, SeasonNlDate d, int campaign,
     wr8(g_mem, r + 0x22u, 0);
 }
 
+/* The one round of 4 two-leg ties (Euro 2028 with no host place in use): the fields of the class's own
+ * two-leg play-off (0x57d4bf..0x57d530: code 0xa0, +0x0f 3, +0x21 2, +0x22 4, 8 teams in 4 ties). Changes: the
+ * first leg on the path semi-final day and the second leg 3 days later (+0x22, docs/research/
+ * 2026-10-17-cup-round-record.md: the second leg comes +0x22 days after the first), so both legs fall in the
+ * real windows of 23-25 and 26-28 March 2028; no away goals (+0x0f bit 0x4, the same doc), as UEFA from 2021-22;
+ * bit 0x200 keeps the list's pairs (the class sets it at 0x57f437). */
+static void tie_round(uint32_t rec, SeasonNlDate d, int campaign, int teams)
+{
+    uint32_t a[7] = {rec, 0, 1, (uint32_t)(d.month - 1), (uint32_t)d.year, 0xffffffffu, (uint32_t)campaign};
+    call_cdecl(CUP_DRAW_DATE, 7, a);
+    if (rt_unwinding) return;
+    uint32_t b[9] = {rec, 0, (uint32_t)d.day, (uint32_t)(d.month - 1), (uint32_t)d.year, 0xffffffffu, 1,
+                     (uint32_t)campaign, 0};
+    call_cdecl(CUP_MATCH_DATE, 9, b);
+    if (rt_unwinding) return;
+    wr16(g_mem, rec + 7u, 0xa0u);
+    wr16(g_mem, rec + 9u, 0);
+    wr16(g_mem, rec + 0xbu, 0);
+    wr16(g_mem, rec + 0xdu, 0x200u);
+    wr16(g_mem, rec + 0xfu, 7u);
+    wr8(g_mem, rec + 0x17u, 0xa);
+    wr16(g_mem, rec + 0x18u, (uint32_t)teams);
+    wr16(g_mem, rec + 0x1au, (uint32_t)teams / 2u);
+    wr16(g_mem, rec + 0x1cu, (uint32_t)teams);
+    wr16(g_mem, rec + 0x1eu, 0);
+    wr8(g_mem, rec + 0x20u, 0);
+    wr8(g_mem, rec + 0x21u, 2);
+    wr8(g_mem, rec + 0x22u, 3);
+}
+
 void o_0057d190(void);
 
 /* EuroChampQual::create_schedule, thiscall (stage as a byte, short *rounds, short *code, int *is_league), ret
@@ -157,17 +205,18 @@ RT_WRAP(0057d190, nl_euro_qual_template)
     const SeasonNlQualifying *q = moved(self);
     int stage = (int8_t)rd8(g_mem, sp + 4u);
     if (q && stage == (int8_t)rd8(g_mem, self + F_PLAYOFF)) {
-        /* The path play-off: two cup rounds (0x68 bytes each, class doc 12.1). */
-        int teams = 4 * q->paths;
+        /* The path play-off: two cup rounds (0x68 bytes each, class doc 12.1), or one round of two-leg ties. */
+        int teams = po_teams(q), rounds = po_paths(q) ? 2 : 1;
         uint32_t out_rounds = rd32(g_mem, sp + 8u), out_code = rd32(g_mem, sp + 0xcu), out_league = rd32(g_mem, sp + 0x10u);
         if (readable(out_league)) wr32(g_mem, out_league, 0);
-        if (readable(out_rounds)) wr16(g_mem, out_rounds, 2);
+        if (readable(out_rounds)) wr16(g_mem, out_rounds, (uint32_t)rounds);
         if (readable(out_code)) wr16(g_mem, out_code, 0);
-        uint32_t rec = game_malloc(2u * ROUND_SIZE);
+        uint32_t rec = game_malloc((uint32_t)rounds * ROUND_SIZE);
         if (rt_unwinding) return;
         int campaign = (int16_t)rd16(g_mem, self + F_YEAR);
-        if (rec) season_nl_path_round(rec, 0, q->po_sf, campaign, teams);
-        if (rec && !rt_unwinding) season_nl_path_round(rec, 1, q->po_final, campaign, teams / 2);
+        if (rec && rounds == 1) tie_round(rec, q->po_sf, campaign, teams);
+        if (rec && rounds == 2) season_nl_path_round(rec, 0, q->po_sf, campaign, teams);
+        if (rec && rounds == 2 && !rt_unwinding) season_nl_path_round(rec, 1, q->po_final, campaign, teams / 2);
         if (rt_unwinding) return;
         rt_ret_stdcall(rec, 4);
         return;
@@ -258,6 +307,68 @@ static int group_rows(uint32_t self, const char *mark, int nations, SeasonNlRow 
     return n;
 }
 
+/* The hosts of a Euro that play its qualifying, and the places kept for them (docs/research/
+ * 2026-10-23-euro-2028-qualifying.md, section 1). Euro 2028: the hosts appointed in 2023 are England, Northern
+ * Ireland, Republic of Ireland, Scotland and Wales, but Northern Ireland hosts no match, and UEFA's qualifying
+ * rule (May 2025) names the other four as the hosts that play the qualifying, in separate groups. Two places go
+ * to "the two best-ranked host nations" that do not qualify from the groups. */
+static const struct {
+    int euro, places;
+    const char *hosts[4];
+} kept_places[] = {
+    {2028, 2, {"England", "Republic of Ireland", "Scotland", "Wales"}},
+};
+
+static int nation_named(const char *name, int nations)
+{
+    uint32_t table = rd32(g_mem, NATIONS);
+    for (int id = 0; readable(table) && id < nations; id++)
+        if (!strcmp(name, win_str(table + (uint32_t)id * NATION_ROW + 4u)) && season_nl_nation_can_play(id)) return id;
+    return -1;
+}
+
+/* The host places of the Euro of q: the hosts that did not qualify from the groups, ranked as the group rows
+ * (group place, then points: group_rows), take the kept places in that order through add_qualified_team, the
+ * call of a group qualifier (0x57d609). Inference: the ranking of the groups' places and points stands for
+ * the overall qualifying ranking that one source names (W1). Marks each host that comes in. Returns the places
+ * in use, or -1 when the Euro has no kept places. */
+static int host_places(uint32_t self, const SeasonNlQualifying *q, uint32_t euro, char *mark, int nations)
+{
+    int k = -1;
+    for (int i = 0; i < (int)(sizeof kept_places / sizeof kept_places[0]); i++)
+        if (kept_places[i].euro == q->euro) k = i;
+    if (k < 0) return -1;
+    if (!readable(euro) || (int16_t)rd16(g_mem, euro + F_YEAR) != q->euro) return 0;
+    int host[4], hosts = 0;
+    for (int i = 0; i < 4; i++) {
+        int id = nation_named(kept_places[k].hosts[i], nations);
+        if (id >= 0) host[hosts++] = id;
+    }
+    /* Test switch RECOMP_TEST_EURO_HOST_PLACES=0 or 1: at most that many host places, so a test plays the other
+     * play-off shapes (tests/seasons/rules_report_check.py runs). */
+    int places = kept_places[k].places;
+    const char *test = getenv("RECOMP_TEST_EURO_HOST_PLACES");
+    if (test && *test >= '0' && *test < '0' + places) places = *test - '0';
+    SeasonNlRow rows[NL_MAX_NATIONS];
+    int n = group_rows(self, mark, nations, rows), used = 0;
+    for (int r = 0; r < n && used < places && !rt_unwinding; r++) {
+        int is_host = 0;
+        for (int i = 0; i < hosts; i++) is_host |= rows[r].nation == host[i];
+        if (!is_host) continue;
+        uint32_t team = season_nl_nation_team(rows[r].nation);
+        if (rt_unwinding || !team) continue;
+        uint32_t a[1] = {team};
+        call_this(EURO_ADD_TEAM, euro, 1, a);
+        if (rt_unwinding) return used;
+        mark[rows[r].nation] = 1;
+        used++;
+        if (logging())
+            fprintf(stderr, "recomp: season nl: euro %d host place %d: %s\n", q->euro, used,
+                    win_str(rd32(g_mem, NATIONS) + (uint32_t)rows[r].nation * NATION_ROW + 4u));
+    }
+    return used;
+}
+
 /* The Euro's seeding and draw two and four days after the path finals (class doc 12.2: both tested by the
  * exact day in EuroChamp::update_for_date 0x57c620). */
 static void move_euro_draw(uint32_t euro, const SeasonNlQualifying *q, int campaign)
@@ -283,8 +394,16 @@ static void build_paths(uint32_t self, const SeasonNlQualifying *q)
     uint32_t euro = euro_object();
     qualified(self, euro, mark, nations);
     if (rt_unwinding) { free(mark); return; }
+    int used = host_places(self, q, euro, mark, nations);
+    if (rt_unwinding) { free(mark); return; }
+    if (q->paths <= 0) {
+        paths_by_hosts = used >= 2 ? 2 : used == 1 ? 3 : 0;
+        fprintf(stderr, "recomp: season nl: euro %d: %d host places in use, play-off of %s\n", q->euro, used < 0 ? 0 : used,
+                paths_by_hosts ? (paths_by_hosts == 2 ? "2 paths of 4" : "3 paths of 4") : "4 two-leg ties");
+    }
+    int paths = po_paths(q), teams = po_teams(q), groups = paths ? paths : 2;
     SeasonNlRow rows[NL_MAX_NATIONS];
-    int n = season_nl_held_results(q->euro - 2, rows), from_nl = n >= 4 * q->paths;
+    int n = season_nl_held_results(q->euro - 2, rows), from_nl = n >= teams;
     if (rt_unwinding) { free(mark); return; }
     if (from_nl) {
         for (int i = 0; i < n; i++) rows[i].qualified = rows[i].nation >= 0 && rows[i].nation < nations && mark[rows[i].nation];
@@ -293,14 +412,21 @@ static void build_paths(uint32_t self, const SeasonNlQualifying *q)
     }
     free(mark);
     if (rt_unwinding) return;
-    int picked[16], teams = 4 * q->paths;
-    season_nl_paths(rows, n, q->paths, 4, picked);
+    /* The ties of 8 nations take the nations of two paths, and in each tie the better nation plays the second
+     * leg at home (one source, W1: the seeded teams host the second leg). Inference: the first team of a pair
+     * hosts the first leg, as the home side of a single match. */
+    int picked[16];
+    season_nl_paths(rows, n, groups, 4, picked);
     uint32_t list = game_malloc(4u * (uint32_t)teams), out = game_malloc(8);
     if (rt_unwinding || !list || !out) return;
     int ok = 1;
-    for (int p = 0; p < q->paths; p++) {
+    for (int p = 0; p < groups; p++) {
         int pairs[4];
         season_nl_path_pairs(&picked[4 * p], pairs);
+        if (!paths) {
+            int t = pairs[0]; pairs[0] = pairs[1], pairs[1] = t;
+            t = pairs[2]; pairs[2] = pairs[3], pairs[3] = t;
+        }
         for (int k = 0; k < 4; k++) {
             uint32_t team = pairs[k] >= 0 ? season_nl_nation_team(pairs[k]) : 0;
             if (rt_unwinding) return;
@@ -308,7 +434,8 @@ static void build_paths(uint32_t self, const SeasonNlQualifying *q)
             wr32(g_mem, list + 4u * (uint32_t)(4 * p + k), team);
         }
         if (logging()) {
-            fprintf(stderr, "recomp: season nl: euro %d path %c (%s):", q->euro, 'A' + p, from_nl ? "Nations League" : "groups");
+            fprintf(stderr, "recomp: season nl: euro %d %s %c (%s):", q->euro, paths ? "path" : "ties", 'A' + p,
+                    from_nl ? "Nations League" : "groups");
             for (int k = 0; k < 4; k++)
                 fprintf(stderr, " %s;", pairs[k] >= 0 ? win_str(rd32(g_mem, 0xae23a8u) + (uint32_t)pairs[k] * 0x122u + 4u) : "none");
             fputc('\n', stderr);

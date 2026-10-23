@@ -168,7 +168,9 @@ def editions():
 # Paths: Euro 2020 "4 paths of 4" (row 189), Euro 2024 "3 paths" (row 233), the 2022 World Cup UEFA qualifying
 # (3 paths of 4: the 10 runners-up and the 2 best 2020-21 Nations League group winners, int-world rows of the
 # 2022 cycle). key: (prefix of the events, finals year, paths, 1 for a World Cup)
-QUALIFYING = {"euro2020": (2020, 4, 0), "euro2024": (2024, 3, 0), "wc2022": (2022, 3, 1)}
+# Euro 2028 (docs/research/2026-10-23-euro-2028-qualifying.md): paths 0, the play-off shape comes from the host
+# places that the groups leave in use (season_nl_euro.c): 2 paths of 4, 3 paths of 4 or 4 two-leg ties.
+QUALIFYING = {"euro2020": (2020, 4, 0), "euro2024": (2024, 3, 0), "wc2022": (2022, 3, 1), "euro2028": (2028, 0, 0)}
 
 MOVED_DATES = {
     ("2020-21", "sf1"): "2021-06-02",
