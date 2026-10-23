@@ -151,6 +151,8 @@ CALLBACKS = {
     0x51C800: ("6aff68d976950064", "Cup::set_up_round, thiscall (round)"),
     0x521E60: ("8b4c24148b442418", "cup_set_round_draw_date, cdecl"),
     0x521EB0: ("8b4c24148b442418", "cup_set_round_match_date, cdecl"),
+    # season_nl_euro.c (O320): the Euro 2028 host places
+    0x57C120: ("668b413681ec0002", "EuroChamp::add_qualified_team (team), thiscall"),
     0x571980: ("8a44240481ec0802", "EngFirst +0x3c: the round table of a stage, thiscall (stage, &rounds, &name, flag)"),
     0x576C50: ("8a44240c5355563c", "EngFirst +0x44: a stage result (jumped to from the wrap of 0x686940)"),
     0x944E46: ("ff350830de00ff74", "malloc, cdecl"),
