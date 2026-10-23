@@ -671,8 +671,11 @@ RT_WRAP(0057c120, euro_add_qualified)
     if (season_intl_on()) season_euro_slots_after_load(self);    /* slice 28: no slot array after a load */
     if (rt_unwinding) return;
     cpu.ecx = self;
+    /* A safety net (O260 A12): the cause, the club addresses of the 24-team draw where the group builders take
+     * club indexes (0x57b5e4..0x57b5fd), is fixed in season_intl_euro.c. The line is always written, so a run
+     * shows any qualifier with no nation. */
     if (season_intl_on() && !team_nation(rt_arg(0))) {
-        if (logging()) fprintf(stderr, "recomp: season intl: euro_champ: a qualifier with no nation stays out\n");
+        fprintf(stderr, "recomp: season intl: euro_champ: a qualifier with no nation stays out\n");
         rt_ret_stdcall(0, 1);
         return;
     }
