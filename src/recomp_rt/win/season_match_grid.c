@@ -83,6 +83,10 @@ RT_WRAP(006b7f20, match_subs_test)
     }
     uint32_t fixture = rt_arg(0);
     matches++;
+    /* A fixture made before the MLS fix (an older save's round table, season_mls.c) still holds flag 0x20 at +0x38
+     * (the run-in shootout, period_completed 0x6bdb1c): in a season game it plays as extra time and penalties. */
+    if (fixture >= 0x10000u && (rd16(g_mem, fixture + 0x38) & 0x20u))
+        wr16(g_mem, fixture + 0x38, rt_mls_round_flags(rd16(g_mem, fixture + 0x38)));
     if (used > 0 && used <= 9 && fixture >= 0x10000u)
         wr16(g_mem, fixture + 0x4d, (uint16_t)((rd16(g_mem, fixture + 0x4d) & 0xff0fu) | (uint32_t)(used << 4)));
     o_006b7f20();

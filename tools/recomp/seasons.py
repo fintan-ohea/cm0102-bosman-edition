@@ -111,6 +111,15 @@ PATCHES = {
     # esi. rt_intl_round_flags (win/season_intl_rules.c) clears the bit for an edition without golden goal; the
     # base game keeps the flags. The first argument is the class (season_intl.h): 0 World Cup, 1 European
     # Championship, 2 Confederations Cup.
+    # MLS play-off and final rounds (season_mls.c, rule O284): flag 0x20 (the run-in shootout) becomes extra time
+    # and penalties in a season game. UsaMls::create_schedule 0x9072d0.
+    0x907FE7: (0x230, "rt_mls_round_flags(0x230u)"),
+    0x908003: (0x30, "rt_mls_round_flags(0x30u)"),
+    0x908009: (0x20, "rt_mls_round_flags(0x20u)"),
+    0x908068: (0x230, "rt_mls_round_flags(0x230u)"),
+    0x90808B: (0x30, "rt_mls_round_flags(0x30u)"),
+    0x908091: (0x20, "rt_mls_round_flags(0x20u)"),
+    0x9081C2: (0x220, "rt_mls_round_flags(0x220u)"),
     0x92C96B: (0x383, "rt_intl_round_flags(0u, R16(edi + 0x40u), 0x383u)"),    # World Cup last 16
     0x92CA46: (0x383, "rt_intl_round_flags(0u, R16(edi + 0x40u), 0x383u)"),    # quarter-final
     0x92CB15: (0x383, "rt_intl_round_flags(0u, R16(edi + 0x40u), 0x383u)"),    # semi-final
