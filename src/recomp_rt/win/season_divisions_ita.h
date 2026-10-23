@@ -37,6 +37,7 @@ uint32_t rt_ita_ccup_group(uint32_t cup, uint32_t original);       /* Coppa Ital
 uint32_t rt_ita_ccup_days(uint32_t cup, uint32_t original);        /* Coppa Italia Serie C: match days of a group */
 uint32_t rt_ita_ccup_seconds(uint32_t cup, uint32_t original);     /* its knockout: bytes of the runners-up rows */
 uint32_t rt_ita_ccup_first_seed(uint32_t cup, uint32_t original);  /* its knockout: the place of the first seed */
+uint32_t rt_ita_ccup_seed_slot(uint32_t cup, uint32_t list, uint32_t first);  /* its knockout: the slot of the first seed */
 uint32_t rt_ita_start_c2(uint32_t c2a);                         /* 0x641986: the C2a object of the start block */
 
 /* 1 when League::create_fixtures 0x6835c0 makes no fixtures for league: the group C object that slice 26's module

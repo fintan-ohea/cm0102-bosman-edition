@@ -1364,6 +1364,18 @@ uint32_t rt_ita_ccup_first_seed(uint32_t cup, uint32_t original)
     return (uint32_t)(CCUP_KO - (n - CCUP_GROUPS * ccup_group(n)));
 }
 
+/* The slot the seed loop writes first (0x63de86, lea edx, [ecx + 0x58]). The original fixes the slot at place 22 and
+ * counts places in esi from 0x63de7b, so with the first place 32 - S moved the S seeds went to places 22 to 21 + S:
+ * places 32 - S to 21 stayed empty and the last 22 - (32 - S) seeds were written past the list of 32 (0x80 bytes,
+ * 0x63dd43). For 12 seeds that was places 20 and 21 empty and two writes past the end. The slot now follows the first
+ * place: list + 4 x esi, which is list + 0x58 in the original's cup. */
+uint32_t rt_ita_ccup_seed_slot(uint32_t cup, uint32_t list, uint32_t first)
+{
+    if (!ccup_clubs(cup)) return list + 0x58u;
+    fprintf(stderr, "recomp: serie c: Coppa Italia Serie C knockout: seeds from place %u of %d\n", first, CCUP_KO);
+    return list + 4u * first;
+}
+
 /* ItaCup::select_entrants 0x63faf0, the two compares with the C1/B id (0x63fc79, 0x63fcf9): in the Serie C era the id
  * of C2/A (group C) gives the C1/B id, so the compare is "equal" and group C's clubs take the cup's lower places as the
  * clubs of groups A and B do. Its second loop goes up through the last positions until it has 32 clubs and has no end

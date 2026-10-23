@@ -64,6 +64,7 @@ INSNS = {
     0x63DE55: ("cmp edx, 0x162",
                "t0 = edx; t1 = rt_ita_ccup_seconds(ebp, 0x162u); t2 = t0 - t1 - 0; SETF(K_SUB | SZ4, t0, t1, t2, 0);"),
     0x63DE7B: ("mov esi, 0x16", "esi = rt_ita_ccup_first_seed(ebp, 0x16u);"),
+    0x63DE86: ("lea edx, [ecx + 0x58]", "edx = rt_ita_ccup_seed_slot(ebp, ecx, esi);"),
     # PorCup::collect_entrants 0x7ce220, second pass: a club with no division is passed over (je 0x7ce3ed at
     # 0x7ce37d). With Liga 3 the club moves leave more Portuguese clubs with no division, and the cup (164 entrants,
     # 0x7ce234) stopped at por_cup.cpp 74 in a 2021/22 start; rt_por_cup_none takes them then (Q528).

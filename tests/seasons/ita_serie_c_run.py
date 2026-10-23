@@ -98,7 +98,20 @@ def check_ccup(name, log):
     and the rest seeded into the knockout of 32."""
     if not re.search(r"Coppa Italia Serie C \d+: (4[89]|5\d|6[0-4]) clubs, 16 groups of 3 and \d+ seeds", log):
         return [f"{name}: no Coppa Italia Serie C of the groups' clubs"]
-    return []
+    return check_knockout(name, log)
+
+
+def check_knockout(name, log):
+    """O259 row A21: the knockout of 32 fills all its places itself (0x63de86 writes the seeds from the first seed
+    place): no knockout without the seed line, and slice 21's cup-entrants net finds no empty place after it."""
+    fails, lines = [], log.splitlines()
+    for i, line in enumerate(lines):
+        if "Coppa Italia Serie C knockout:" in line and "runners-up" in line:
+            if i + 1 >= len(lines) or "seeds from place" not in lines[i + 1]:
+                fails.append(f"{name}: a Coppa Italia Serie C knockout with no seed line")
+            elif i + 2 < len(lines) and re.search(r"cup entrants: cup_stage .* places empty", lines[i + 2]):
+                fails.append(f"{name}: the Coppa Italia Serie C knockout left places empty: {lines[i + 2]}")
+    return fails
 
 
 def run_season(name, extra):
@@ -244,6 +257,9 @@ def run_two(name, year, last, database, rules, want):
         found, log = ufr.boxes(work)
         fails += [f"{name}: message box {b}" for b in found]
         fails += check_two(name, report, log, want)
+        if not re.search(r"Coppa Italia Serie C \d+: 7[2-6] clubs, 16 groups of 4 and \d+ seeds", log):
+            fails.append(f"{name}: no Coppa Italia Serie C of two C2 groups (groups of 4)")
+        fails += check_knockout(name, log)
         first = min(want)
         if want[first][0] == 20 and len(re.findall(rf"serie c: .* {first}: 20 clubs, 38 match days", log)) < 2:
             fails.append(f"{name}: fewer than 2 C2 groups of 20 with 38 match days in {first}")

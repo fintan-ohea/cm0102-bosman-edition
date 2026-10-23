@@ -340,6 +340,7 @@ uint32_t rt_ita_ccup_group(uint32_t cup, uint32_t original);
 uint32_t rt_ita_ccup_days(uint32_t cup, uint32_t original);
 uint32_t rt_ita_ccup_seconds(uint32_t cup, uint32_t original);
 uint32_t rt_ita_ccup_first_seed(uint32_t cup, uint32_t original);
+uint32_t rt_ita_ccup_seed_slot(uint32_t cup, uint32_t list, uint32_t first);
 uint32_t rt_ita_tier_c2(uint32_t c2a);
 uint32_t rt_ita_tier_last(uint32_t obj);
 uint32_t rt_ita_cup_c1b(uint32_t id, uint32_t c1b);
