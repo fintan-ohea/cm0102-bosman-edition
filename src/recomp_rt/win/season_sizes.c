@@ -176,9 +176,16 @@ uint32_t rt_league_clubs(uint32_t obj, uint32_t original)
      * runs (0x7f2b68, then 0x7f2ba6), and with -1 check_complete would count (12 - 1) x 3 = 33. */
     /* A league that goes back to the class count after a season at another count also counts again, when its value
      * is the one check_complete made for the old count ((old - 1) x meetings +0x3c): else it kept the old season's
-     * matches and was never complete (C2 of 20 back to 18 in 2012/13, slice 20b). ScoPrm's 38 is not that value. */
+     * matches and was never complete (C2 of 20 back to 18 in 2012/13, slice 20b). ScoPrm's 38 is not that value.
+     * In a season start the old count is gone: start_new_season frees the table first (League::free_table 0x687970,
+     * for example at 0x64b830), which sets +0x3e to 0 (0x687a0c) before create_table reaches this store. So the old
+     * count is the one that the value itself gives: a value of (k - 1) x meetings for another count k is the last
+     * season's. The Serie C groups of 20 back to 18 in 2015/16 kept 38, check_complete never found them complete,
+     * and Italy never started 2016/17 (O278). */
     int old = (int16_t)rd16(g_mem, obj + 0x3e), m = (int16_t)rd16(g_mem, obj + COMP_MATCHES);
-    if ((uint32_t)n != original || (old != n && old >= MIN_CLUBS && m == (old - 1) * (int)g_mem[obj + 0x3c]))
+    int meet = (int)g_mem[obj + 0x3c];
+    if (old == 0 && meet > 0 && m > 0 && m % meet == 0) old = m / meet + 1;
+    if ((uint32_t)n != original || (old != n && old >= MIN_CLUBS && m == (old - 1) * meet))
         wr16(g_mem, obj + COMP_MATCHES, 0xffffu);
     return (uint32_t)n;
 }
