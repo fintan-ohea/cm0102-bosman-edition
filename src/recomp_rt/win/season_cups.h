@@ -85,11 +85,12 @@ typedef struct {
  * last row of the table the rule stays (Q248). */
 const SeasonSuperFour *season_super_four(const char *file, int season);
 
-/* The four clubs from in[]: league winner, league runner-up, cup winner, cup runner-up, league third (0: none).
- * A cup place whose club already has a place, or none, goes to the league third, once. out[] gets the semi-final
- * pairs: league winner v cup runner-up, cup winner v league runner-up. Returns 0 when four clubs are not found
- * (the cup then keeps the class's two clubs). */
-int season_super_four_pick(const uint32_t in[5], uint32_t out[4]);
+/* The four clubs: league[] holds the league's clubs of the last season by place (league[0] the winner, league[1]
+ * the runner-up, 0 ends the list), cw and cru the cup winner and runner-up (0: none). A cup place whose club
+ * already has a place, or none, goes to the best league club that has no place yet: third, then fourth, and so on
+ * (the Supercopa from 2019/20, O342). out[] gets the semi-final pairs: league winner v cup runner-up, cup winner v
+ * league runner-up. Returns 0 when four clubs are not found (the cup then keeps the class's two clubs). */
+int season_super_four_pick(const uint32_t *league, int count, uint32_t cw, uint32_t cru, uint32_t out[4]);
 
 /* The rules report lines "cupmore" of slice 21c (season_super_cups.c); file is the report's FILE *. */
 void season_cups_more_report(void *file, int season, const char *phase);

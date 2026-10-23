@@ -9,7 +9,8 @@
  * stage -1: one round, 0x68 bytes) and map_fixture_tree 0x518790. Both pickers are direct calls, so their wraps
  * test the cup and the season:
  * - a season whose rules table row gives 4 clubs (season_super_four): the picker's list becomes the four clubs
- *   (season_super_four_pick) and the round table two rounds: semi-finals (code 130, flag 0x200, so the ties are the
+ *   (season_super_four_pick: a place that a club already holds goes to the next league club, O342) and the round
+ *   table two rounds: semi-finals (code 130, flag 0x200, so the ties are the
  *   list's pairs, map_fixture_tree 0x519279) and the final (code 150), one match each, on the dates of the row;
  * - an object of a new super cup (season_comps.c, its own vtable copy): the picker takes the clubs of its nation.
  * The table is made only at a season start or a new game; a save keeps the list and the table (Cup::save_cup_to_disk
@@ -133,6 +134,43 @@ static void put_list(uint32_t cup, const uint32_t *clubs, int n)
     wr16(g_mem, cup + CUP_TEAMS, (uint16_t)n);
 }
 
+#define CLUBS 0xae23b4u
+#define CLUB_COUNT 0xae235cu
+#define CLUB_COUNT_LESS 0xae2350u       /* the clubs are [0xae235c] - 2 * [0xae2350] */
+#define CLUB_SIZE 0x245u
+#define CLUB_LAST_DIVISION 0x5bu        /* the division of the last season */
+#define CLUB_LAST_PLACE 0x5fu           /* s8, the place in it (compare_clubs_by_seeding_pot 0x640590) */
+#define LEAGUE_MAX 48
+
+/* The league's clubs of the last season by place, for the places that the cup finalists leave (O342): the first
+ * three of the history rows (comp_util_get_latest_placed_club), then the clubs whose last division (+0x5b) is the
+ * league by their last place (+0x5f), as season_new_cups.c division_clubs orders them. Returns the count. */
+static int league_order(uint32_t key_global, uint32_t *out)
+{
+    int n = 0;
+    for (int p = 0; p < 3; p++) {
+        uint32_t c = placed(key_global, p);
+        if (rt_unwinding) return 0;
+        if (!c) break;
+        out[n++] = c;
+    }
+    if (n < 3) return n;
+    int32_t key = (int32_t)rd32(g_mem, key_global);
+    uint32_t base = rd32(g_mem, CLUBS);
+    int32_t clubs = (int32_t)rd32(g_mem, CLUB_COUNT) - 2 * (int32_t)rd32(g_mem, CLUB_COUNT_LESS);
+    int rank[LEAGUE_MAX], first = n;
+    for (int32_t i = 0; readable(base) && i < clubs && i < 200000 && n < LEAGUE_MAX; i++) {
+        uint32_t club = base + (uint32_t)i * CLUB_SIZE, rec = rd32(g_mem, club + CLUB_LAST_DIVISION);
+        int place = (int8_t)g_mem[club + CLUB_LAST_PLACE];
+        if (!readable(rec) || (int32_t)rd32(g_mem, rec) != key || place < 1) continue;
+        if (club == out[0] || club == out[1] || club == out[2]) continue;
+        int k = n++;
+        while (k > first && rank[k - 1] > place) out[k] = out[k - 1], rank[k] = rank[k - 1], k--;
+        out[k] = club, rank[k] = place;
+    }
+    return n;
+}
+
 /* After the picker of a super cup (it returned 1 with two clubs in the list). */
 static void teams_made(uint32_t cup)
 {
@@ -143,18 +181,29 @@ static void teams_made(uint32_t cup)
     const SeasonSuperFour *four = k ? season_super_four(file, season) : NULL;
     if (!four) return;
     Cpu saved = cpu;
-    uint32_t in[5] = {placed(k->league, 0), placed(k->league, 1), placed(k->cup, 0), placed(k->cup, 1),
-                      placed(k->league, 2)};
+    uint32_t league[LEAGUE_MAX];
+    int count = league_order(k->league, league);
+    uint32_t cw = placed(k->cup, 0), cru = placed(k->cup, 1);
     if (rt_unwinding) return;
+    if (getenv("RECOMP_SUPER_TRACE") && *getenv("RECOMP_SUPER_TRACE")) {
+        char line[600];
+        int m = 0;
+        for (int i = 0; i < count && i < 8 && m < (int)sizeof line - 60; i++)
+            m += snprintf(line + m, sizeof line - (size_t)m, " %d:%.20s(last %d)", i + 1, win_str(league[i] + 4),
+                          (int8_t)g_mem[league[i] + CLUB_LAST_PLACE]);
+        fprintf(stderr, "recomp: super trace: %s %d league order%s; cup %.20s, %.20s\n", file, season,
+                m ? line : " none", cw ? win_str(cw + 4) : "-", cru ? win_str(cru + 4) : "-");
+    }
     uint32_t out[4];
-    if (!season_super_four_pick(in, out)) {
+    if (!season_super_four_pick(league, count, cw, cru, out)) {
         fprintf(stderr, "recomp: super cups: %s %d: four clubs not found, two clubs play\n", file, season);
         cpu = saved;
         return;
     }
     put_list(cup, out, 4);
     if (rt_unwinding) return;
-    fprintf(stderr, "recomp: super cups: %s %d with four clubs\n", file, season);
+    fprintf(stderr, "recomp: super cups: %s %d with four clubs: %.30s v %.30s, %.30s v %.30s (%d league clubs)\n", file,
+            season, win_str(out[0] + 4), win_str(out[1] + 4), win_str(out[2] + 4), win_str(out[3] + 4), count);
     cpu = saved;
 }
 
@@ -282,7 +331,8 @@ void season_super_cups_trace(uint32_t cup, uint32_t today)
     if (!on || !readable(cup) || !readable(today) || strcmp(season_change_file(cup), "spa_super")) return;
     char line[1600];
     int n = snprintf(line, sizeof line, "head 2c=%d 30=%d 3c=%d 3e=%d 40=%d 44=%d 48=%08x 4c=%d b1=%d b2=%d",
-                     (int32_t)rd32(g_mem, cup + 0x2c), (int32_t)rd32(g_mem, cup + 0x30), (int16_t)rd16(g_mem, cup + 0x3c),
+                     (int32_t)rd32(g_mem, cup + 0x2c), (int32_t)rd32(g_mem, cup + 0x30),
+                     (int16_t)rd16(g_mem, cup + 0x3c),
                      (int16_t)rd16(g_mem, cup + 0x3e), (int16_t)rd16(g_mem, cup + 0x40), (int8_t)g_mem[cup + 0x44],
                      rd32(g_mem, cup + 0x48), (int32_t)rd32(g_mem, cup + 0x4c), g_mem[cup + 0xb1], g_mem[cup + 0xb2]);
     uint32_t list = rd32(g_mem, cup + CUP_TEAM_LIST);

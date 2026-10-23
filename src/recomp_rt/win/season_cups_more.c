@@ -78,24 +78,31 @@ const SeasonSuperFour *season_super_four(const char *file, int season)
     return best;
 }
 
-int season_super_four_pick(const uint32_t in[5], uint32_t out[4])
+static int in_list(const uint32_t *list, int n, uint32_t club)
 {
-    uint32_t lw = in[0], lru = in[1], cw = in[2], cru = in[3], third = in[4];
-    if (!lw || !lru || lw == lru) return 0;
-    /* The league third is a spare only when it is not in the list yet: it can also be the cup winner. A spare that
-     * was the cup winner gave one club two places (O326, gate (a) run 5, the 2020/21 and 2022/23 Supercopa: the
-     * tie of the club with itself never ended, so the edition stayed open and no later edition came). The history
-     * rows give the first three places only, so with no spare left the two-club format plays. */
-    int spare = third && third != lw && third != lru && third != cw;
-    if (!cw || cw == lw || cw == lru) {
-        if (!spare) return 0;
-        cw = third, spare = 0;
+    for (int i = 0; i < n; i++)
+        if (list[i] == club) return 1;
+    return 0;
+}
+
+int season_super_four_pick(const uint32_t *league, int count, uint32_t cw, uint32_t cru, uint32_t out[4])
+{
+    if (count < 2 || !league[0] || !league[1] || league[0] == league[1]) return 0;
+    uint32_t got[4] = {league[0], league[1], 0, 0};
+    int n = 2, next = 2;
+    const uint32_t cup[2] = {cw, cru};
+    for (int c = 0; c < 2; c++) {
+        uint32_t club = cup[c];
+        if (!club || in_list(got, n, club)) {
+            /* The best league club with no place yet. A club named twice in the league list counts once. */
+            club = 0;
+            while (next < count && league[next] && in_list(got, n, league[next])) next++;
+            if (next < count && league[next]) club = league[next++];
+            if (!club) return 0;
+        }
+        got[n++] = club;
     }
-    if (!cru || cru == lw || cru == lru || cru == cw) {
-        if (!spare) return 0;
-        cru = third, spare = 0;
-    }
-    out[0] = lw, out[1] = cru, out[2] = cw, out[3] = lru;
+    out[0] = got[0], out[1] = got[3], out[2] = got[2], out[3] = got[1];
     return 1;
 }
 

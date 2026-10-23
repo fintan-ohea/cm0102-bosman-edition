@@ -51,26 +51,34 @@ static void four_clubs(void)
 
 static void picks(void)
 {
-    /* in: league winner, league runner-up, cup winner, cup runner-up, league third. out: the semi-final pairs. */
+    /* league: the league clubs by place (1 first), then cup winner and runner-up. out: the semi-final pairs, league
+     * winner v cup runner-up, cup winner v league runner-up. A place a club already holds goes to the next league
+     * club (O342). */
     uint32_t out[4];
-    const uint32_t a[5] = {1, 2, 3, 4, 5};
-    CHECK(season_super_four_pick(a, out) && out[0] == 1 && out[1] == 4 && out[2] == 3 && out[3] == 2,
+    const uint32_t lg[6] = {1, 2, 3, 4, 5, 6};
+    CHECK(season_super_four_pick(lg, 6, 7, 8, out) && out[0] == 1 && out[1] == 8 && out[2] == 7 && out[3] == 2,
           "four clubs: league winner v cup runner-up, cup winner v league runner-up");
-    const uint32_t b[5] = {1, 2, 1, 4, 5};      /* the champion won the cup: the league third takes its place */
-    CHECK(season_super_four_pick(b, out) && out[0] == 1 && out[1] == 4 && out[2] == 5 && out[3] == 2,
-          "the league third for the cup winner");
-    const uint32_t c[5] = {1, 2, 3, 2, 5};      /* the runner-up lost the final */
-    CHECK(season_super_four_pick(c, out) && out[1] == 5 && out[2] == 3, "the league third for the cup runner-up");
-    const uint32_t d[5] = {1, 2, 2, 1, 5};      /* both finalists came first and second: no fourth club */
-    CHECK(!season_super_four_pick(d, out), "two places free and one league third: the two-club format");
-    const uint32_t e[5] = {1, 2, 3, 0, 5};      /* no cup runner-up in the history */
-    CHECK(season_super_four_pick(e, out) && out[1] == 5, "no cup runner-up");
-    const uint32_t h[5] = {1, 2, 3, 1, 3};      /* the cup winner came third, the champion lost the final */
-    CHECK(!season_super_four_pick(h, out), "the league third won the cup: no spare, the two-club format");
-    const uint32_t k[5] = {1, 2, 2, 4, 3};      /* the runner-up won the cup: the third takes its place once */
-    CHECK(season_super_four_pick(k, out) && out[1] == 4 && out[2] == 3 && out[3] == 2, "the league third once");
-    const uint32_t g[5] = {0, 2, 3, 4, 5};
-    CHECK(!season_super_four_pick(g, out), "no league winner");
+    CHECK(season_super_four_pick(lg, 6, 1, 8, out) && out[1] == 8 && out[2] == 3, "cup winner first: the third");
+    CHECK(season_super_four_pick(lg, 6, 2, 8, out) && out[1] == 8 && out[2] == 3, "cup winner second: the third");
+    CHECK(season_super_four_pick(lg, 6, 3, 1, out) && out[1] == 4 && out[2] == 3,
+          "cup winner third, the champion lost the final: the fourth (gate (a) run 5)");
+    CHECK(season_super_four_pick(lg, 6, 1, 2, out) && out[0] == 1 && out[1] == 4 && out[2] == 3 && out[3] == 2,
+          "both finalists in the top two: the third and the fourth");
+    CHECK(season_super_four_pick(lg, 6, 2, 1, out) && out[1] == 4 && out[2] == 3, "the same, the other way round");
+    CHECK(season_super_four_pick(lg, 6, 3, 4, out) && out[1] == 4 && out[2] == 3, "finalists third and fourth");
+    CHECK(season_super_four_pick(lg, 6, 7, 0, out) && out[1] == 3 && out[2] == 7, "no cup runner-up: the third");
+    CHECK(season_super_four_pick(lg, 6, 7, 7, out) && out[1] == 3 && out[2] == 7, "one cup club twice");
+    const uint32_t two[2] = {1, 2};
+    CHECK(!season_super_four_pick(two, 2, 1, 2, out), "two league clubs only: the two-club format");
+    const uint32_t g[3] = {0, 2, 3};
+    CHECK(!season_super_four_pick(g, 3, 4, 5, out), "no league winner");
+    for (int a = 1; a <= 8; a++)
+        for (int b = 0; b <= 8; b++) {
+            if (!season_super_four_pick(lg, 6, (uint32_t)a, (uint32_t)b, out)) continue;
+            int distinct = out[0] != out[1] && out[0] != out[2] && out[0] != out[3] && out[1] != out[2] &&
+                           out[1] != out[3] && out[2] != out[3];
+            CHECK(distinct, "every pick holds four different clubs");
+        }
 }
 
 static void new_cups(void)
