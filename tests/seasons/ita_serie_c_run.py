@@ -87,7 +87,18 @@ def check_moves(name, log):
             fails.append(f"{name}: {up} clubs up to Serie B and {down} down (want 4 and 4)")
     if "group C starts again" in log:
         fails.append(f"{name}: group C started twice in one season change")
+    # O259 row A21 (Q628): the Coppa Italia Serie C takes no Serie D club.
+    if "Coppa Italia Serie C takes" in log:
+        fails.append(f"{name}: the Coppa Italia Serie C took Serie D clubs")
     return fails
+
+
+def check_ccup(name, log):
+    """O259 row A21 (Q628): in the era the Coppa Italia Serie C takes the clubs of the three groups: 16 groups of 3
+    and the rest seeded into the knockout of 32."""
+    if not re.search(r"Coppa Italia Serie C \d+: (4[89]|5\d|6[0-4]) clubs, 16 groups of 3 and \d+ seeds", log):
+        return [f"{name}: no Coppa Italia Serie C of the groups' clubs"]
+    return []
 
 
 def run_season(name, extra):
@@ -104,6 +115,7 @@ def run_season(name, extra):
             fails.append(f"{name}: no regroup into 2015/16")
         if not re.search(r"serie c: \d+ up to Serie B", log):
             fails.append(f"{name}: no line of the clubs that go up to Serie B")
+        fails += check_ccup(name, log)
         return fails + check_moves(name, log)
     return run
 
@@ -128,6 +140,7 @@ def run_change(name, extra):
             fails.append(f"{name}: the one club of the ended C2/C did not go to the Serie D at the new game")
         if extra and not re.search(r"serie c: [^\n]*(girone C|C2/C) \(ended\): 0 clubs to the Serie C", log):
             fails.append(f"{name}: the ended C2/C held clubs at the change into the era")
+        fails += check_ccup(name, log)
         return fails + check_moves(name, log)
     return run
 
@@ -159,6 +172,7 @@ def run_load(name, extra):
             fails.append(f"{name}: no regroup into 2015/16 after the load")
         if len(re.findall(r"serie c: .* 2015: 20 clubs, 38 match days", out)) < 3:
             fails.append(f"{name}: fewer than 3 groups of 20 with 38 match days after the load")
+        fails += check_ccup(name, out)
         return fails + check_moves(name, out)
     return run
 
