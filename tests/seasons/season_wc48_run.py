@@ -106,6 +106,12 @@ def check(name, start, last, rules, work):
         if "Russia" in x and "Europe pool of" not in x and \
                 ("wc qualifying 2026" in x or "world_cup 2026 qualifier" in x or "wc play-off 2026" in x):
             fails.append(f"{name}: Russia in the 2026 qualifying: {x.strip()}")
+    # A fill, a qualifier in already and a full World Cup are faults in every run and every year (O334).
+    for x in log:
+        if "season intl: world_cup " in x and " filled" in x and not x.rstrip().endswith(" 0 filled"):
+            fails.append(f"{name}: a World Cup draw takes teams from the fill: {x.strip()}")
+        if "is in already" in x or "world_cup is full" in x:
+            fails.append(f"{name}: {x.strip()}")
     year = QUALIFIERS.get(name)
     if year:
         count = {}
@@ -131,11 +137,9 @@ def check(name, start, last, rules, work):
         for host in HOSTS.get(year, []):
             if host in teams:
                 fails.append(f"{name}: the host {host} qualifies for {year} through qualifying")
-        # The 2030 shape only (O265): two paths, no host in qualifying, no fill. 2026 keeps its four paths A to D.
-        for x in log if year in HOSTS else []:
-            if f"world_cup {year}: " in x and "filled" in x and not x.rstrip().endswith(" 0 filled"):
-                fails.append(f"{name}: the {year} draw takes teams from the fill: {x.strip()}")
-            if "is in already" in x or "world_cup is full" in x or f"wc qualifying {year}: path C" in x:
+        # Only the 2030 shape (O265) has two paths; 2026 keeps its four paths A to D.
+        for x in log:
+            if year in HOSTS and f"wc qualifying {year}: path C" in x:
                 fails.append(f"{name}: {x.strip()}")
     want = NEWS.get(name)
     if want:
@@ -168,6 +172,11 @@ def save_run(program, game, keep, reuse):
     log_a = open(os.path.join(first, "stderr.txt"), encoding="latin-1").read().split("\n")
     log_b = open(os.path.join(second, "stderr.txt"), encoding="latin-1").read().split("\n")
     fails = [f"save: the loaded game: {x.strip()}" for x in log_b if "recomp: message box from" in x]
+    for x in log_a + log_b:                              # O334: in every run
+        if "season intl: world_cup " in x and " filled" in x and not x.rstrip().endswith(" 0 filled"):
+            fails.append(f"save: a World Cup draw takes teams from the fill: {x.strip()}")
+        if "is in already" in x or "world_cup is full" in x:
+            fails.append(f"save: {x.strip()}")
     if not any("world_cup 2026 draw of 48 teams in 12 groups" in x for x in log_a):
         fails.append("save: the first game made no draw of 48 before the save")
     if any("world_cup 2026 round of 32" in x for x in log_a):
