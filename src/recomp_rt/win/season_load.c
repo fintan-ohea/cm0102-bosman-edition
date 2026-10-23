@@ -53,4 +53,5 @@ RT_WRAP(00687b10, league_load)
     o_00687b10();
     if (!rt_unwinding && cpu.eax) season_load_clear_stages(obj);
     if (!rt_unwinding && cpu.eax) season_divisions_loaded(obj);    /* the 3. Liga stage slot */
+    if (!rt_unwinding && cpu.eax) season_club_world_loaded(obj);   /* the table of a Form K parent */
 }

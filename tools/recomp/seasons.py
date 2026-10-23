@@ -111,6 +111,15 @@ PATCHES = {
     # esi. rt_intl_round_flags (win/season_intl_rules.c) clears the bit for an edition without golden goal; the
     # base game keeps the flags. The first argument is the class (season_intl.h): 0 World Cup, 1 European
     # Championship, 2 Confederations Cup.
+    # MLS play-off and final rounds (season_mls.c, rule O284): flag 0x20 (the run-in shootout) becomes extra time
+    # and penalties in a season game. UsaMls::create_schedule 0x9072d0.
+    0x907FE7: (0x230, "rt_mls_round_flags(0x230u)"),
+    0x908003: (0x30, "rt_mls_round_flags(0x30u)"),
+    0x908009: (0x20, "rt_mls_round_flags(0x20u)"),
+    0x908068: (0x230, "rt_mls_round_flags(0x230u)"),
+    0x90808B: (0x30, "rt_mls_round_flags(0x30u)"),
+    0x908091: (0x20, "rt_mls_round_flags(0x20u)"),
+    0x9081C2: (0x220, "rt_mls_round_flags(0x220u)"),
     0x92C96B: (0x383, "rt_intl_round_flags(0u, R16(edi + 0x40u), 0x383u)"),    # World Cup last 16
     0x92CA46: (0x383, "rt_intl_round_flags(0u, R16(edi + 0x40u), 0x383u)"),    # quarter-final
     0x92CB15: (0x383, "rt_intl_round_flags(0u, R16(edi + 0x40u), 0x383u)"),    # semi-final
@@ -321,8 +330,8 @@ INSNS = {
     0x57BE3D: ("jle 0x57becc", "if (cc_le(F)) { if (rt_intl_euro_no_host()) goto L_57bf2f; goto L_57becc; }"),
     # EuroChampQual::get_group_team_count 0x57d9d0 gives the size of each qualifying group by the hosts that the
     # pool leaves out (+0xf6): 1 (0x57d9de) or 2 (0x57d9e5), else the box "euro_champ_qual.cpp 581" (0x57da3d).
-    # A Euro without a host place (2020, 2028) has 0: in a season game it takes the sizes of 1 host (groups 0,
-    # 2, 5 and 7 of six, the others of five: room for 54, the pool holds at most 51, 0x57f76f).
+    # A Euro without a host place (2020, 2028) has 0: in a season game it goes to the branch of 1 host, whose
+    # sizes (0x57da6e, 0x57da8e, 0x57da9b) rt_euroq_group_size gives from the pool for the formats of 24 teams.
     0x57D9DE: ("je 0x57da7b", "if (cc_e(F) || (rt_intl_euro_no_host() && R8(ecx + 0xf6u) == 0u)) goto L_57da7b;"),
 
     # Euro of 24 teams (0.6.0 slice 27, win/season_intl_euro.c). start_new_season 0x57b750 keeps the stage array
@@ -356,12 +365,10 @@ INSNS = {
     0x5E128E: ("lea ecx, [eax + eax*2]", "ecx = eax * rt_intl_copa_groups(esi, 3u);"),
     0x5E1595: ("mov ecx, esi", "SYNC(); rt_intl_copa_stages(esi); ecx = esi;"),
     # EuroChampQual (0.6.0 slice 27): the hosts that the qualifying pool leaves out (+0xf6) are counted at
-    # 0x57f6b7..0x57f6e4 and must be 0 to 2 (box "euro_champ_qual.cpp 1245" at 0x57f6fa); the group sizes
-    # (0x57d9d0) and the play-off round (0x57d4f3: 6 teams for 1, 8 for 2, else the box "euro_champ_qual.cpp
-    # 283" at 0x57d597) take only 1 or 2. A Euro without a host place (2020, 2028) has 0: in a season game the
-    # count becomes 1 here, before the pool size 0x33 - count (0x57f76f), so the qualifying takes the shape of
-    # one host (a pool of 50).
-    0x57F768: ("movsx eax, byte ptr [esi + 0xf6]", "if (rt_intl_euro_no_host() && R8(esi + 0xf6u) == 0u) W8(esi + 0xf6u, 1u); eax = (uint32_t)(int32_t)(int8_t)R8(esi + 0xf6u);"),
+    # 0x57f6b7..0x57f6e4 and may be 0 to 2 (box "euro_champ_qual.cpp 1245" at 0x57f6fa only above 2); the pool
+    # is 0x33 - count (0x57f76f). A Euro without a host place (2020, 2028) keeps 0 and the whole pool of 51 (O260
+    # A13): its group sizes come from the pool (0x57d9de below, rt_euroq_group_size) and its play-off from
+    # rt_euroq_hosts (0x57d4f3: 8 teams), so 10 groups give 20 and the play-off 4: the 24 places, no host.
 
     # World Cup qualifying 2006 to 2022 (0.6.0 slice 27, win/season_intl_qual.c). Gate: a season game and the
     # World Cup year (campaign +0x40 + 2) in 2006 to 2022; outside it each site gives the original's value.
@@ -382,7 +389,7 @@ INSNS = {
     # A2: Asia stage 12 (0x913d50, this in esi, the two teams at [ebp]) takes its partner from the European
     # section (0x91def0, ecx the Europe object). The partner of the cycle replaces it; the European runner-up
     # stays the fallback.
-    0x913E42: ("call 0x91def0", "esp -= 4; W32(esp, 0x913e47u); SYNC(); f_0091def0(); LOAD(); RT_AFTER_CALL(); eax = rt_wcq_asia_partner(esi, R32(ebp), eax);"),
+    0x913E42: ("call 0x91def0", "esp -= 4; W32(esp, 0x913e47u); SYNC(); f_0091def0(); LOAD(); RT_AFTER_CALL(); eax = rt_wcq_asia_partner(esi, ebp, eax);"),
     # O1: Oceania stage 2 (0x91f800, this in esi) found ebp teams in the array ebx: the OFC winner and the
     # South American play-off team. The pair of the cycle replaces them, then the compare with 2.
     0x91F8E9: ("cmp ebp, 2", "ebp = rt_wcq_oceania_pair(esi, ebx, ebp); t0 = ebp; t1 = 0x2u; t2 = t0 - t1; SETF(K_SUB | SZ4, t0, t1, t2, 0);"),

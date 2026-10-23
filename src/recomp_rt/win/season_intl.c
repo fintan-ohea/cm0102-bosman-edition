@@ -70,6 +70,7 @@ static const struct { const char *file; uint32_t key; } host_comps[] = {
 };
 #define HOST_COMPS ((int)(sizeof host_comps / sizeof host_comps[0]))
 #define KEY_CONFED 0x9cf964u
+#define CONFED_ANY_YEAR 2200            /* the year that the Confederations Cup row of every year moves to */
 
 static int logging(void)
 {
@@ -250,7 +251,19 @@ static void hosts_apply(uint32_t self, int from_season, int sort)
     uint32_t rows = rd32(g_mem, self);
     int count = (int16_t)rd16(g_mem, self + 4);
     if (!readable(rows) || count <= 0 || count > 1000) return;
+    /* The Confederations Cup row of every year (year 0, host redrawn by 0x5fab70) would come first in find_hosts,
+     * before the rows of the table: it leaves for a year that no game reaches (2200, below). In its place each
+     * year from the start that has no edition in the table gets its own copy, so find_hosts still finds a host
+     * there: with changing rules off the original holds the cup every two years after 2017 (fifa_confed..cpp 870,
+     * 0x58c7b5, in a 2016 start on 5 January 2019). */
+    uint32_t confed = rd32(g_mem, KEY_CONFED), any = 0;
+    if (confed != 0xffffffffu) {
+        any = row_find(rows, count, confed, 0);
+        if (!any) any = row_find(rows, count, confed, CONFED_ANY_YEAR);
+    }
     int extra = 0;
+    for (int y = from_season; any && y <= SEASON_LAST_YEAR + 4; y++)
+        if (!season_intl_edition("fifa_confed", y) && !row_find(rows, count, confed, y)) extra++;
     for (int c = 0; c < HOST_COMPS; c++) {
         uint32_t key = rd32(g_mem, host_comps[c].key);
         if (key == 0xffffffffu) continue;
@@ -271,19 +284,23 @@ static void hosts_apply(uint32_t self, int from_season, int sort)
         uint32_t old[1] = {rows};
         call_cdecl(GAME_FREE, 1, old);
         if (rt_unwinding) return;
+        if (any) any = now + (any - rows);
         rows = now;
         wr32(g_mem, self, rows);
     }
     int used = count;
+    for (int y = from_season; any && y <= SEASON_LAST_YEAR + 4; y++) {
+        if (season_intl_edition("fifa_confed", y) || row_find(rows, used, confed, y)) continue;
+        uint32_t row = rows + (uint32_t)used++ * ROW_SIZE;
+        memcpy(g_mem + row, g_mem + any, ROW_SIZE);
+        wr16(g_mem, row + ROW_YEAR, (uint16_t)y);
+        wr8(g_mem, row + ROW_CYCLE, 0);
+    }
     for (int c = 0; c < HOST_COMPS; c++) {
         uint32_t key = rd32(g_mem, host_comps[c].key);
         if (key == 0xffffffffu) continue;
-        if (key == rd32(g_mem, KEY_CONFED)) {
-            /* The Confederations Cup row of every year (year 0, host redrawn by 0x5fab70) would come first in
-             * find_hosts: it leaves for the year that no game reaches. */
-            uint32_t any = row_find(rows, used, key, 0);
-            if (any) wr16(g_mem, any + ROW_YEAR, 2200);
-        }
+        if (key == confed && any && (int16_t)rd16(g_mem, any + ROW_YEAR) == 0)
+            wr16(g_mem, any + ROW_YEAR, CONFED_ANY_YEAR);       /* see the top of the function */
         for (int i = 0; i < season_intl_edition_count; i++) {
             const SeasonIntlEdition *e = &season_intl_editions[i];
             if (strcmp(e->file, host_comps[c].file) || e->season < from_season) continue;
@@ -457,6 +474,98 @@ static int nation_in(const uint32_t *teams, int n, uint32_t nation)
     return 0;
 }
 
+static int dead_name(const char *name);
+
+/* The nation of the first of the names ('/' between them) that the data holds: no case, not a dead record
+ * (dead_name), with a continent. -1 for none. */
+static int nation_by_alts(const char *names)
+{
+    char one[64];
+    for (const char *p = names; p && *p;) {
+        size_t n = strcspn(p, "/");
+        snprintf(one, sizeof one, "%.*s", (int)n, p);
+        if (!dead_name(one))
+            for (int id = 0; id < nation_count(); id++)
+                if (!strcasecmp(win_str(nation_at(id) + NATION_NAME), one) &&
+                    readable(rd32(g_mem, nation_at(id) + NATION_CONTINENT)))
+                    return id;
+        p += n;
+        if (*p == '/') p++;
+    }
+    return -1;
+}
+
+uint32_t season_intl_team_named(const char *names)
+{
+    int id = nation_by_alts(names);
+    if (id < 0) return 0;
+    uint32_t args[1] = {nation_at(id)};
+    uint32_t c = call_cdecl(NATIONAL_TEAM, 1, args);
+    return !rt_unwinding && team_nation(c) == nation_at(id) ? c : 0;
+}
+
+/* 1 when the nation is one of the real draw's (season_intl_real_draw). */
+static int in_real_draw(const char *draw, uint32_t nation)
+{
+    char one[160];
+    for (const char *p = draw; p && *p;) {
+        size_t n = strcspn(p, ";");
+        snprintf(one, sizeof one, "%.*s", (int)n, p);
+        int id = nation_by_alts(one);
+        if (id >= 0 && nation_at(id) == nation) return 1;
+        p += n;
+        if (*p == ';') p++;
+    }
+    return 0;
+}
+
+/* A start after the qualifying began (O259 A9): the slots become the real draw. A slot whose nation is in it
+ * stays; the other real finalists that the data holds take the other slots in the table's order; a finalist
+ * that the data lacks leaves its slot to the fill below (logged). Returns the count of slots set. */
+static int real_draw_slots(uint32_t comp, const char *name, int year, uint32_t *teams, int room)
+{
+    const char *draw = season_intl_real_draw(name, year);
+    uint32_t slots = rd32(g_mem, comp + SLOTS);
+    if (!draw || !readable(slots)) return 0;
+    uint32_t keep[64];
+    uint8_t flag[64];
+    int n = 0;
+    for (int i = 0; i < room; i++) {
+        uint32_t t = teams[i], nation = team_nation(t);
+        if (nation && in_real_draw(draw, nation) && !nation_in(keep, n, nation)) {
+            flag[n] = rd8(g_mem, slots + (uint32_t)i * SLOT_SIZE + 4u);
+            keep[n++] = t;
+        }
+    }
+    char one[160];
+    for (const char *p = draw; *p && n < room;) {
+        size_t len = strcspn(p, ";");
+        snprintf(one, sizeof one, "%.*s", (int)len, p);
+        p += len;
+        if (*p == ';') p++;
+        int id = nation_by_alts(one);
+        if (id >= 0 && nation_in(keep, n, nation_at(id))) continue;
+        uint32_t t = id >= 0 ? season_intl_team_named(one) : 0;
+        if (rt_unwinding) return 0;
+        if (!t) {
+            if (logging()) fprintf(stderr, "recomp: season intl: %s %d: the finalist %s is not in the data\n", name,
+                                   year, one);
+            continue;
+        }
+        flag[n] = 0;
+        keep[n++] = t;
+    }
+    for (int i = 0; i < room; i++) {
+        teams[i] = i < n ? keep[i] : 0;
+        wr32(g_mem, slots + (uint32_t)i * SLOT_SIZE, teams[i]);
+        wr8(g_mem, slots + (uint32_t)i * SLOT_SIZE + 4u, i < n ? flag[i] : 0);
+    }
+    if (logging())
+        fprintf(stderr, "recomp: season intl: %s %d: the real draw, %d of %d teams (qualifying began before the "
+                        "game)\n", name, year, n, room);
+    return n;
+}
+
 /* 1 when the finals of an edition year may take teams that no qualifier gave. The fill is for the slots that
  * qualifying cannot fill:
  * - a game that starts in the season of the finals or the one before: the qualifying began before the game
@@ -498,6 +607,14 @@ static void fill_slots(uint32_t comp, uint32_t continent, const char *name)
             empty += i < count;
             if (i >= count && nation) spare[n_spare++] = t;         /* a default nation still in the slot */
         }
+    }
+    if (season_intl_late_start(name, year)) {
+        int set = real_draw_slots(comp, name, year, teams, room);
+        if (rt_unwinding) return;
+        n_open = n_spare = 0;
+        for (int i = set; i < room; i++) open[n_open++] = i;
+        if (set) wr16(g_mem, comp + SLOT_COUNT, (uint16_t)set);
+        count = set;
     }
     if (!n_open) return;
     int filled = 0, s = 0, k = 0;
@@ -621,6 +738,20 @@ void o_0057c120(void);
 /* A qualifier that ends after the fill finds no free slot: WorldCup::add_qualified_team 0x92e740 and
  * EuroChamp::add_qualified_team 0x57c120 (thiscall (team), ret 4) stop at a box when the slots are full
  * (0x92e74a, 0x57c12a). In a season game the team does not come in. */
+/* A start after the qualifying began (O259 A9): a qualifier of the part of the campaign that the game plays goes
+ * in only when it is one of the real draw's (the draw fill gives the others, real_draw_slots). */
+static int late_out(uint32_t comp, const char *name)
+{
+    int year = (int16_t)rd16(g_mem, comp + 0x40u);
+    uint32_t nation = team_nation(rt_arg(0));
+    if (!season_intl_late_start(name, year) || !nation || in_real_draw(season_intl_real_draw(name, year), nation))
+        return 0;
+    if (logging())
+        fprintf(stderr, "recomp: season intl: %s %d: %s is not in the real draw, it stays out\n", name, year,
+                win_str(nation + NATION_NAME));
+    return 1;
+}
+
 static int slots_full(uint32_t comp)
 {
     return season_intl_on() && (int16_t)rd16(g_mem, comp + SLOT_COUNT) >= (int16_t)rd16(g_mem, comp + SLOT_ROOM);
@@ -642,6 +773,10 @@ RT_WRAP(0092e740, wc_add_qualified)
             rt_ret_stdcall(0, 1);
             return;
         }
+    }
+    if (late_out(cpu.ecx, "world_cup")) {
+        rt_ret_stdcall(0, 1);
+        return;
     }
     if (slots_full(cpu.ecx)) {
         if (logging()) fprintf(stderr, "recomp: season intl: world_cup is full, a qualifier stays out\n");
@@ -671,8 +806,15 @@ RT_WRAP(0057c120, euro_add_qualified)
     if (season_intl_on()) season_euro_slots_after_load(self);    /* slice 28: no slot array after a load */
     if (rt_unwinding) return;
     cpu.ecx = self;
+    /* A safety net (O260 A12): the cause, the club addresses of the 24-team draw where the group builders take
+     * club indexes (0x57b5e4..0x57b5fd), is fixed in season_intl_euro.c. The line is always written, so a run
+     * shows any qualifier with no nation. */
     if (season_intl_on() && !team_nation(rt_arg(0))) {
-        if (logging()) fprintf(stderr, "recomp: season intl: euro_champ: a qualifier with no nation stays out\n");
+        fprintf(stderr, "recomp: season intl: euro_champ: a qualifier with no nation stays out\n");
+        rt_ret_stdcall(0, 1);
+        return;
+    }
+    if (late_out(cpu.ecx, "euro_champ")) {
         rt_ret_stdcall(0, 1);
         return;
     }

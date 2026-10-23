@@ -36,6 +36,7 @@
 #define CLUB_REPUTATION 0x80u
 #define RECORD_LEVEL 0x69u
 #define MAX_LIST 512
+#define CUP_STAGE_VTABLE 0x00969468u
 
 static int readable(uint32_t p) { return p >= 0x10000u && p < 0xfff00000u; }
 
@@ -65,13 +66,18 @@ static int better(uint32_t a, uint32_t b, int lowest)
 void season_cup_fill_entrants(uint32_t cup)
 {
     if (!readable(cup) || !season_game_changes()) return;
+    /* A Cup_Stage (vtable 0x969468, set by its constructor at 0x522e80) is a stage of another competition, for
+     * example a promotion play-off: it takes only the clubs that qualified for it, so an empty place stays
+     * (O258; gate (a) run 7, 2024 start: a stage on the I liga record in May 2025). */
+    if (rd32(g_mem, cup) == CUP_STAGE_VTABLE) return;
     uint32_t list = rd32(g_mem, cup + CUP_TEAM_LIST), rec = rd32(g_mem, cup + 4);
     int count = (int16_t)rd16(g_mem, cup + CUP_TEAMS);
     if (!readable(list) || !readable(rec) || count < 2 || count > MAX_LIST) return;
-    int nation = -1, empty = 0, lowest = 1000000, other = 0;
+    int nation = -1, empty = 0, lowest = 1000000, other = 0, first_empty = -1;
     for (int i = 0; i < count; i++) {
         uint32_t club = rd32(g_mem, list + ENTRY * (uint32_t)i);
         if (!readable(club)) {
+            if (first_empty < 0) first_empty = i;
             empty++;
             continue;
         }
@@ -107,6 +113,7 @@ void season_cup_fill_entrants(uint32_t cup)
         g_mem[at + 5] = 0;
         filled++;
     }
-    fprintf(stderr, "recomp: cup entrants: %s (%.40s) %d: %d of %d places empty, %d filled\n", season_change_file(cup),
-            win_str(rec + 4), (int16_t)rd16(g_mem, cup + 0x40), empty, count, filled);
+    fprintf(stderr, "recomp: cup entrants: %s (%.40s) %d: %d of %d places empty (the first is place %d), %d filled\n",
+            season_change_file(cup), win_str(rec + 4), (int16_t)rd16(g_mem, cup + 0x40), empty, count, first_empty,
+            filled);
 }

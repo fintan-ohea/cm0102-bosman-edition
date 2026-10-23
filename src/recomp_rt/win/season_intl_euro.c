@@ -718,8 +718,12 @@ void o_0076c120(void);
 /* NationalTeams::select_squad, thiscall (nation, flag, date, fixture, flag), ret 0x14 (from 0x76bc23 with the
  * home team's nation; 0x76c266 inside). Test log only (RECOMP_SEASON_INTL_LOG=1): with no nation it logs the
  * fixture and the clubs of each Euro group table, then calls the original. */
+void season_national_after_pick(uint32_t nation, int slot);     /* season_national_fill.c (rule O304) */
+
 RT_WRAP(0076c120, euro_select_squad_log)
 {
+    uint32_t nation = rt_arg(0);
+    int slot = (int8_t)rt_arg(1);
     if (logging() && !rt_arg(0)) {
         uint32_t fx = rt_arg(3), euro = 0, comps = rd32(g_mem, 0xadadfcu);
         fprintf(stderr, "recomp: season intl: select_squad with no nation, fixture %08x:", fx);
@@ -743,4 +747,5 @@ RT_WRAP(0076c120, euro_select_squad_log)
         }
     }
     o_0076c120();
+    season_national_after_pick(nation, slot);   /* the under-21 squad keeps out the senior squad */
 }

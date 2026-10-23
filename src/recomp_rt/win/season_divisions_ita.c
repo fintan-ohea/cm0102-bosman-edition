@@ -614,9 +614,9 @@ static void chain(uint32_t serie_a)
     if (rt_unwinding || !a || !b) return;
     mark_last_season();
     if (rt_unwinding) return;
-    /* Serie A and B, 4 and 4 in pairs (0x64248e); B and each group in pairs (as 0x6424b6, 0x6424de), after the
-     * choice of the clubs that go up (Q627). */
-    uint32_t ab[6] = {a, b, 1, 1, 4, 4};
+    /* Serie A and B in pairs with the counts of their places (0x64248e, 0x642476); B and each group in pairs (as
+     * 0x6424b6, 0x6424de), after the choice of the clubs that go up (Q627). */
+    uint32_t ab[6] = {a, b, 1, 1, rt_promote_expected(b, 1, 4), rt_promote_expected(a, 0, 4)};
     call_this(F_PROMOTE_RELEGATE, serie_a, 6, ab);
     /* The change into the era with the extra division flag: C2/A played the season before as a C2 group, two tiers
      * below Serie B (the C2 rows of 2013/14 send no club up: all join the single Serie C, ita-210, ita-211), so its
@@ -827,9 +827,9 @@ static int rows_of_status(uint32_t league, int up)
 /* The chain with two C2 groups, in place of 0x642410 once C2/C has ended (the change into two groups runs the
  * original's chain, as C2/C still plays that season): the final places of A, B, C1/A, C1/B, C2/A and C2/B
  * (0x642423..0x642465, 0x6424fb, 0x642511), then the original's calls of league_promote_and_relegate 0x689c80 with
- * their arguments, less the two of C2/C (0x6425f0, 0x642618): A and B (1, 1, 4, 4; 0x64248e), B and C1/A, B and
- * C1/B (1, 1, -1, -1; 0x6424b6, 0x6424de), C1/A and C2/A (1, 1; 0x642550), C1/B and C2/A (0, 1; 0x642578), C1/A
- * and C2/B (1, 1; 0x6425a0), C1/B and C2/B (0, 1; 0x6425c8). */
+ * their arguments, less the two of C2/C (0x6425f0, 0x642618): A and B (1, 1, the counts of their places;
+ * 0x64248e), B and C1/A, B and C1/B (1, 1, -1, -1; 0x6424b6, 0x6424de), C1/A and C2/A (1, 1; 0x642550), C1/B and
+ * C2/A (0, 1; 0x642578), C1/A and C2/B (1, 1; 0x6425a0), C1/B and C2/B (0, 1; 0x6425c8). */
 static void c2_chain(uint32_t serie_a)
 {
     uint32_t a = object_of(KEY_A), b = object_of(KEY_B), c1a = object_of(KEY_C1A), c1b = object_of(KEY_C1B);
@@ -838,7 +838,8 @@ static void c2_chain(uint32_t serie_a)
     for (int i = 0; i < 6 && !rt_unwinding; i++)
         if (list[i]) call_this(rd32(g_mem, rd32(g_mem, list[i]) + 0xa4), list[i], 0, NULL);
     if (rt_unwinding || !a || !b || !c1a || !c1b || !c2a || !c2b) return;
-    const uint32_t pairs[3][6] = {{a, b, 1, 1, 4, 4}, {b, c1a, 1, 1, 0xffffffffu, 0xffffffffu},
+    const uint32_t pairs[3][6] = {{a, b, 1, 1, rt_promote_expected(b, 1, 4), rt_promote_expected(a, 0, 4)},
+                                  {b, c1a, 1, 1, 0xffffffffu, 0xffffffffu},
                                   {b, c1b, 1, 1, 0xffffffffu, 0xffffffffu}};
     for (int i = 0; i < 3 && !rt_unwinding; i++) call_this(F_PROMOTE_RELEGATE, serie_a, 6, pairs[i]);
     if (rt_unwinding) return;
