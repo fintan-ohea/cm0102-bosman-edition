@@ -65,7 +65,8 @@ The differences, by kind:
     not_held                    the game holds a competition (its year is the season, one year before or one
                                 after) that the table marks not held in that season
     idle                        the game's object waits for a later edition (its year is later), but the
-                                table holds the competition in that season
+                                table holds the competition in that season (a row that is not_played counts as not
+                                held here and in not_held)
     club_list                   (a season game, its start season) a division with a club list of the club moves
                                 table (tools/seasons/make_clubs.py) whose listed clubs that the database holds
                                 are not all in it, or that holds other clubs too: the division keeps the count of
@@ -77,7 +78,8 @@ The differences, by kind:
                                 report, slice 22): the second group stage and the first knockout round differ
                                 from the "Rounds (clubs):" list of the row ("Groups 2 16, KO 8" or "KO 16")
     not_in_game                 a row with no competition in the game, of a nation (or body, such as UEFA)
-                                that has a numbered tier in the report, or of a file of the report
+                                that has a numbered tier in the report, or of a file of the report; not for a row whose
+                                notes say "not played in the game" (not_played, Q336)
 
 The row of a competition: the rows of its file in that season; of those, a row with this file alone before a
 row of two files; a row that is not a qualifying path ("qualifying" in comp); then the k-th row for the k-th
@@ -228,6 +230,16 @@ def league_playoffs():
 
 
 
+NOT_PLAYED = "not played in the game"
+
+
+def not_played(r):
+    """A row of a competition that the game does not play by a decision, marked in its notes column (the National
+    League Cup from 2024/25, Q336: the game holds no under-21 sides). The one source for the not_in_game check and
+    league_stalls: such a row counts as not held."""
+    return NOT_PLAYED in (r.get("notes") or "")
+
+
 def league_stalls(comps, rows=None):
     """Gate check (O278, O282): the divisions whose edition does not move on from one season to the next. comps: the
     comp lines of one or more reports, the legs of a soak in leg order. A division is a file of a table row with a
@@ -242,14 +254,15 @@ def league_stalls(comps, rows=None):
     give no line, as in differences().
     O324: the domestic cups too, the files of the rows with tier "cup" (each object of the file, league or cup kind).
     A cup is checked in a season only when the table holds it in that season and the season before: a season where
-    its row says not held, or where it has no row (before its first or after its last edition), gives no line.
+    its row says not held or not played in the game (not_played), or where it has no row (before its first or after
+    its last edition), gives no line.
     Returns lines "<season>: <file> (<name>) ..."."""
     if rows is None:
         rows = make_rules.read_rows()
     divisions = {f for r in rows if isinstance(r["tier"], int) for f in row_files(r)}
     cup_held = collections.defaultdict(set)         # cup file: the seasons the table holds it
     for r in rows:
-        if r["tier"] == "cup" and "not_held" not in (r["clubs"], r["format"]):
+        if r["tier"] == "cup" and "not_held" not in (r["clubs"], r["format"]) and not not_played(r):
             for f in row_files(r):
                 cup_held[f].add(r["season"])
     years = {"start": collections.defaultdict(dict), "end": collections.defaultdict(dict)}
@@ -332,7 +345,7 @@ def differences(seasons, comps, rows):
         r = pick_row(found, c["file"], k)
         nations |= {x["nation"] for x in found if isinstance(x["tier"], int)}
         label = f"{c['file']} ({c['name']}), row {r['id']}"
-        table_held = "not_held" not in (r["clubs"], r["format"])
+        table_held = "not_held" not in (r["clubs"], r["format"]) and not not_played(r)
         # Some objects of a record hold no year at +0x40 (French CFA and French Lower Division of fra_first): the
         # value is whatever the memory holds and changes from build to build, so such an object gives no line.
         if not any(1900 <= x["year"] <= 2200 for x in both):
@@ -375,7 +388,7 @@ def differences(seasons, comps, rows):
     out |= uefa_format_differences(rows)
     for s in sorted({x["season"] for x in seasons}):
         for r in rows:
-            if r["season"] != s or r["comp_file"] == "na" or "not_held" in (r["clubs"], r["format"]):
+            if r["season"] != s or r["comp_file"] == "na" or "not_held" in (r["clubs"], r["format"]) or not_played(r):
                 continue
             files = row_files(r)
             if any(f in held[s] for f in files):

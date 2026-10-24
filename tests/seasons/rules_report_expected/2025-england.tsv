@@ -19,7 +19,6 @@
 2025	not_held	euro_champ_qual (UEFA European Championship qualifying), row int-continental-266: the game holds 2026, the table says not held
 2025	not_in_game	eng-272 eng_conf 'National League' (England)
 2025	not_in_game	eng-445 eng_fa_trophy 'FA Trophy' (England)
-2025	not_in_game	eng-447 new 'National League Cup' (England)
 2025	not_in_game	uefa-193 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2026	bench	eur_super_cup (UEFA Super Cup), row uefa-208: game 9, table 12 (12 (23 players on the match sheet, Art. 40.01))
 2026	bench	european_cup (UEFA Champions League), row uefa-202: game 9, table 12 (12)
@@ -44,6 +43,5 @@
 2026	no_row	record_utils (Under 21 International): no table row
 2026	not_in_game	eng-282 eng_conf 'National League' (England)
 2026	not_in_game	eng-451 eng_fa_trophy 'FA Trophy' (England)
-2026	not_in_game	eng-453 new 'National League Cup' (England)
 2026	not_in_game	uefa-201 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2026	playoffs	eng_first (EFL Championship), row eng-279: game 4 up and 0 down play-off places, table 6 and 0 ('3rd-8th: 5v8 and 6v7 single-leg eliminators (higher club at home), then semi-fin')
