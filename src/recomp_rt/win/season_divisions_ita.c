@@ -1325,11 +1325,24 @@ RT_WRAP(0063dfe0, ita_ccup_entrants)
     rt_ret_cdecl(1);
 }
 
-/* The group size (init_first_group 0x63d5ee, read by create_group_stage at 0x63dac5). */
+/* The group size (init_first_group 0x63d5ee, read by create_group_stage at 0x63dac5). The cup object is group 1 and
+ * lives on from edition to edition, so it keeps the matches per club (+0xa7) that check_complete 0x689ad0 made for
+ * its last group: (5 - 1) x 1 = 4 in the original, where every group has 5 clubs. Groups 2 to 16 are new objects
+ * (0x68b100 at 0x63db49) with -1. When g changes (5 to 4 in 2011/12, 4 to 3 in 2014/15, changing rules on), group 1
+ * kept the old value, was never complete, the knockout was never made (advance_stage 0x63d950) and the cup stayed at
+ * that edition. So the store gives -1 when the value is not the one of g clubs, and check_complete counts again (as
+ * own_clubs does for C2/A). */
 uint32_t rt_ita_ccup_group(uint32_t cup, uint32_t original)
 {
     int n = ccup_clubs(cup);
-    return n ? (uint32_t)ccup_group(n) : original;
+    if (!n) return original;
+    int g = ccup_group(n), m = (int16_t)rd16(g_mem, cup + 0xa7), meet = (int)g_mem[cup + 0x3c];
+    if (m != -1 && m != (g - 1) * meet) {
+        wr16(g_mem, cup + 0xa7, 0xffffu);
+        fprintf(stderr, "recomp: serie c: Coppa Italia Serie C %d: group 1 counts its matches again (%d of the last "
+                        "edition, groups of %d now)\n", (int16_t)rd16(g_mem, cup + 0x40), m, g);
+    }
+    return (uint32_t)g;
 }
 
 /* The match days of a group (create_schedule 0x63cfd8): the first of the original's five dates. */
