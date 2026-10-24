@@ -25,6 +25,7 @@
 #define CLUB_NAME 4u                /* long name, 52 bytes */
 #define CLUB_NATION 0x53u           /* nation pointer */
 #define CLUB_DIVISION 0x57u         /* club_comp pointer */
+#define CLUB_REPUTATION 0x80u      /* s16 */
 #define CLUB_LAST_DIVISION 0x5bu    /* club_comp pointer: the division of the last season */
 #define COMPS 0xae23d0u             /* the club_comp table (0x6b bytes a record) */
 #define COMP_COUNT 0xae2378u
@@ -166,7 +167,7 @@ typedef struct {
     uint32_t at, nation;
     int rank, n0, want, tier, target, spare, sized;
     int fresh;          /* slice 20: a record that the module adds, with no club in the database */
-    int listed, found, kept, missing, missing_reserve, filled_own, filled_left, filled_pool, filled_spare, filled_lower;
+    int listed, found, kept, missing, missing_reserve, filled_own, filled_left, filled_up, filled_pool, filled_spare, filled_lower;
     int open, stand_in;
     const char *name;
 } Division;
@@ -356,6 +357,46 @@ static int find_division(const Division *div, int ncomps, const char *name)
     for (int t = 0; t < ncomps; t++)
         if ((div[t].n0 > 0 || div[t].fresh) && !div[t].spare && same_name(div[t].at + COMP_NAME, name)) return t;
     return -1;
+}
+
+/* 1 when a club can take a place of division d in a fill group of move_clubs (the groups are named there). */
+static int fill_takes(const Club *c, const Division *div, int ncomps, uint32_t comps, const Division *d, int group,
+                      uint32_t spare1, uint32_t spare2, uint32_t cup_pool_nation)
+{
+    if (c->kept || c->national || c->nation != d->nation || c->div == d->at) return 0;
+    int t = c->db_div >= comps ? (int)((c->db_div - comps) / COMP_SIZE) : -1;
+    int reserve_ok = !reserve_name(win_str(c->at + CLUB_NAME)) || d->missing_reserve;
+    if (group == 0)                     /* a club that left a division of a higher rank */
+        return !c->div && t >= 0 && t < ncomps && div[t].rank > d->rank && reserve_ok;
+    if (group == 4)                     /* a club that left a lower division with a list */
+        return !c->div && t >= 0 && t < ncomps && div[t].target && !div[t].spare && div[t].rank < d->rank && reserve_ok;
+    if (group == 1) return !c->div && !c->db_div && reserve_ok;
+    if (group == 2) return c->div && (c->div == spare1 || c->div == spare2) && c->nation != cup_pool_nation;
+    if (c->div >= comps && c->div < comps + (uint32_t)ncomps * COMP_SIZE) {
+        const Division *from = &div[(c->div - comps) / COMP_SIZE];
+        return !from->spare && !from->target && from->rank < d->rank;
+    }
+    return 0;
+}
+
+/* FILL_BY_REP: the club of the group with the highest reputation (+0x80), or -1. A list of a lower division (the
+ * English Conference) sends the clubs that it does not keep out of that division. Its former clubs are the clubs
+ * of the nation nearest to the division above, so they take its open places first, best first. The spare
+ * divisions (A Lower Division, A Premier Division) hold the nation's small clubs in alphabetical order; the club
+ * table trim 0x5267c0 keeps clubs by reputation (0x526afd..0x526b9e, inference), so a fill that took the first of
+ * them lost the weakest at the trim. A 2025/26 start on data of 2002 (England, changing rules on) gave League Two
+ * seven clubs of A Lower Division (Abbey Hey to Almondsbury Town). The trim then dropped four, League Two
+ * played with 20 clubs, and the FA Cup and the League Cup filled 4 empty places each season. */
+static int best_fill(const Club *club, int count, const Division *div, int ncomps, uint32_t comps, const Division *d,
+                     int group, uint32_t spare1, uint32_t spare2, uint32_t cup_pool_nation)
+{
+    int best = -1, best_rep = 0;
+    for (int i = 0; i < count; i++) {
+        if (!fill_takes(&club[i], div, ncomps, comps, d, group, spare1, spare2, cup_pool_nation)) continue;
+        int rep = (int16_t)rd16(g_mem, club[i].at + CLUB_REPUTATION);
+        if (best < 0 || rep > best_rep) best = i, best_rep = rep;
+    }
+    return best;
 }
 
 /* The moves of a season. */
@@ -585,9 +626,9 @@ static void move_clubs(int season)
          *   slice 18): first a club that left a division of a higher rank (step "Leave"; no reserve or B side,
          *   and no move between two divisions of one rank such as German Regional North and South), so the
          *   clubs of the nation stay in its divisions (SweCup::build_club_pool 0x88da20 needs 244 Swedish clubs in
-         *   them and loops for ever with fewer). Then the nation's clubs with no division, then the clubs of the
-         *   spare divisions, then the clubs of
-         *   lower divisions that no list keeps. */
+         *   them and loops for ever with fewer). Then a club that left a lower division with a list, then the
+         *   nation's clubs with no division, then the clubs of the spare divisions, then the clubs of lower
+         *   divisions that no list keeps. */
         for (int i = 0; i < count && now < d->want; i++) {
             Club *c = &club[i];
             if (c->kept || c->national || c->nation != d->nation || c->div || c->db_div != d->at) continue;
@@ -600,34 +641,35 @@ static void move_clubs(int season)
         int fixed = class_size(d->name, season) > 0;
         int reserve_places = missing_places < d->missing_reserve ? missing_places : d->missing_reserve;
         int places[2] = {d->tier > 2 || fixed ? missing_places : reserve_places, need - missing_places};
+        /* The groups of a kind 1 place, in this order: 0 a club that left a higher division, 4 a club that left a
+         * lower division with a list, 1 a club with no division, 2 a club of a spare division, 3 a club of a lower
+         * division with no list. Groups 4 and 2 take the club with the highest reputation first (see FILL_BY_REP). */
+        static const int kind1_groups[] = {0, 4, 1, 2, 3};
         for (int kind = 0; kind < 2; kind++)
-            for (int group = kind ? 0 : 1; group <= (kind ? 3 : 1) && places[kind] > 0; group++)
+            for (int g = 0; g < (kind ? 5 : 1) && places[kind] > 0; g++) {
+                int group = kind ? kind1_groups[g] : 1;
+                int by_rep = group == 4 || group == 2;
                 for (int i = 0; i < count && places[kind] > 0; i++) {
-                    Club *c = &club[i];
-                    if (c->kept || c->national || c->nation != d->nation || c->div == d->at) continue;
-                    int take = 0;
-                    if (group == 0) {           /* a club that left a division of a higher rank */
-                        int t = c->db_div >= comps ? (int)((c->db_div - comps) / COMP_SIZE) : -1;
-                        take = !c->div && t >= 0 && t < ncomps && div[t].rank > d->rank &&
-                               (!reserve_name(win_str(c->at + CLUB_NAME)) || d->missing_reserve);
-                    } else if (group == 1)
-                        take = !c->div && !c->db_div && (!reserve_name(win_str(c->at + CLUB_NAME)) || d->missing_reserve);
-                    else if (group == 2)
-                        take = c->div && (c->div == spare1 || c->div == spare2) && c->nation != cup_pool_nation;
-                    else if (c->div >= comps && c->div < comps + (uint32_t)ncomps * COMP_SIZE) {
-                        Division *from = &div[(c->div - comps) / COMP_SIZE];
-                        take = !from->spare && !from->target && from->rank < d->rank;
+                    int pick = by_rep ? best_fill(club, count, div, ncomps, comps, d, group, spare1, spare2,
+                                                  cup_pool_nation)
+                                      : (fill_takes(&club[i], div, ncomps, comps, d, group, spare1, spare2,
+                                                    cup_pool_nation) ? i : -1);
+                    if (pick < 0) {
+                        if (by_rep) break;
+                        continue;
                     }
-                    if (!take) continue;
+                    Club *c = &club[pick];
                     c->div = d->at;         /* a lower division that gives a club fills in its turn, later */
                     now++;
                     places[kind]--;
                     if (group == 0) d->filled_left++;
+                    else if (group == 4) d->filled_up++;
                     else if (group == 1) d->filled_pool++;
                     else if (group == 2) d->filled_spare++;
                     else d->filled_lower++;
                     if (kind == 0 && d->tier <= 2 && reserve_places-- <= 0) d->stand_in++;
                 }
+            }
         d->open = d->want - now;
         if (now < d->want) {
             short_after++;
@@ -672,9 +714,9 @@ static void move_clubs(int season)
                  div[t].listed == div[t].want;
         if (log)
             fprintf(stderr, "recomp: club moves: list: %d/%02d\t%s\ttier %d\treal %d\tfound %d\tkept %d\town %d\t"
-                            "left %d\tno division %d\tspare %d\tlower %d\tstand-in %d\topen %d\tclass %d\tdatabase %d\n",
+                            "left %d\tup %d\tno division %d\tspare %d\tlower %d\tstand-in %d\topen %d\tclass %d\tdatabase %d\n",
                     season, (season + 1) % 100, div[t].name, div[t].tier, div[t].listed, div[t].found, div[t].kept,
-                    div[t].filled_own, div[t].filled_left, div[t].filled_pool, div[t].filled_spare, div[t].filled_lower, div[t].stand_in,
+                    div[t].filled_own, div[t].filled_left, div[t].filled_up, div[t].filled_pool, div[t].filled_spare, div[t].filled_lower, div[t].stand_in,
                     div[t].open, div[t].want, div[t].n0);
     }
     fprintf(stderr, "recomp: club moves of %d/%02d: %d divisions with a list (%d whole), %d clubs moved, %d left "
