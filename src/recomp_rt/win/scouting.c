@@ -15,6 +15,8 @@
  *   ranges, as the Assistant scores a player (picker.c: the key attributes of the role, times the fit, over 20),
  *   and compares that with the best two players of the squad in the role (their true attributes: the club's
  *   coaches know them). Sign, Consider or Not needed follows.
+ * - Need: the reports rank by stars plus NEED_BONUS for a player whose best role is one of the squad's two weakest,
+ *   and keep his value (staff +0x52) and weekly wage (the contract) at their date.
  * - The reports, the duties the assistant gave and its count go into the save as the part bosman_scouting.dat.
  *
  * The Scout reports box (slice 3) opens from the Assistant drop-down of the player's own squad screen
@@ -61,6 +63,11 @@
 #define STAFF_CLUB 0x39u
 #define COACH_DATA 0x69u            /* staff: the coaching data */
 #define PLAYER_DATA 0x61u
+#define STAFF_VALUE 0x52u           /* int32: the value the search screens sort by (0x819fa6) */
+#define CONTRACT_INDEX 0xae2d0cu    /* int32 a staff id, 79 bytes apart: the contract, -1 none (editor.c) */
+#define CONTRACTS 0xae1050u         /* the contract manager; a contract is 80 bytes */
+#define CONTRACT_WAGE 0x0cu         /* int32 a week (CONTRACT_MANAGER::get_wage 0x4d0c20) */
+#define FORMAT_MONEY 0x441c10u      /* cash_format_money, cdecl (text, size, s64) (editor.c) */
 #define SQUAD 0xd7u                 /* club: 50 staff pointers, the first team */
 #define MANAGER 0xcfu               /* club: the manager's staff record */
 #define GAME_DATE 0xae2c90u         /* s16 day of the year from 0, s16 year */
@@ -103,7 +110,9 @@
 #define CLOSE 0xfffffff7u
 #define TEXT_SIZE 0x200u
 #define NAME_AT 0x300u
-#define SCRATCH_SIZE 0x400u
+#define MONEY_AT 0x400u             /* scratch + this: the money text, 0x7d0 bytes as the finance screen gives */
+#define MONEY_SIZE 0x7d0u
+#define SCRATCH_SIZE (MONEY_AT + MONEY_SIZE)
 #define ROWS 14
 
 enum { ROLE_GK, ROLE_DC, ROLE_DLR, ROLE_DMC, ROLE_MC, ROLE_MLR, ROLE_AM, ROLE_FC, ROLES };
@@ -126,12 +135,14 @@ static const uint8_t keys[ROLES][7] = {
 typedef struct {
     int32_t player, scout;
     int16_t yday, year;
-    uint8_t ability, potential, role, rec, judging, isnew, age, pad;
-    uint16_t est, best, second, pad2;  /* role scores x 10; the record is 100 bytes, no padding of its own */
+    uint8_t ability, potential, role, rec, judging, isnew, age, need;  /* need: the role is one the squad needs */
+    uint16_t est, best, second, pad2;  /* role scores x 10; the record has no padding of its own */
     int32_t best_player, second_player;
     uint8_t lo[ATTRIBUTES + 1], hi[ATTRIBUTES + 1];
+    int32_t value, wage;               /* at the report's date; -1 unknown (reports of format 1) */
 } Report;
-_Static_assert(sizeof(Report) == 100, "the save part keeps reports of 100 bytes");
+_Static_assert(sizeof(Report) == 108, "the save part keeps reports of 108 bytes");
+#define REPORT_V1 100u                 /* format 1: the record without value and wage */
 
 typedef struct { int32_t started; uint8_t ours; } Duty;
 
@@ -185,6 +196,13 @@ static int shown(uint32_t staff, int k)
 
 static int judging(uint32_t scout)
 {
+    static int test = -2;              /* test only: RECOMP_SCOUT_JUDGING n reports as a scout of judging n */
+    if (test == -2) {
+        const char *v = getenv("RECOMP_SCOUT_JUDGING");
+        test = v && *v ? atoi(v) : -1;
+        if (test > 20) test = 20;
+    }
+    if (test >= 1) return test;
     uint32_t c = rd32(g_mem, scout + COACH_DATA);
     if (!c) return 1;
     uint32_t a[2] = {c, rd8(g_mem, c + 0x17)};
@@ -253,6 +271,29 @@ static void squad_best(uint32_t club, int role, int *best, int32_t *best_id, int
     }
 }
 
+/* The roles the squad needs: the NEEDS roles whose best player of the first team scores lowest. The game's
+ * search filters (filters at a search's +0x1fa, positions GK 0x8, D 0x10, M 0x20, A 0x40 of the high word,
+ * set_option_flag 0x806630) act only when a list of results is shown (get_result_list 0x7af40d is the one
+ * caller of player_matches_filter 0x807450), not on what a scout looks at; so the duties cannot aim at a
+ * position, and the need is used where the reports are chosen. */
+#define NEEDS 2
+#define NEED_BONUS 3                /* stars added to a candidate of a needed role when the reports are chosen */
+
+static unsigned needed_roles(uint32_t club)
+{
+    int best[ROLES], second;
+    int32_t a, b;
+    for (int r = 0; r < ROLES; r++) squad_best(club, r, &best[r], &a, &second, &b);
+    unsigned mask = 0;
+    for (int n = 0; n < NEEDS; n++) {
+        int low = -1;
+        for (int r = 0; r < ROLES; r++)
+            if (!(mask & 1u << r) && (low < 0 || best[r] < best[low])) low = r;
+        mask |= 1u << low;
+    }
+    return mask;
+}
+
 /* ---- Reports (slice 2) ---- */
 
 static uint32_t mix(uint32_t x)
@@ -277,7 +318,13 @@ static Report *new_slot(void)
     return oldest;
 }
 
-static void write_report(uint32_t club, uint32_t staff, uint32_t scout, int ability, int potential)
+static int32_t wage_of(uint32_t staff)
+{
+    int32_t ci = (int32_t)rd32(g_mem, rd32(g_mem, CONTRACT_INDEX) + rd32(g_mem, staff) * 79u);
+    return ci < 0 ? -1 : (int32_t)rd32(g_mem, rd32(g_mem, rd32(g_mem, CONTRACTS)) + (uint32_t)ci * 80u + CONTRACT_WAGE);
+}
+
+static void write_report(uint32_t club, uint32_t staff, uint32_t scout, int ability, int potential, unsigned need)
 {
     int32_t pid = (int32_t)rd32(g_mem, staff), sid = (int32_t)rd32(g_mem, scout);
     int j = judging(scout);
@@ -309,6 +356,9 @@ static void write_report(uint32_t club, uint32_t staff, uint32_t scout, int abil
     }
     uint32_t data = rd32(g_mem, staff + PLAYER_DATA);
     r->role = (uint8_t)best_role(data);
+    r->need = (uint8_t)!!(need & 1u << r->role);
+    r->value = (int32_t)rd32(g_mem, staff + STAFF_VALUE);
+    r->wage = wage_of(staff);
     r->est = (uint16_t)score(mid, r->role, fit(data, r->role));
     int best, second;
     squad_best(club, r->role, &best, &r->best_player, &second, &r->second_player);
@@ -321,17 +371,20 @@ static void write_report(uint32_t club, uint32_t staff, uint32_t scout, int abil
     else if (r->est >= r->second || young || (potential >= 3 && r->age <= 23)) r->rec = REC_CONSIDER;
     else r->rec = REC_NOT;
     fprintf(stderr, "recomp: scouting report player %d by scout %d (judging %d, span %d, true value inside %d of %d): "
-                    "stars %d/%d, %s est %d best %d second %d: %s\n", pid, sid, j, span, inside, ATTRIBUTES, ability,
-            potential, role_names[r->role], r->est, r->best, r->second, rec_names[r->rec]);
+                    "stars %d/%d, %s%s est %d best %d second %d value %d wage %d: %s\n", pid, sid, j, span, inside,
+            ATTRIBUTES, ability, potential, role_names[r->role], r->need ? " (need)" : "", r->est, r->best, r->second,
+            r->value, r->wage, rec_names[r->rec]);
 }
 
-/* The candidates of a manager's scout searches: entries with stars, of players of other clubs, best stars first. */
+/* The candidates of a manager's scout searches: entries with stars, of players of other clubs, best first: by
+ * stars, with NEED_BONUS more for a player whose best role is one the squad needs. */
 static void file_reports(int h, uint32_t club)
 {
-    struct { uint32_t staff, scout; int ability, potential; } c[REPORTS_A_DAY];
+    struct { uint32_t staff, scout; int ability, potential, rank; } c[REPORTS_A_DAY];
     int n = 0;
     if (today() != last_day) last_day = today(), filed_today = 0;
     if (filed_today >= REPORTS_A_DAY) return;
+    unsigned need = needed_roles(club);
     for (int slot = 0; slot < SEARCHES; slot++) {
         uint32_t s = search_of(h, slot);
         if ((int32_t)rd32(g_mem, s + 0x180) < 0) continue;
@@ -348,19 +401,20 @@ static void file_reports(int h, uint32_t club)
             if (!rd32(g_mem, staff + PLAYER_DATA) || rd32(g_mem, staff + STAFF_CLUB) == club) continue;
             Report *old = find_report(id);
             if (old && (old->judging >= judging(scout) || today() - (old->year * 372 + old->yday) < 60)) continue;
-            /* Keep the best REPORTS_A_DAY by stars: a full list takes a candidate only in place of its last. */
+            int rank = ability + potential + (need & 1u << best_role(rd32(g_mem, staff + PLAYER_DATA)) ? NEED_BONUS : 0);
+            /* Keep the best REPORTS_A_DAY by rank: a full list takes a candidate only in place of its last. */
             int k;
             if (n < REPORTS_A_DAY) k = n++;
-            else if (ability + potential > c[n - 1].ability + c[n - 1].potential) k = n - 1;
+            else if (rank > c[n - 1].rank) k = n - 1;
             else continue;
-            c[k].staff = staff, c[k].scout = scout, c[k].ability = ability, c[k].potential = potential;
-            for (; k > 0 && c[k].ability + c[k].potential > c[k - 1].ability + c[k - 1].potential; k--) {
+            c[k].staff = staff, c[k].scout = scout, c[k].ability = ability, c[k].potential = potential, c[k].rank = rank;
+            for (; k > 0 && c[k].rank > c[k - 1].rank; k--) {
                 __typeof__(c[0]) t = c[k]; c[k] = c[k - 1]; c[k - 1] = t;
             }
         }
     }
     for (int i = 0; i < n && filed_today < REPORTS_A_DAY; i++, filed_today++)
-        write_report(club, c[i].staff, c[i].scout, c[i].ability, c[i].potential);
+        write_report(club, c[i].staff, c[i].scout, c[i].ability, c[i].potential, need);
 }
 
 /* ---- The weekly news (slice 4) ---- */
@@ -488,7 +542,7 @@ void scouting_saved(const char *path)
     uint32_t size = PART_HEAD + sizeof duties + (uint32_t)report_count * sizeof(Report);
     uint8_t *part = malloc(size);
     if (!part) return;
-    put32(part, 1);
+    put32(part, 2);
     put32(part + 4, size);
     put32(part + 8, (uint32_t)report_count);
     put32(part + 12, (uint32_t)counter);
@@ -505,7 +559,7 @@ static int loading_size;
 
 void scouting_loading(const char *path)
 {
-    static uint8_t buf[PART_HEAD + sizeof duties + MAX_REPORTS * sizeof(Report)];
+    static uint8_t buf[PART_HEAD + sizeof duties + MAX_REPORTS * sizeof(Report)];   /* fits format 1 too */
     char host[2048];
     loading = buf;
     loading_size = win_existing_file(path, host, sizeof host) ? savepart_read(host, PART_NAME, buf, sizeof buf) : 0;
@@ -522,12 +576,17 @@ void scouting_loaded(int ok)
 {
     if (!ok) return;
     scouting_new_game();
-    if (loading_size < (int)(PART_HEAD + sizeof duties) || get32(loading) != 1) return;
-    uint32_t n = get32(loading + 8);
-    if (n > MAX_REPORTS || PART_HEAD + sizeof duties + n * sizeof(Report) > (uint32_t)loading_size) return;
+    uint32_t format = loading_size >= (int)(PART_HEAD + sizeof duties) ? get32(loading) : 0;
+    uint32_t n = format ? get32(loading + 8) : 0, size = format == 1 ? REPORT_V1 : sizeof(Report);
+    if ((format != 1 && format != 2) || n > MAX_REPORTS ||
+        PART_HEAD + sizeof duties + n * size > (uint32_t)loading_size) return;
     counter = (int)get32(loading + 12);
     memcpy(duties, loading + PART_HEAD, sizeof duties);
-    memcpy(reports, loading + PART_HEAD + sizeof duties, n * sizeof(Report));
+    for (uint32_t i = 0; i < n; i++) {
+        memset(&reports[i], 0, sizeof reports[i]);
+        reports[i].value = reports[i].wage = -1;
+        memcpy(&reports[i], loading + PART_HEAD + sizeof duties + i * size, size);
+    }
     report_count = (int)n;
     fprintf(stderr, "recomp: scouting: the save has %d reports\n", report_count);
 }
@@ -614,6 +673,15 @@ static void club_of(int32_t id, char *out, size_t room)
     snprintf(out, room, "%s", win_str(scratch + NAME_AT));
 }
 
+/* An amount as the game writes money ("£1,500,000"), or "-" when not known. */
+static void money(int32_t v, const char *tail, char *out, size_t room)
+{
+    if (v < 0) { snprintf(out, room, "-"); return; }
+    uint32_t f[4] = {scratch + MONEY_AT, MONEY_SIZE, (uint32_t)v, 0};
+    call(FORMAT_MONEY, 4, f);
+    snprintf(out, room, "%s%s", win_str(scratch + MONEY_AT), tail);
+}
+
 static int by_value(const void *a, const void *b)
 {
     const Report *x = &reports[*(const int *)a], *y = &reports[*(const int *)b];
@@ -622,7 +690,7 @@ static int by_value(const void *a, const void *b)
     return x->player - y->player;
 }
 
-static const uint8_t weights_list[] = {13, 30, 9, 6, 22, 9, 9, 14};
+static const uint8_t weights_list[] = {12, 25, 8, 5, 17, 8, 7, 12, 12};
 static const uint8_t weights_attr[] = {52, 20};
 #define ROW_X1 160
 #define ROW_X2 729
@@ -643,24 +711,25 @@ static void build_list(uint32_t light, uint32_t yellow, uint32_t green)
     int fresh = 0;
     for (int i = 0; i < report_count; i++) fresh += reports[i].isnew;
     char s[160];
-    snprintf(s, sizeof s, "%d reports, %d new. Stars: the scout's ability / potential. Score: the role's key "
-             "attributes x fit.", report_count, fresh);
+    snprintf(s, sizeof s, "%d reports, %d new. Stars: ability / potential. Score: key attributes x fit. "
+             "Yellow role: one you need.", report_count, fresh);
     box_text(ROW_X1, 98, ROW_X2, 116, 1, 0, 1, 1, light, s);
-    int h = area(ROW_X1, 120, ROW_X2, 140, 8, weights_list, 1, 0);
-    static const char *const heads[8] = {"Advice", "Player", "Role", "Age", "Club", "Stars", "Score", "Your best"};
-    for (int c = 0; c < 8; c++) plain(h, c, heads[c], 2, light);
+    int h = area(ROW_X1, 120, ROW_X2, 140, 9, weights_list, 1, 0);
+    static const char *const heads[9] = {"Advice", "Player", "Role", "Age", "Club", "Stars", "Score", "Your best",
+                                         "Value"};
+    for (int c = 0; c < 9; c++) plain(h, c, heads[c], 2, light);
     int pages = (report_count + ROWS - 1) / ROWS;
     if (page >= pages) page = pages ? pages - 1 : 0;
     for (int row = 0; row < ROWS && page * ROWS + row < report_count; row++) {
         int i = order[page * ROWS + row];
         const Report *r = &reports[i];
-        int a = area(ROW_X1, 144 + row * 24, ROW_X2, 166 + row * 24, 8, weights_list, 1, 0);
+        int a = area(ROW_X1, 144 + row * 24, ROW_X2, 166 + row * 24, 9, weights_list, 1, 0);
         if (r->rec == REC_SIGN) value_text(a, 0, rec_names[r->rec]);
         else plain(a, 0, rec_names[r->rec], 2, r->rec == REC_CONSIDER ? yellow : light);
         char name[64], club[64];
         name_of(r->player, name, sizeof name);
         link(a, 1, name, LIST_ID, (uint32_t)i, green);
-        plain(a, 2, role_names[r->role], 2, light);
+        plain(a, 2, role_names[r->role], 2, r->need ? yellow : light);
         snprintf(s, sizeof s, "%d", r->age);
         plain(a, 3, s, 2, light);
         club_of(r->player, club, sizeof club);
@@ -671,6 +740,8 @@ static void build_list(uint32_t light, uint32_t yellow, uint32_t green)
         plain(a, 6, s, 2, light);
         snprintf(s, sizeof s, "%d.%d", r->best / 10, r->best % 10);
         plain(a, 7, s, 2, light);
+        money(r->value, "", s, sizeof s);
+        plain(a, 8, s, 2, light);
     }
     if (!report_count) box_text(ROW_X1, 150, ROW_X2, 172, 1, 0, 1, 2, light,
                                 "No reports yet: your scouts report as they find players.");
@@ -705,8 +776,16 @@ static void build_detail(uint32_t light, uint32_t yellow)
     snprintf(s, sizeof s, "Score as %s: %d.%d. Your best: %s %d.%d, then %s %d.%d.", role_names[r->role], r->est / 10,
              r->est % 10, best, r->best / 10, r->best % 10, second, r->second / 10, r->second % 10);
     box_text(ROW_X1, 136, ROW_X2, 154, 1, 0, 1, 1, light, s);
+    {
+        char v[64], w[64];
+        money(r->value, "", v, sizeof v);
+        money(r->wage, " a week", w, sizeof w);
+        snprintf(s, sizeof s, "Value %s, wage %s.%s", v, w,
+                 r->need ? " Your squad needs this role: it is one of its two weakest." : "");
+    }
+    box_text(ROW_X1, 154, ROW_X2, 172, 1, 0, 1, 1, r->need ? yellow : light, s);
     for (int k = 1; k <= ATTRIBUTES; k++) {
-        int col = (k - 1) / 11, row = (k - 1) % 11, x = ROW_X1 + col * 190, y = 162 + row * 26;
+        int col = (k - 1) / 11, row = (k - 1) % 11, x = ROW_X1 + col * 190, y = 176 + row * 25;
         int a = area(x, y, x + 184, y + 22, 2, weights_attr, 1, 0);
         uint32_t na[4] = {(uint32_t)k, scratch + NAME_AT, 100, 0};
         call(ATTRIBUTE_NAME, 4, na);

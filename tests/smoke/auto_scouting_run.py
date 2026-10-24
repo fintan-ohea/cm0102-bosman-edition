@@ -7,6 +7,7 @@ Usage:
 Runs, in classic mode, from start.sav (tests/fixtures), each a holiday of 14 days (RECOMP_SAVE_AFTER_DAYS=14):
     on, again   auto_scouting = on, twice.
     off         auto_scouting = off.
+    low         auto_scouting = on, the reports written as by scouts of judging 1 (RECOMP_SCOUT_JUDGING=1, test only).
     load        loads the save of "on", returns from the holiday and opens Scout reports in the Assistant drop-down
                 of the Arsenal squad, then the first report.
 
@@ -15,6 +16,9 @@ Checks:
       value of each attribute is inside its range; a news item goes out on Monday 16.7.01.
     - on: the save has the part bosman_scouting.dat; the width of each range follows the scout's judging
       (1 + (20 - judging) * 4 / 19).
+    - on: every report has the player's value, and a wage when he has a contract; more than a quarter of the
+      reports are of a role the squad needs (two roles of eight, ranked up when the reports are chosen).
+    - low: every range is 6 numbers wide (span 5) and still holds the true value; the ranges are wider than on's.
     - again: the save is the same as that of on (the reports draw no random numbers of the game).
     - off: no duty, no report, and no part in the save.
     - load: the load reads the reports and the box opens with them.
@@ -47,9 +51,12 @@ LOAD = fixtures.LOAD_STEPS[:-1] + ["11000 click 45 165", "12500 click 705 572", 
 DUTY = re.compile(r"recomp: scouting duty manager \d+ slot (\d+) scout (\d+)")
 REPORT = re.compile(r"recomp: scouting report player (\d+) by scout (\d+) \(judging (\d+), span (\d+), true value "
                     r"inside (\d+) of (\d+)\)")
+MONEY = re.compile(r"recomp: scouting report .*?: stars \d+/\d+, [^:]*? (\(need\) )?est \d+ best \d+ second \d+ "
+                   r"value (-?\d+) wage (-?\d+)")
 NEWS = re.compile(r"recomp: scouting news: (\d+) new reports")
 DAY = re.compile(r"recomp: (?:human turn|day) ")
-REPORT_SIZE = 100   # scouting.c Report: ids, date, 8 bytes, 4 scores, 2 ids, 32 + 32 range ends
+REPORT_SIZE = 108   # scouting.c Report: ids, date, 8 bytes, 4 scores, 2 ids, 32 + 32 range ends, value, wage
+LO, HI = 36, 68
 DUTIES = 16 * 10 * 8
 
 
@@ -95,11 +102,12 @@ def main(argv):
         return u
 
     start = os.path.join(folder, "start.sav")
-    users = {n: user(n, start) for n in ("on", "again", "off")}
+    users = {n: user(n, start) for n in ("on", "again", "off", "low")}
     env = {"RECOMP_SAVE_AFTER_DAYS": "14"}
-    with ThreadPoolExecutor(3) as pool:
+    with ThreadPoolExecutor(4) as pool:
         runs = {n: pool.submit(play, program, game, users[n], os.path.join(out, n), HOLIDAY,
-                               [("auto_scouting", "off" if n == "off" else "on")], env) for n in users}
+                               [("auto_scouting", "off" if n == "off" else "on")],
+                               dict(env, RECOMP_SCOUT_JUDGING="1") if n == "low" else env) for n in users}
         logs = {n: runs[n].result() for n in runs}
 
     code, log = logs["on"]
@@ -111,6 +119,12 @@ def main(argv):
           "on: in every report each true value is inside its range")
     check(all(int(span) == 1 + (20 - int(j)) * 4 // 19 for _, _, j, span, _, _ in reports),
           "on: each report's span follows its scout's judging")
+    money = MONEY.findall(log)
+    check(len(money) == len(reports) and all(int(v) > 0 and int(w) != 0 for _, v, w in money),
+          f"on: every report has a value and a wage ({money[:3]})")
+    need = sum(bool(n) for n, _, _ in money)
+    check(money and need * 4 > len(money), f"on: {need} of {len(money)} reports are of a role the squad needs")
+    width_on = sum(int(span) for _, _, _, span, _, _ in reports) / max(len(reports), 1)
     news = NEWS.findall(log)
     check(bool(news) and int(news[0]) > 0, f"on: news items go out ({news})")
     saved = os.path.join(users["on"], "samesave.sav")
@@ -122,7 +136,7 @@ def main(argv):
         for i in range(n):
             r = part[16 + DUTIES + i * REPORT_SIZE:16 + DUTIES + (i + 1) * REPORT_SIZE]
             judging = r[16]
-            lo, hi = r[REPORT_SIZE - 64:REPORT_SIZE - 32], r[REPORT_SIZE - 32:]
+            lo, hi = r[LO:LO + 32], r[HI:HI + 32]
             want = 1 + (20 - judging) * 4 // 19
             spans.append(all(hi[k] - lo[k] == want or (lo[k] == 1 or hi[k] == 20) for k in range(1, 32)))
         check(n > 0 and all(spans), f"on: the {n} saved reports keep ranges as wide as their scout's judging gives")
@@ -135,6 +149,11 @@ def main(argv):
     off_save = os.path.join(users["off"], "samesave.sav")
     check(code == 0 and "scouting duty" not in log and "scouting report" not in log and
           os.path.exists(off_save) and part_of(off_save) is None, "off: no duty, no report, no part in the save")
+
+    code, log = logs["low"]
+    low = REPORT.findall(log)
+    check(code == 0 and low and all(int(j) == 1 and int(span) == 5 and int(i) == int(t) for _, _, j, span, i, t in low)
+          and 5 > width_on, f"low: {len(low)} reports of judging 1, span 5 (on: {width_on:.2f}), true values inside")
 
     if os.path.exists(saved):
         code, log = play(program, game, user("load", saved), os.path.join(out, "load"), LOAD, [("auto_scouting", "on")])
