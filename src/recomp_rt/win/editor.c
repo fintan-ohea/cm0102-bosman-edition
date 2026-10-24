@@ -316,15 +316,17 @@ static int64_t funds_of(uint32_t f)
     return call_this64(TRANSFER_BUDGET, f, 5, a);
 }
 
-/* An amount as the game writes money, in the game's currency; rounded as the finance screen rounds the
- * transfer funds when round is 1. */
+/* An amount as the game writes money, in the shown currency and money scale (money.c); rounded as the finance
+ * screen rounds the transfer funds when round is 1 (Cash::get_display_amount reads an int32). */
 static void money_game_text(int64_t v, int round, char *out, size_t room)
 {
-    uint32_t at = scratch + OUT_AT;
-    wr64(g_mem, at, (uint64_t)v);
-    if (round) {
+    if (round && v >= INT32_MIN && v <= INT32_MAX) {
+        uint32_t at = scratch + OUT_AT;
+        wr32(g_mem, at, (uint32_t)(int32_t)v);
         static const uint32_t a[2] = {6, 6};
         v = call_this64(DISPLAY_AMOUNT, at, 2, a);
+    } else {
+        v = money_shown(v);
     }
     uint32_t f[4] = {scratch + MONEY_AT, MONEY_SIZE, (uint32_t)v, (uint32_t)((uint64_t)v >> 32)};
     call(FORMAT_MONEY, 4, f);
@@ -463,8 +465,9 @@ static void step_wage(int op)
     uint32_t c = contract();
     if (!c) return;
     int32_t w0 = (int32_t)rd32(g_mem, c + CONTRACT_WAGE), w = w0;
-    int64_t tenth = (int64_t)w0 / 10 > WAGE_STEP ? (int64_t)w0 / 10 : WAGE_STEP;
-    int64_t by = op == 0 ? -WAGE_STEP : op == 1 ? WAGE_STEP : op == 2 ? -tenth : tenth;
+    int64_t step = money_internal(WAGE_STEP) > 0 ? money_internal(WAGE_STEP) : 1;   /* WAGE_STEP as shown */
+    int64_t tenth = (int64_t)w0 / 10 > step ? (int64_t)w0 / 10 : step;
+    int64_t by = op == 0 ? -step : op == 1 ? step : op == 2 ? -tenth : tenth;
     int64_t v = (int64_t)w0 + by;
     w = v < 0 ? 0 : v > 0x7fffffff ? 0x7fffffff : (int32_t)v;
     if (w == w0) return;
@@ -499,7 +502,7 @@ static void step_balance(int op)
     static const int64_t by[4] = {-100000, 100000, -1000000, 1000000};
     uint32_t f = finance();
     if (!f) return;
-    int64_t b0 = balance_of(f), b = b0 + by[op];
+    int64_t b0 = balance_of(f), b = b0 + money_internal(by[op]);   /* the steps as shown */
     const int64_t most = (int64_t)1 << 50;
     if (b > most || b < -most) return;
     wr64(g_mem, f, (uint64_t)b);
@@ -514,7 +517,8 @@ static void step_funds(int op)
     uint32_t f = finance();
     if (!f) return;
     int32_t club = (int32_t)rd32(g_mem, f + FINANCE_CLUB);
-    int64_t a0 = adjustment_of(club), a = a0 + (op ? FUNDS_STEP : -FUNDS_STEP), v0 = funds_of(f);
+    int64_t step = money_internal(FUNDS_STEP);    /* as shown */
+    int64_t a0 = adjustment_of(club), a = a0 + (op ? step : -step), v0 = funds_of(f);
     if (a > ((int64_t)1 << 50) || a < -((int64_t)1 << 50) || !set_adjustment(club, a)) return;
     fprintf(stderr, "recomp: player editor: club %d transfer funds %lld -> %lld (adjustment %lld)\n", club,
             (long long)v0, (long long)funds_of(f), (long long)a);
@@ -721,10 +725,9 @@ static void editor_build(void)
     } else {
         button(k, 1, "-10%", FIELD_WAGE, 2, green);
         button(k, 2, "-", FIELD_WAGE, 0, green);
-        int32_t w = (int32_t)rd32(g_mem, con + CONTRACT_WAGE);
-        if (w >= 1000000) snprintf(s, sizeof s, "%d,%03d,%03d/w", w / 1000000, w / 1000 % 1000, w % 1000);
-        else if (w >= 1000) snprintf(s, sizeof s, "%d,%03d/w", w / 1000, w % 1000);
-        else snprintf(s, sizeof s, "%d/w", w);
+        char money[64];
+        money_game_text((int32_t)rd32(g_mem, con + CONTRACT_WAGE), 0, money, sizeof money);
+        snprintf(s, sizeof s, "%s/w", money);
         value_text(k, 3, s);
         button(k, 4, "+", FIELD_WAGE, 1, green);
         button(k, 5, "+10%", FIELD_WAGE, 3, green);

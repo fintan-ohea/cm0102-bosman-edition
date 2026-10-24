@@ -72,6 +72,9 @@ static const OptionDef defs[OPT_COUNT] = {
     /* Fork of fintan-ohea: docs/specs/2026-10-24-auto-scouting-spec.md. */
     [OPT_AUTO_SCOUTING] = {"auto_scouting", KIND_SWITCH, "off", NULL,
         "auto_scouting = on gives your free scouts duties on their own and turns what they find into Scout reports, in the Assistant drop-down of your squad screen."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-24-money-scale-spec.md. */
+    [OPT_MONEY_SCALE] = {"money_scale", KIND_ENUM, "off", "off|5|7|10",
+        "money_scale = 5, 7 or 10 shows every amount of money (values, wages, fees, budgets, balances) that many times larger, for the money of today, and divides the amounts you enter by it. The game itself keeps its own amounts."},
 };
 
 #define TEXT_MAX 1100

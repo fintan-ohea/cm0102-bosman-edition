@@ -82,6 +82,7 @@ static void check_defaults(void)
     CHECK(options_bool(OPT_TRAINING_ASSISTANT) == 0);
     CHECK(options_bool(OPT_TRAINING_CYCLE) == 0);
     CHECK(options_bool(OPT_AUTO_SCOUTING) == 0);
+    CHECK(options_enum(OPT_MONEY_SCALE) == 0 && !strcmp(options_string(OPT_MONEY_SCALE), "off"));
 }
 
 int main(void)
@@ -119,6 +120,8 @@ int main(void)
     CHECK(strstr(get(), "training_cycle = on makes the Outfield schedule") != NULL);
     CHECK(strstr(get(), "\nauto_scouting = off\n") != NULL);
     CHECK(strstr(get(), "auto_scouting = on gives your free scouts duties") != NULL);
+    CHECK(strstr(get(), "\nmoney_scale = off\n") != NULL);
+    CHECK(strstr(get(), "money_scale = 5, 7 or 10 shows every amount of money") != NULL);
     static char first[16384];
     snprintf(first, sizeof first, "%s", get());
     options_load(path);                         /* a second start changes nothing */
@@ -224,6 +227,17 @@ int main(void)
     put("auto_scouting = always\n");
     options_load(path);
     CHECK(options_bool(OPT_AUTO_SCOUTING) == 0);
+
+    /* 5b6. money_scale (fork): off by default; 5, 7 or 10; a bad value keeps off. */
+    put("money_scale = 7\n");
+    options_load(path);
+    CHECK(options_enum(OPT_MONEY_SCALE) == 2);
+    put("money_scale = 8\n");
+    options_load(path);
+    CHECK(options_enum(OPT_MONEY_SCALE) == 0);
+    CHECK(options_set(OPT_MONEY_SCALE, "10") == 1 && options_enum(OPT_MONEY_SCALE) == 3);
+    CHECK(options_set(OPT_MONEY_SCALE, "x7") == 0 && options_enum(OPT_MONEY_SCALE) == 3);
+    CHECK(options_set(OPT_MONEY_SCALE, "off") == 1 && options_enum(OPT_MONEY_SCALE) == 0);
 
     /* 5c. changing_rules (0.6.0 slice 11): on by default, off when the file says so. A bad word keeps on. */
     put("changing_rules = off\n");

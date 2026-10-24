@@ -673,11 +673,12 @@ static void club_of(int32_t id, char *out, size_t room)
     snprintf(out, room, "%s", win_str(scratch + NAME_AT));
 }
 
-/* An amount as the game writes money ("£1,500,000"), or "-" when not known. */
+/* An amount as the game writes money ("£1,500,000"), as the player sees it, or "-" when not known. */
 static void money(int32_t v, const char *tail, char *out, size_t room)
 {
     if (v < 0) { snprintf(out, room, "-"); return; }
-    uint32_t f[4] = {scratch + MONEY_AT, MONEY_SIZE, (uint32_t)v, 0};
+    int64_t m = money_shown(v);         /* the shown currency and money scale (money.c) */
+    uint32_t f[4] = {scratch + MONEY_AT, MONEY_SIZE, (uint32_t)m, (uint32_t)((uint64_t)m >> 32)};
     call(FORMAT_MONEY, 4, f);
     snprintf(out, room, "%s%s", win_str(scratch + MONEY_AT), tail);
 }

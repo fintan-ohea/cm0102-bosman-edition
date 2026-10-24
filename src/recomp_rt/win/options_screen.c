@@ -101,7 +101,7 @@ extern const uint32_t rt_site_options_item, rt_site_main_poll;
 #define ROWS 9
 #define TEXT_SIZE 0x200u
 
-typedef enum { ROW_SWITCH, ROW_DISPLAY, ROW_PATH } RowKind;
+typedef enum { ROW_SWITCH, ROW_DISPLAY, ROW_PATH, ROW_SCALE } RowKind;
 
 typedef struct {
     int tab;                        /* 1 Graphics, 2 Game, 3 Tools */
@@ -134,12 +134,14 @@ static const Row rows[] = {
     {3, OPT_TRAINING_ASSISTANT, ROW_SWITCH, "Training assistant", "Training setup in the\nsquad's Assistant menu"},
     {3, OPT_TRAINING_CYCLE, ROW_SWITCH, "Training cycle", "Outfield: Intensive Sun-Thu,\nMedium Fri-Sat"},
     {3, OPT_AUTO_SCOUTING, ROW_SWITCH, "Automatic scouting", "Free scouts get duties;\nScout reports in Assistant"},
+    {3, OPT_MONEY_SCALE, ROW_SCALE, "Money scale", "All money shown x factor,\nfor today's amounts"},
 };
 #define ROW_COUNT ((int)(sizeof rows / sizeof rows[0]))
 
 static const char *const switch_text[] = {"On", "Off"}, *const switch_word[] = {"on", "off"};
 static const char *const display_text[] = {"Widescreen", "Classic"};
 static const char *const display_word[] = {"widescreen", "classic"};
+static const char *const scale_text[] = {"Off", "x5", "x7", "x10"}, *const scale_word[] = {"off", "5", "7", "10"};
 
 /* Game memory for the texts and the column weights. The create functions copy each text. */
 static uint32_t scratch;
@@ -265,7 +267,7 @@ static void folder_text(char *out, size_t room)
 static int current_index(const Row *r)
 {
     if (r->kind == ROW_SWITCH) return options_bool(r->id) ? 0 : 1;
-    if (r->kind == ROW_DISPLAY) return options_enum(r->id);
+    if (r->kind == ROW_DISPLAY || r->kind == ROW_SCALE) return options_enum(r->id);
     return 0;
 }
 
@@ -274,6 +276,7 @@ static int current_index(const Row *r)
  * column. */
 static const uint8_t weights_two[] = {38, 17, 17, 48};
 static const uint8_t weights_path[] = {38, 44, 15, 28};
+static const uint8_t weights_scale[] = {38, 9, 9, 9, 9, 46};
 #define ROW_X1 160
 #define ROW_X2 729
 
@@ -327,6 +330,17 @@ static void build_row(const Row *r, int index, int y1, int y2, uint32_t green, u
         return;
     }
     int cur = current_index(r);
+    if (r->kind == ROW_SCALE) {
+        int a = area(ROW_X1, y1, ROW_X2, y2, 6, weights_scale, 1, 0);
+        plain(a, 0, r->label, 3, light);
+        for (int i = 0; i < 4; i++) {
+            if (i == cur) current(a, i + 1, scale_text[i]);
+            else choice(a, i + 1, scale_text[i], VALUE_ID, (uint32_t)index * 16u + (uint32_t)i, green);
+        }
+        note(index == failed_row ? "Not saved: settings.txt\ncannot be written" : r->note, weights_scale, 6, y1, y2,
+             light);
+        return;
+    }
     int a = area(ROW_X1, y1, ROW_X2, y2, 4, weights_two, 1, 0);
     plain(a, 0, r->label, 3, light);
     for (int i = 0; i < 2; i++) {
@@ -424,6 +438,7 @@ static void apply(const Row *r, int index, int value)
     const char *word = NULL;
     if (r->kind == ROW_SWITCH && value < 2) word = switch_word[value];
     if (r->kind == ROW_DISPLAY && value < 2) word = display_word[value];
+    if (r->kind == ROW_SCALE && value < 4) word = scale_word[value];
     if (!word) return;
     char old[1100];
     snprintf(old, sizeof old, "%s", options_string(r->id));
@@ -437,6 +452,7 @@ static void apply(const Row *r, int index, int value)
     failed_row = -1;
     fprintf(stderr, "recomp: option %s = %s (%d)\n", options_name(r->id), word, ok);
     if (r->id == OPT_SHARP_PICTURE) win_sharp_picture_changed();
+    if (r->id == OPT_MONEY_SCALE) money_apply();
 }
 
 /* The input of the box: cdecl (s16 widget). Only the box's own widgets: the box covers the screen. */

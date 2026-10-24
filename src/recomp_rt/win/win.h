@@ -194,6 +194,10 @@ void scouting_loaded(int ok);                  /* after that load */
 void scouting_new_game(void);                  /* a new game has no reports */
 int scouting_news_item(uint32_t item);          /* 1 for the weekly news item of scouting.c */
 int scouting_news_write(uint32_t item, uint32_t text, int full);  /* its headline or body; 0 for other items */
+int money_factor(void);                        /* money_scale: 1, 5, 7 or 10 (money.c, fork) */
+void money_apply(void);                        /* after money_scale changes: sets the game's rates again */
+int64_t money_shown(int64_t v);                /* an amount of the game as the player sees it (currency, scale) */
+int64_t money_internal(int64_t shown);         /* an amount the player sees as the game keeps it */
 /* Parts of the fork in a saved game (savepart.c): write 0 on success; read the size, 0 none, -1 damaged. */
 int savepart_write(const char *host, const char *name, const uint8_t *data, uint32_t size);
 int savepart_read(const char *host, const char *name, uint8_t *data, uint32_t room);

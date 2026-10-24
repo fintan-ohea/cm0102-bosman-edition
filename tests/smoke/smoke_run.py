@@ -205,7 +205,8 @@ SAME_SAVE_RUNS = [
              "match_columns": "off", "condition_colours": "off", "save_backups": "off", "remember_window": "off",
              "squad_views": "off", "attribute_groups": "off", "foreign_colours": "off",
              "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
-             "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off"}),
+             "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off",
+             "money_scale": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
@@ -220,6 +221,9 @@ SAME_SAVE_RUNS = [
     ("cycle-on", {"faster_days": "off", "training_assistant": "on", "training_cycle": "on"}),
     # Automatic scouting (fork): off must give the save of normal. On changes the game on purpose (the scouts work).
     ("scouting-off", {"faster_days": "off", "auto_scouting": "off"}),
+    # Money scale (fork): only what is shown and entered changes; the game's logic runs with its own rates.
+    ("money-7", {"faster_days": "off", "money_scale": "7"}),
+    ("money-off", {"faster_days": "off", "money_scale": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),
@@ -315,6 +319,8 @@ MATCH_RUNS = [
     ("training-on", {"training_assistant": "on"}),
     ("training-off", {"training_assistant": "off"}),
     ("cycle-on", {"training_assistant": "on", "training_cycle": "on"}),
+    ("money-7", {"money_scale": "7"}),
+    ("money-off", {"money_scale": "off"}),
     ("rules-on", {"changing_rules": "on"}),
     ("rules-off", {"changing_rules": "off"}),
     ("sleep-off", {"_env": {"RECOMP_IDLE_SLEEP": "0"}}),
