@@ -131,6 +131,7 @@ static const Row rows[] = {
     {2, OPT_CHANGING_RULES, ROW_SWITCH, "Changing rules", "Default for a new game\nSetup Game sets each game"},
     {2, OPT_SAVE_FOLDER, ROW_PATH, "Save folder", "Applies at the next start\nOld saves do not move"},
     {3, OPT_PLAYER_EDITOR, ROW_SWITCH, "Player editor", "Edit player in the\nprofile's Action menu"},
+    {3, OPT_TRAINING_ASSISTANT, ROW_SWITCH, "Training assistant", "Training setup in the\nsquad's Assistant menu"},
 };
 #define ROW_COUNT ((int)(sizeof rows / sizeof rows[0]))
 

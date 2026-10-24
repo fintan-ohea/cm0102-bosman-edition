@@ -13,7 +13,10 @@
  *
  * With squad_views = on, the drop-down ends with Team views, which opens the Team views screen
  * (views.c). Another club's squad screen has no Clear Squad button (0x600c90 at 0x458a37), so it gets
- * an Assistant button with Team views only, in the same cell. */
+ * an Assistant button with Team views only, in the same cell.
+ *
+ * With training_assistant = on (fork), the drop-down of the player's own squad ends with Training setup, which
+ * opens the training assistant (training.c). */
 #include "win.h"
 #include "options.h"
 
@@ -38,6 +41,7 @@ extern const uint32_t rt_site_squad_clear, rt_site_squad_filter;
 #define REBUILD 0xfffffff5u      /* -0xb: the screen loop builds the screen again (0x7fd3a9) */
 #define NEW_SCREEN 0xfffffffcu   /* -4: build the screen on top, after a push (as the start screen menu) */
 #define VIEWS_KIND 4u            /* the data of the Team views item (views.c) */
+#define TRAINING_KIND 5u         /* the data of the Training setup item (training.c, fork) */
 #define CELL_BUTTON 0x8040a0u    /* the cell button create, for the Assistant button of another club */
 #define BUTTON_COLOUR 0xae317eu  /* u16 colours of the Clear Squad button (0x458ad0) */
 #define BUTTON_TEXT 0xae3184u
@@ -69,10 +73,12 @@ static uint32_t display(void)
 static uint32_t text(int i)
 {
     static const char *const texts[] = {"Assistant", "Pick best team", "Pick most match-fit team",
-                                        "Pick under-21 team", "Clear squad", "Undo clear", "Team views"};
-    static uint32_t at[7];
+                                        "Pick under-21 team", "Clear squad", "Undo clear", "Team views",
+                                        "Training setup"};
+    enum { TEXTS = sizeof texts / sizeof texts[0] };
+    static uint32_t at[TEXTS];
     if (!at[0])
-        for (int k = 0; k < 7; k++) at[k] = rt_alloc_str(texts[k]);
+        for (int k = 0; k < TEXTS; k++) at[k] = rt_alloc_str(texts[k]);
     return at[i];
 }
 
@@ -133,6 +139,7 @@ RT_WRAP(008040a0, cell_button)
     for (int i = 1; i <= 3; i++) popup_item(popup, text(i), PICK_ID, (uint32_t)i);
     popup_item(popup, text(undo ? 5 : 4), CLEAR_ID, undo);
     if (options_bool(OPT_SQUAD_VIEWS)) popup_item(popup, text(6), PICK_ID, VIEWS_KIND);
+    if (options_bool(OPT_TRAINING_ASSISTANT)) popup_item(popup, text(7), PICK_ID, TRAINING_KIND);
     cpu.eax = button;
 }
 
@@ -154,6 +161,11 @@ RT_WRAP(004671f0, squad_input)
     if (kind == VIEWS_KIND) {
         views_open(club, team);
         rt_ret_cdecl(NEW_SCREEN);
+        return;
+    }
+    if (kind == TRAINING_KIND) {
+        if (training_open(club)) rt_ret_cdecl(NEW_SCREEN);
+        else rt_ret_cdecl(REBUILD);
         return;
     }
     int n = picker_pick(club, team, kind);

@@ -79,6 +79,7 @@ static void check_defaults(void)
     CHECK(!strcmp(options_string(OPT_DATABASE), "3.9.68"));
     CHECK(options_enum(OPT_SEASON) == 0 && !strcmp(options_string(OPT_SEASON), "2001/02"));
     CHECK(options_bool(OPT_PLAYER_EDITOR) == 0);
+    CHECK(options_bool(OPT_TRAINING_ASSISTANT) == 0);
 }
 
 int main(void)
@@ -110,6 +111,8 @@ int main(void)
     CHECK(strstr(get(), "season = the season of a new game, 2001/02 to 2025/26.") != NULL);
     CHECK(strstr(get(), "\nplayer_editor = off\n") != NULL);
     CHECK(strstr(get(), "player_editor = on adds Edit player to the Action drop-down") != NULL);
+    CHECK(strstr(get(), "\ntraining_assistant = off\n") != NULL);
+    CHECK(strstr(get(), "training_assistant = on adds Training setup to the Assistant drop-down") != NULL);
     static char first[16384];
     snprintf(first, sizeof first, "%s", get());
     options_load(path);                         /* a second start changes nothing */
@@ -191,6 +194,14 @@ int main(void)
     put("player_editor = maybe\n");
     options_load(path);
     CHECK(options_bool(OPT_PLAYER_EDITOR) == 0);
+
+    /* 5b3. training_assistant (fork): off by default, on when the file says so. */
+    put("training_assistant = on\n");
+    options_load(path);
+    CHECK(options_bool(OPT_TRAINING_ASSISTANT) == 1);
+    put("training_assistant = sometimes\n");
+    options_load(path);
+    CHECK(options_bool(OPT_TRAINING_ASSISTANT) == 0);
 
     /* 5c. changing_rules (0.6.0 slice 11): on by default, off when the file says so. A bad word keeps on. */
     put("changing_rules = off\n");

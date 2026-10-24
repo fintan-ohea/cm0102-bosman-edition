@@ -64,6 +64,9 @@ static const OptionDef defs[OPT_COUNT] = {
     /* Fork of fintan-ohea: docs/specs/2026-10-24-player-editor-spec.md. */
     [OPT_PLAYER_EDITOR] = {"player_editor", KIND_SWITCH, "off", NULL,
         "player_editor = on adds Edit player to the Action drop-down of a player's profile. It changes the player's attributes, current ability and potential ability, and marks the game as edited."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-24-training-assistant-spec.md. */
+    [OPT_TRAINING_ASSISTANT] = {"training_assistant", KIND_SWITCH, "off", NULL,
+        "training_assistant = on adds Training setup to the Assistant drop-down of your squad screen. It sets up training schedules for your first team."},
 };
 
 #define TEXT_MAX 1100

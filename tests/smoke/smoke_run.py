@@ -204,7 +204,8 @@ SAME_SAVE_RUNS = [
              "clickable_names": "off", "attribute_colours": "off", "faster_days": "off",
              "match_columns": "off", "condition_colours": "off", "save_backups": "off", "remember_window": "off",
              "squad_views": "off", "attribute_groups": "off", "foreign_colours": "off",
-             "full_player_search": "off", "changing_rules": "off", "player_editor": "off"}),
+             "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
+             "training_assistant": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
@@ -212,6 +213,9 @@ SAME_SAVE_RUNS = [
     # Player editor (fork): on, with the box never opened, must give the save of normal.
     ("editor-on", {"faster_days": "off", "player_editor": "on"}),
     ("editor-off", {"faster_days": "off", "player_editor": "off"}),
+    # Training assistant (fork): on, with the box never opened, must give the save of normal.
+    ("training-on", {"faster_days": "off", "training_assistant": "on"}),
+    ("training-off", {"faster_days": "off", "training_assistant": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),
@@ -304,6 +308,8 @@ MATCH_RUNS = [
     ("search-off", {"full_player_search": "off"}),
     ("editor-on", {"player_editor": "on"}),
     ("editor-off", {"player_editor": "off"}),
+    ("training-on", {"training_assistant": "on"}),
+    ("training-off", {"training_assistant": "off"}),
     ("rules-on", {"changing_rules": "on"}),
     ("rules-off", {"changing_rules": "off"}),
     ("sleep-off", {"_env": {"RECOMP_IDLE_SLEEP": "0"}}),

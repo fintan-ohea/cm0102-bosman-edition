@@ -184,6 +184,7 @@ int picker_attribute_known(uint32_t viewer, uint32_t staff, uint32_t k);
 int picker_check_turn(void);                   /* at each human turn: the picker check; 1 when done */
 /* The Team views screen (views.c): pushes it for a club and team (0 = first team) of a squad screen. */
 void views_open(uint32_t club, uint32_t team);
+int training_open(uint32_t club);              /* the training assistant (training.c, fork); 0 when it fails */
 uint32_t columns_attribute_colour(int value);   /* 1 to 20: the attribute colour (RGB565), else 0 */
 void views_widget_drawn(uint32_t widget);      /* after the game draws a widget: the pitch */
 /* Faster commentary (commentary.c): at each widget create, before the rect is scaled. */
