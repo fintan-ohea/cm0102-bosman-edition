@@ -9,7 +9,8 @@
  * The box is a screen of the runtime on the game's screen stack, built as the Options screen
  * (options_screen.c): the frame of Game Settings (0x823950), pushed with flag 1. It shows current ability
  * (player data +0x05), potential ability (+0x07) and the 31 attributes of 0x5431e0, with - and + buttons, and
- * (slice 3) the condition with Full, the morale (+0x45), and the injury with Cure while the player has one.
+ * (slice 3) the condition with Full, the morale (+0x45), and the injury with Cure while the player has one, and
+ * (slice 4) the contract's wage and end date.
  * Each click changes the game's memory at once, so the box shows the game's own values. Save keeps the
  * changes and Cancel puts back the values that the player had when the box opened.
  *
@@ -79,6 +80,16 @@ extern const uint32_t rt_site_profile_note;
 #define CONDITION_FULL 10000
 #define CONDITION_STEP 500
 
+/* The contract (slice 4): ci = int32 [[CONTRACT_INDEX] + id * 79], the record [[CONTRACTS]] + ci * 80. */
+#define CONTRACT_INDEX 0xae2d0cu
+#define CONTRACTS 0xae1050u         /* the contract manager: the this of get_wage 0x4d0c20 */
+#define CONTRACT_WAGE 0x0cu         /* int32 (0x4d0c59) */
+#define CONTRACT_END 0x2du          /* Date: s16 day of the year, s16 year, u32 leap flag (0x85e954) */
+#define CONTRACT_TYPE 0x35u         /* low 6 bits: 1 rolling, 3 expired, 4 free (0x85e8f0) */
+#define END_TEXT 0x85e8f0u          /* thiscall on the contract (text): the profile's "Expires" text */
+#define DATE_SET 0x54a130u          /* Date::set, thiscall (day 1 to 31, month 0 to 11, year, weekday or -1) */
+#define WAGE_STEP 100
+
 #define ITEM_ID 0x7d40u             /* "Edit player" in the Action popup. Ids that the original does not use. */
 #define STEP_ID 0x7d41u             /* data: field * 4 + step (0: -1, 1: +1, 2: -10, 3: +10) */
 #define SAVE_ID 0x7d42u
@@ -92,7 +103,9 @@ extern const uint32_t rt_site_profile_note;
 #define FIELD_CONDITION (2 + ATTRIBUTES)
 #define FIELD_MORALE (FIELD_CONDITION + 1)
 #define FIELD_INJURY (FIELD_CONDITION + 2)
-#define FIELDS (FIELD_CONDITION + 3)
+#define FIELD_WAGE (FIELD_CONDITION + 3)
+#define FIELD_END (FIELD_CONDITION + 4)
+#define FIELDS (FIELD_CONDITION + 5)
 #define ABILITY_MAX 200
 #define VALUE_MAX 20
 #define TEXT_SIZE 0x200u
@@ -111,6 +124,8 @@ static int16_t old_ability, old_potential;
 static uint8_t old_bytes[ATTRIBUTES + 1], old_morale;
 static int16_t old_ceiling, old_condition, old_recovery, old_injured;
 static uint32_t old_record;         /* the injury record when the box opened, 0 for none */
+static uint32_t old_contract, old_wage;
+static uint8_t old_end[8];
 static int edited, edited_before;   /* the game is edited; and before the box opened */
 static uint32_t handled_press = 0xffffffffu;
 
@@ -207,6 +222,32 @@ static int injury_left(int status)
     return (int16_t)rd16(g_mem, record + (status == 2 ? 0x2a : 0x28)) - injury_days(record);
 }
 
+/* The player's contract record, or 0 for none. */
+static uint32_t contract(void)
+{
+    int32_t ci = (int32_t)rd32(g_mem, rd32(g_mem, CONTRACT_INDEX) + rd32(g_mem, staff) * 79u);
+    return ci < 0 ? 0 : rd32(g_mem, rd32(g_mem, CONTRACTS)) + (uint32_t)ci * 80u;
+}
+
+/* A contract whose end date means something: not rolling, expired or free (0x85e8f0). */
+static int has_end_date(uint32_t c)
+{
+    int type = (int)(rd8(g_mem, c + CONTRACT_TYPE) & 0x3f);
+    return type != 1 && type != 3 && type != 4;
+}
+
+static int leap(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }
+
+/* Day of the year from 0 into month from 0 and day from 1. */
+static void month_day(int yday, int year, int *month, int *day)
+{
+    static const int days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int m = 0;
+    while (m < 11 && yday >= days[m] + (m == 1 && leap(year))) yday -= days[m] + (m == 1 && leap(year)), m++;
+    *month = m;
+    *day = yday + 1;
+}
+
 static const char *morale_word(int m)
 {
     return m < 4 ? "Very Low" : m < 8 ? "Low" : m < 12 ? "Ok" : m < 15 ? "Good" : m < 18 ? "Very Good" : "Superb";
@@ -222,8 +263,12 @@ static void log_values(const char *what)
             (int16_t)rd16(g_mem, data + ABILITY), (int16_t)rd16(g_mem, data + POTENTIAL));
     for (int k = 1; k <= ATTRIBUTES; k++) fprintf(stderr, " %d", shown(k));
     int status = injury_status();
-    fprintf(stderr, " condition %d morale %d injury %d %d\n", condition(), (int)rd8(g_mem, data + MORALE), status,
+    fprintf(stderr, " condition %d morale %d injury %d %d", condition(), (int)rd8(g_mem, data + MORALE), status,
             injury_left(status));
+    uint32_t c = contract();
+    if (c) fprintf(stderr, " wage %d end %d %d\n", (int32_t)rd32(g_mem, c + CONTRACT_WAGE),
+                   (int16_t)rd16(g_mem, c + CONTRACT_END + 2), (int16_t)rd16(g_mem, c + CONTRACT_END));
+    else fprintf(stderr, " wage none\n");
 }
 
 /* ---- The changes ---- */
@@ -314,6 +359,42 @@ static void cure(void)
     mark_edited();
 }
 
+/* The wage: - and + by WAGE_STEP, the outer buttons by 10%. */
+static void step_wage(int op)
+{
+    uint32_t c = contract();
+    if (!c) return;
+    int32_t w0 = (int32_t)rd32(g_mem, c + CONTRACT_WAGE), w = w0;
+    int64_t tenth = (int64_t)w0 / 10 > WAGE_STEP ? (int64_t)w0 / 10 : WAGE_STEP;
+    int64_t by = op == 0 ? -WAGE_STEP : op == 1 ? WAGE_STEP : op == 2 ? -tenth : tenth;
+    int64_t v = (int64_t)w0 + by;
+    w = v < 0 ? 0 : v > 0x7fffffff ? 0x7fffffff : (int32_t)v;
+    if (w == w0) return;
+    wr32(g_mem, c + CONTRACT_WAGE, (uint32_t)w);
+    fprintf(stderr, "recomp: player editor: staff %d wage %d -> %d\n", (int32_t)rd32(g_mem, staff), w0, w);
+    mark_edited();
+}
+
+/* The end date: a year earlier or later, through Date::set so the leap flag fits. 29 February becomes 28. The
+ * date stays after today. */
+static void step_end(int by)
+{
+    uint32_t c = contract();
+    if (!c || !has_end_date(c)) return;
+    uint32_t at = c + CONTRACT_END;
+    int yday = (int16_t)rd16(g_mem, at), year = (int16_t)rd16(g_mem, at + 2), month, day;
+    month_day(yday, year, &month, &day);
+    int to = year + by;
+    if (month == 1 && day == 29 && !leap(to)) day = 28;
+    int today_year = (int16_t)rd16(g_mem, TODAY + 2), today_yday = (int16_t)rd16(g_mem, TODAY);
+    if (to < today_year || (to == today_year && yday <= today_yday)) return;
+    uint32_t a[4] = {(uint32_t)day, (uint32_t)month, (uint32_t)to, 0xffffffffu};
+    call_this(DATE_SET, at, 4, a);
+    fprintf(stderr, "recomp: player editor: staff %d contract end %d.%d.%d -> %d.%d.%d\n", (int32_t)rd32(g_mem, staff),
+            day, month + 1, year, day, month + 1, (int16_t)rd16(g_mem, at + 2));
+    mark_edited();
+}
+
 static void step(int field, int op)
 {
     static const int by[4] = {-1, 1, -10, 10};
@@ -322,6 +403,8 @@ static void step(int field, int op)
     else if (field == FIELD_CONDITION) step_condition(op == 3 ? 0 : by[op] * CONDITION_STEP);
     else if (field == FIELD_MORALE && op < 2) step_morale(by[op]);
     else if (field == FIELD_INJURY && op == 3) cure();
+    else if (field == FIELD_WAGE) step_wage(op);
+    else if (field == FIELD_END && op < 2) step_end(by[op]);
     else if (field < FIELD_CONDITION && op < 2) step_attribute(field - 1, by[op]);
 }
 
@@ -340,6 +423,11 @@ static void snapshot(void)
         old_recovery = (int16_t)rd16(g_mem, old_record + 0x28);
         old_injured = (int16_t)rd16(g_mem, old_record + 0x2a);
     }
+    old_contract = contract();
+    if (old_contract) {
+        old_wage = rd32(g_mem, old_contract + CONTRACT_WAGE);
+        memcpy(old_end, g_mem + old_contract + CONTRACT_END, sizeof old_end);
+    }
     edited_before = edited;
 }
 
@@ -355,6 +443,10 @@ static void restore(void)
     if (old_record) {
         wr16(g_mem, old_record + 0x28, (uint32_t)old_recovery);
         wr16(g_mem, old_record + 0x2a, (uint32_t)old_injured);
+    }
+    if (old_contract) {
+        wr32(g_mem, old_contract + CONTRACT_WAGE, old_wage);
+        memcpy(g_mem + old_contract + CONTRACT_END, old_end, sizeof old_end);
     }
     edited = edited_before;
 }
@@ -416,14 +508,16 @@ static const uint8_t weights_ability[] = {27, 8, 6, 9, 6, 8, 4, 27, 8, 6, 9, 6, 
 /* The fitness row: condition (name, -, value, +, Full), morale (name, -, value, +) and injury (name, value,
  * Cure), with small gaps. */
 static const uint8_t weights_fitness[] = {18, 5, 9, 5, 8, 3, 14, 5, 16, 5, 3, 13, 22, 8};
+/* The contract row: wage (name, -10%, -, value, +, +10%) and end date (name, -1y, value, +1y). */
+static const uint8_t weights_contract[] = {14, 9, 5, 16, 5, 9, 3, 18, 8, 22, 8};
 /* An attribute row: name, -, value, +. */
 static const uint8_t weights_attribute[] = {50, 10, 12, 10};
 #define ROW_X1 160
 #define ROW_X2 729
 #define COLUMN_W 190
 #define ROWS_PER_COLUMN 11
-#define ROW_Y 186
-#define ROW_STEP 27
+#define ROW_Y 214
+#define ROW_STEP 25
 
 static void ability_cells(int a, int first, const char *label, int v, int field, uint32_t green, uint32_t light)
 {
@@ -479,6 +573,32 @@ static void editor_build(void)
     value_text(f, 12, s);
     if (status) button(f, 13, "Cure", FIELD_INJURY, 3, green);
 
+    /* The contract: wage and end date, or "No contract". */
+    int k = area(ROW_X1, 182, ROW_X2, 208, 11, weights_contract, 1, 0);
+    uint32_t con = contract();
+    plain(k, 0, "Wage", light);
+    if (!con) {
+        value_text(k, 3, "No contract");
+    } else {
+        button(k, 1, "-10%", FIELD_WAGE, 2, green);
+        button(k, 2, "-", FIELD_WAGE, 0, green);
+        int32_t w = (int32_t)rd32(g_mem, con + CONTRACT_WAGE);
+        if (w >= 1000000) snprintf(s, sizeof s, "%d,%03d,%03d/w", w / 1000000, w / 1000 % 1000, w % 1000);
+        else if (w >= 1000) snprintf(s, sizeof s, "%d,%03d/w", w / 1000, w % 1000);
+        else snprintf(s, sizeof s, "%d/w", w);
+        value_text(k, 3, s);
+        button(k, 4, "+", FIELD_WAGE, 1, green);
+        button(k, 5, "+10%", FIELD_WAGE, 3, green);
+        plain(k, 7, "Contract ends", light);
+        uint32_t t[1] = {scratch + NAME_AT};
+        call_this(END_TEXT, con, 1, t);
+        char end[64];
+        snprintf(end, sizeof end, "%s", win_str(scratch + NAME_AT));
+        if (has_end_date(con)) button(k, 8, "-1y", FIELD_END, 0, green);
+        value_text(k, 9, end);
+        if (has_end_date(con)) button(k, 10, "+1y", FIELD_END, 1, green);
+    }
+
     for (int k = 1; k <= ATTRIBUTES; k++) {
         int col = (k - 1) / ROWS_PER_COLUMN, row = (k - 1) % ROWS_PER_COLUMN;
         int x = ROW_X1 + col * COLUMN_W, y = ROW_Y + row * ROW_STEP;
@@ -492,7 +612,7 @@ static void editor_build(void)
         value(r, 2, shown(k));
         button(r, 3, "+", k + 1, 1, green);
     }
-    box_text(ROW_X1, 485, ROW_X2, 504, 1, 0, 1, 1, light,
+    box_text(ROW_X1, 488, ROW_X2, 506, 1, 0, 1, 1, light,
              "Changes show at once. Cancel puts back the values from when the box opened.");
 
     int b = area(155, 509, 734, 539, 2, NULL, 1, 0);

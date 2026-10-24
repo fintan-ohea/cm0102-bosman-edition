@@ -1,6 +1,6 @@
 # Player editor (fork of fintan-ohea)
 
-Status: Slices 1 to 3 built on `feature/save-editor`, 2026-10-24 (`src/recomp_rt/win/editor.c`). Decisions taken (end of this page).
+Status: Slices 1 to 4 built on `feature/save-editor`, 2026-10-24 (`src/recomp_rt/win/editor.c`). Decisions taken (end of this page).
 
 ## Problem
 
@@ -19,7 +19,7 @@ In order. Each step is a slice of its own, and each ends with a working, tested 
 1. **The 31 attributes of a player** (Finishing, Pace, Determination and the rest), each 1 to 20, as the profile shows them. This is what the GK editor is used for most, and it touches one record.
 2. **Current ability and potential ability** of a player. They are hidden values (glossary): no screen of the original shows them. The box shows and edits them (decision 1).
 3. **The player's condition, morale and injury**: fit a player again, or end an injury. Built: Condition - and + (5% of the stored condition) and Full (100%), Morale - and + (1 to 20, shown with the game's word), and Cure, which ends the injury and its recovery today as if their days had passed. Research: the condition, injury and morale section of `docs/research/2026-10-24-player-editor-attributes.md`.
-4. **The contract**: wage, end date and clauses (`docs/research/2026-10-15-contract-clauses.md` is the starting point).
+4. **The contract**: wage, end date and clauses (`docs/research/2026-10-15-contract-clauses.md` is the starting point). Built: the wage (- and + by 100, -10% and +10%) and the end date (a year earlier or later, never before today; not for a rolling, expired or free contract). Clauses are not in the box yet. Research: the contract section of `docs/research/2026-10-24-player-editor-attributes.md`.
 5. **The club's money**: balance and transfer budget (`cash.cpp` in the data map, 52 globals).
 
 Not in this plan: moving a player to another club, new players, new clubs, staff who are not players. A move touches the squads of two clubs, the contract, the history and the transfer lists, and a wrong one corrupts the save. The GK editor does it with its validation pass; it is a later plan if wanted.

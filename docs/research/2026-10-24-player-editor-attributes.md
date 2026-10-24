@@ -75,3 +75,12 @@ The injury object is `[0xb63d28]` (the `this` of the calls at 0x87ab0b and 0x87a
 - The editor cures an injury by setting `+0x2a` and `+0x28` of the record to the days already passed: the record then reads as an injury that has run its course, which the daily update meets anyway when the days pass. Inference: the game does not keep the end of an injury anywhere else; the status and the condition read only these fields.
 
 Morale is player data `+0x45`, 1 to 20: staff_adjust_morale (0x544710) holds it between 1 and 20 (0x5447b8..0x5447ca) before it writes it (0x544811). contract_manager_write_morale_text (0x4cc2e0) shows Very Low below 4, Low below 8, Ok below 12, Good below 15, Very Good below 18 and Superb from 18 (0x4cc2e7..0x4cc384).
+
+## Contract (slice 4)
+
+- The contract of staff id `id`: `ci = int32 [[0xae2d0c] + id * 79]`, -1 for none; the record is `[[0xae1050]] + ci * 80` (CONTRACT_MANAGER::get_wage 0x4d0c20, `this` = `[0xae1050]`: 0x4d0c34..0x4d0c50; `docs/research/2026-10-15-contract-clauses.md`).
+- Wage: int32 at `+0x0c` (get_wage returns it at 0x4d0c59).
+- Dates: two Date objects (s16 day of the year, s16 year, u32 leap flag, as the game date at 0xae2c90) at `+0x25` and `+0x2d`, copied by Date::operator= 0x417c10 in STAFF_CONTRACT::operator= (0x4cc86e, 0x4cc882).
+- The end date is `+0x2d`: STAFF_CONTRACT::format_end_date_text (0x85e8f0), which the profile's "  Expires" line calls (0x87d281), writes it with 0x54a650 from `this + 0x2d` (0x85e954). Before that it tests the type, the low 6 bits of `+0x35`: 3 "Contract Expired" (0xa8370c), 4 "Free" (0xa836e4), 1 "Rolling" (0xa836dc) (0x85e8f0..0x85e942).
+- At the start of a game STAFF_CONTRACT::generate_initial_contract (0x85e960) copies the end date from the staff record `+0x46` (0x85ec81..0x85ec8d). Inference: from then on the contract record is the end date the game uses; no other code reads staff `+0x46` as a date (no `lea reg, [reg + 0x46]` in the generated code). The editor changes only the contract record.
+- The editor moves the end date with Date::set 0x54a130 (thiscall: day 1 to 31, month 0 to 11, year, weekday or -1; `season.c`), so the leap flag stays right.
