@@ -116,6 +116,7 @@ RT_WRAP(0055f990, widget_create)
     foreign_widget_before();    /* the tactics screen's names (foreign.c) */
     int holiday = holiday_widget_before();
     int options_item = options_screen_widget_before();
+    int editor_item = editor_widget_before();
     commentary_widget_before();
     if (rt_screen_w != CLASSIC_W && from_comp_text()) {
         uint32_t a = cpu.esp + 8;
@@ -125,6 +126,7 @@ RT_WRAP(0055f990, widget_create)
     o_0055f990();
     if (holiday) holiday_widget_after();
     if (options_item) options_screen_widget_after();
+    if (editor_item) editor_widget_after();
 }
 
 /* Widget rect setter 0x800890, thiscall on the screen stack: (widget, x1, y1, x2, y2), each a 16-bit

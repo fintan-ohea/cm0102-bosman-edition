@@ -46,7 +46,7 @@
  * it. A switch in the box does not change the game: smoke_run.py --same-save --options compares two
  * switches with two tab clicks.
  *
- * Node slots: 0 the tab (1 Graphics, 2 Game), 1 the place that opened the box (1 start screen, 2 game). Only
+ * Node slots: 0 the tab (1 Graphics, 2 Game, 3 Tools), 1 the place that opened the box (1 start screen, 2 game). Only
  * numbers, so the box needs no leave function. */
 #include "win.h"
 #include "options.h"
@@ -91,7 +91,8 @@ extern const uint32_t rt_site_options_item, rt_site_main_poll;
 #define BUTTON_TEXT 0xae3184u
 
 #define VALUE_ID 0x7d3au            /* data: row index * 16 + value index. Ids that the original does not use. */
-#define TAB_ID 0x7d3bu              /* data: the tab, 1 or 2 */
+#define TAB_ID 0x7d3bu              /* data: the tab, 1 to TABS */
+#define TABS 3                      /* Graphics, Game, and Tools (fork: player_editor) */
 #define CLOSE_ID 0x7d3cu
 #define ITEM_ID 0x4b8u              /* the side bar item; the side bar input 0x7615d0 uses no such id */
 #define REBUILD 0xfffffff5u         /* -0xb: build the box again */
@@ -103,7 +104,7 @@ extern const uint32_t rt_site_options_item, rt_site_main_poll;
 typedef enum { ROW_SWITCH, ROW_DISPLAY, ROW_PATH } RowKind;
 
 typedef struct {
-    int tab;                        /* 1 Graphics, 2 Game */
+    int tab;                        /* 1 Graphics, 2 Game, 3 Tools */
     OptionId id;
     RowKind kind;
     const char *label;
@@ -129,6 +130,7 @@ static const Row rows[] = {
     {2, OPT_SAVE_BACKUPS, ROW_SWITCH, "Save backups", ""},
     {2, OPT_CHANGING_RULES, ROW_SWITCH, "Changing rules", "Default for a new game\nSetup Game sets each game"},
     {2, OPT_SAVE_FOLDER, ROW_PATH, "Save folder", "Applies at the next start\nOld saves do not move"},
+    {3, OPT_PLAYER_EDITOR, ROW_SWITCH, "Player editor", "Edit player in the\nprofile's Action menu"},
 };
 #define ROW_COUNT ((int)(sizeof rows / sizeof rows[0]))
 
@@ -339,7 +341,7 @@ static void options_build(void)
 {
     if (!scratch) scratch = rt_alloc_zero(TEXT_SIZE + 16);
     int tab = (int)node_slot(0);
-    if (tab != 1 && tab != 2) {
+    if (tab < 1 || tab > TABS) {
         tab = 1;
         set_slot(0, 1);
     }
@@ -356,10 +358,10 @@ static void options_build(void)
     box_text(165, 115, 420, 135, 1, 0, 1, 1, light, "Bosman Edition " CM0102_VERSION);
     box_text(490, 115, 724, 135, 1, 0, 1, 1, light, "Changes save at once to settings.txt");
 
-    /* The tabs: the open tab as a framed label, the other as a button. */
-    int t = area(165, 142, 724, 168, 2, NULL, 1, 0);
-    static const char *const tab_names[2] = {"Graphics", "Game"};
-    for (int i = 1; i <= 2; i++) {
+    /* The tabs: the open tab as a framed label, the others as buttons. */
+    int t = area(165, 142, 724, 168, TABS, NULL, 1, 0);
+    static const char *const tab_names[TABS] = {"Graphics", "Game", "Tools"};
+    for (int i = 1; i <= TABS; i++) {
         if (i == tab) current(t, i - 1, tab_names[i - 1]);
         else choice(t, i - 1, tab_names[i - 1], TAB_ID, (uint32_t)i, green);
     }
@@ -451,7 +453,7 @@ static void options_input(void)
         uint32_t id = (uint16_t)rd32(g_mem, at), data = rd32(g_mem, at + 0x40);
         if (id == CLOSE_ID) {
             r = CLOSE;
-        } else if (id == TAB_ID && (data == 1 || data == 2)) {
+        } else if (id == TAB_ID && data >= 1 && data <= TABS) {
             set_slot(0, data);
             r = REBUILD;
         } else if (id == VALUE_ID && data / 16 < (uint32_t)ROW_COUNT) {

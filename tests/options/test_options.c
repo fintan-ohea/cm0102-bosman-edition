@@ -78,6 +78,7 @@ static void check_defaults(void)
     CHECK(options_enum(OPT_DATABASE) == DATABASE_3968);
     CHECK(!strcmp(options_string(OPT_DATABASE), "3.9.68"));
     CHECK(options_enum(OPT_SEASON) == 0 && !strcmp(options_string(OPT_SEASON), "2001/02"));
+    CHECK(options_bool(OPT_PLAYER_EDITOR) == 0);
 }
 
 int main(void)
@@ -107,6 +108,8 @@ int main(void)
     CHECK(strstr(get(), "changing_rules = on lets the rules of each league and cup change each July") != NULL);
     CHECK(strstr(get(), "\nseason = 2001/02\n") != NULL);
     CHECK(strstr(get(), "season = the season of a new game, 2001/02 to 2025/26.") != NULL);
+    CHECK(strstr(get(), "\nplayer_editor = off\n") != NULL);
+    CHECK(strstr(get(), "player_editor = on adds Edit player to the Action drop-down") != NULL);
     static char first[16384];
     snprintf(first, sizeof first, "%s", get());
     options_load(path);                         /* a second start changes nothing */
@@ -180,6 +183,14 @@ int main(void)
     put("full_player_search = maybe\n");
     options_load(path);
     CHECK(options_bool(OPT_FULL_PLAYER_SEARCH) == 0);
+
+    /* 5b2. player_editor (fork): off by default, on when the file says so. A bad word keeps off. */
+    put("player_editor = on\n");
+    options_load(path);
+    CHECK(options_bool(OPT_PLAYER_EDITOR) == 1);
+    put("player_editor = maybe\n");
+    options_load(path);
+    CHECK(options_bool(OPT_PLAYER_EDITOR) == 0);
 
     /* 5c. changing_rules (0.6.0 slice 11): on by default, off when the file says so. A bad word keeps on. */
     put("changing_rules = off\n");

@@ -26,6 +26,7 @@
 #define NAME_BUFFER 0xdd6ed4u      /* the text of the name entry of the file dialog */
 #define SAVE_ROUTINE 0x00838e10u   /* the save callback of Save Game */
 #define CLUB_MAX 24                /* characters of the club name in the suggestion */
+#define CLUB_MAX_EDITED 15         /* with " (edited)" (editor.c, fork): the name is no longer than without it */
 #define CLUB_BYTES 49              /* its bytes as UTF-8 (cp1252.h), with the end */
 
 static int leap(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }
@@ -50,13 +51,14 @@ static int suggest(char *out, size_t size)
     uint32_t club = manager ? rd32(g_mem, manager + 0x39) : 0;
     if (!club) return 0;
     char name[CLUB_BYTES];
-    cp1252_file_name(name, sizeof name, (const char *)(g_mem + club + 0x38), CLUB_MAX);
-    if (!name[0]) cp1252_file_name(name, sizeof name, (const char *)(g_mem + club + 4), CLUB_MAX);
+    int edited = editor_game_edited(), most = edited ? CLUB_MAX_EDITED : CLUB_MAX;
+    cp1252_file_name(name, sizeof name, (const char *)(g_mem + club + 0x38), most);
+    if (!name[0]) cp1252_file_name(name, sizeof name, (const char *)(g_mem + club + 4), most);
     if (!name[0]) return 0;
 
     int year, month, day;
     win_game_date(&year, &month, &day);
-    snprintf(out, size, "%s %04d-%02d-%02d", name, year, month, day);
+    snprintf(out, size, "%s %04d-%02d-%02d%s", name, year, month, day, edited ? " (edited)" : "");
     return 1;
 }
 

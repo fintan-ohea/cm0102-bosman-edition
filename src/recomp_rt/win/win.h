@@ -127,6 +127,14 @@ int options_screen_open(int from);             /* pushes the box (from: 1 start 
 void options_screen_after_poll(uint32_t ret, uint32_t display, uint32_t widget);   /* after each input poll */
 int options_screen_widget_before(void);        /* at each widget create: 1 for the Game Settings item */
 void options_screen_widget_after(void);        /* after that create: adds the Bosman Edition Options item */
+/* The player editor (editor.c, fork). */
+int editor_widget_before(void);                /* at each widget create: 1 for the profile's Manager Note item */
+void editor_widget_after(void);                /* after that create: adds Edit player for a player */
+int editor_game_edited(void);                  /* 1 when the game that runs has an edit */
+void editor_saved(const char *path);           /* after a save that wrote path: adds the edited mark */
+void editor_loading(const char *path);         /* before a load of path: reads its edited mark */
+void editor_loaded(int ok);                    /* after that load */
+void editor_new_game(void);                    /* a new game has no edit */
 uint32_t win_press_count(void);                /* user32.c: the count of mouse presses so far */
 void win_sharp_picture_changed(void);          /* user32.c: applies the option sharp_picture at once */
 void win_picture_way(char *out, size_t n);    /* user32.c: how the picture is scaled now, for the display report */

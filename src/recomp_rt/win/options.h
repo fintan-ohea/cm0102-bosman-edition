@@ -35,6 +35,7 @@ typedef enum {
     OPT_FULL_PLAYER_SEARCH,    /* switch, off: the player search lists every player (playersearch.c) */
     OPT_CHANGING_RULES,        /* switch, on: the default of changing rules for a new game (season.c) */
     OPT_SEASON,                /* enum: 2001/02 (default) to 2025/26: the season of a new game (season_screen.c) */
+    OPT_PLAYER_EDITOR,         /* switch, off: Edit player in the profile's Action drop-down (editor.c) */
     OPT_COUNT
 } OptionId;
 

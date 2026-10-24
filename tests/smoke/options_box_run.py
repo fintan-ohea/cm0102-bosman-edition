@@ -60,7 +60,7 @@ SIDE_STEPS = [
     "14000 dump {d}/screen.bmp",
     "15000 click 452 332",                      # Attribute colours: Off
     "16500 dump {d}/screen-off.bmp",
-    "17500 click 584 155",                      # the Game tab
+    "17500 click 444 155",                      # the Game tab
     "19000 dump {d}/game.bmp",
     "20000 click 452 402",                      # Save backups: Off
     "21500 dump {d}/game-off.bmp",
@@ -98,7 +98,7 @@ START_STEPS = fixtures.LOAD_STEPS[:fixtures.LOAD_STEPS.index("wait setup") + 1] 
     "4500 click 452 227",                       # Sharp picture: Off
     "5000 dump {d}/box-sharp-off.bmp",
     "5500 click 371 227",                       # Sharp picture: On
-    "6000 click 584 155",                       # the Game tab
+    "6000 click 444 155",                       # the Game tab
     "7000 dump {d}/game.bmp",
     "7500 click 444 524",                       # Close
     "wait setup",

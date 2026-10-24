@@ -1,6 +1,6 @@
 # Player editor (fork of fintan-ohea)
 
-Status: Plan, on `feature/save-editor`, 2026-10-24. Not built. Decisions taken (end of this page).
+Status: Slice 1 built on `feature/save-editor`, 2026-10-24 (`src/recomp_rt/win/editor.c`). Decisions taken (end of this page).
 
 ## Problem
 
@@ -26,10 +26,11 @@ Not in this plan: moving a player to another club, new players, new clubs, staff
 
 ## How it fits in the game
 
-- **Where**: an Edit button on a player's profile, beside the attribute table. It shows only when `player_editor = on`, and not during a match.
+- **Where**: the item "Edit player" at the end of the Action drop-down of a player's profile, after "Add/Edit Manager Note" (the item create at 0x874653, made for every profile). It shows only when `player_editor = on` and the person is a player. The plan said "not during a match"; slice 1 has no such test, because the only match pointer the runtime knows (0xb67a64, `columns.c`) has no static evidence. An edit during a match changes the values the match reads from then on.
 - **The box**: a screen of the runtime on the game's screen stack, built the way the Options screen is built (`src/recomp_rt/win/options_screen.c`): the frame of the Game Settings box (0x823950), pushed with flag 1 so the game draws it over the profile. One row per value: the name in font 3, the value as a yellow framed label, and green `-` and `+` buttons. Save and Cancel at the bottom. Text entry for typed numbers is a later improvement.
 - **When it applies**: Save writes the values into the game's memory. The profile is built again when the box closes, so it shows the new values. Nothing is written to the save file until the player saves the game.
-- **The option**: one line in the settings file and one row on the Game tab of the Options screen, made with the `add-option` skill of this repository.
+- **The option**: one line in the settings file, made with the `add-option` skill of this repository. The Graphics and Game tabs of the Options screen hold nine rows each, so the row "Player editor" is on a third tab, Tools. The tests that click the Game tab click its new place (x 444).
+- **Same game**: with the option on, a profile gets one more widget, which moves memory as any new screen does. The game from that point can differ from the same game with the option off, even with no edit. The same-save runs `editor-on` and `editor-off` never open a profile, so they show that the option alone changes nothing.
 
 ## The data (3.9.68)
 
