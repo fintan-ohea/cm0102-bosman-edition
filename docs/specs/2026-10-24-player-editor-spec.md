@@ -1,6 +1,6 @@
 # Player editor (fork of fintan-ohea)
 
-Status: Slice 1 built on `feature/save-editor`, 2026-10-24 (`src/recomp_rt/win/editor.c`). Decisions taken (end of this page).
+Status: Slices 1 to 3 built on `feature/save-editor`, 2026-10-24 (`src/recomp_rt/win/editor.c`). Decisions taken (end of this page).
 
 ## Problem
 
@@ -18,7 +18,7 @@ In order. Each step is a slice of its own, and each ends with a working, tested 
 
 1. **The 31 attributes of a player** (Finishing, Pace, Determination and the rest), each 1 to 20, as the profile shows them. This is what the GK editor is used for most, and it touches one record.
 2. **Current ability and potential ability** of a player. They are hidden values (glossary): no screen of the original shows them. The box shows and edits them (decision 1).
-3. **The player's condition, morale and injury**: fit a player again, or end an injury.
+3. **The player's condition, morale and injury**: fit a player again, or end an injury. Built: Condition - and + (5% of the stored condition) and Full (100%), Morale - and + (1 to 20, shown with the game's word), and Cure, which ends the injury and its recovery today as if their days had passed. Research: the condition, injury and morale section of `docs/research/2026-10-24-player-editor-attributes.md`.
 4. **The contract**: wage, end date and clauses (`docs/research/2026-10-15-contract-clauses.md` is the starting point).
 5. **The club's money**: balance and transfer budget (`cash.cpp` in the data map, 52 globals).
 

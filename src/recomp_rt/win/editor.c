@@ -8,7 +8,8 @@
  *
  * The box is a screen of the runtime on the game's screen stack, built as the Options screen
  * (options_screen.c): the frame of Game Settings (0x823950), pushed with flag 1. It shows current ability
- * (player data +0x05), potential ability (+0x07) and the 31 attributes of 0x5431e0, with - and + buttons.
+ * (player data +0x05), potential ability (+0x07) and the 31 attributes of 0x5431e0, with - and + buttons, and
+ * (slice 3) the condition with Full, the morale (+0x45), and the injury with Cure while the player has one.
  * Each click changes the game's memory at once, so the box shows the game's own values. Save keeps the
  * changes and Cancel puts back the values that the player had when the box opened.
  *
@@ -65,6 +66,18 @@ extern const uint32_t rt_site_profile_note;
 #define ABILITY 0x05u               /* player data: s16 current ability, 1 to 200 */
 #define POTENTIAL 0x07u             /* player data: s16 potential ability (0x8e8345) */
 #define DETERMINATION 0x58u         /* staff: attribute 10, the only one outside the player data (0x54376c) */
+#define MORALE 0x45u                /* player data: morale, 1 to 20 (0x544710) */
+
+/* Condition and injury (docs/research/2026-10-24-player-editor-attributes.md, slice 3). */
+#define INJURIES 0xb63d28u          /* the injury object: the this of 0x62c400 and 0x62c590 */
+#define GET_CONDITION 0x62c590u     /* thiscall (staff, 1): the condition in %, after the day's update */
+#define INJURY_STATUS 0x62c400u     /* thiscall (staff): 0 fit, 1 recovering, 2 injured */
+#define DAYS_SINCE 0x54cc30u        /* thiscall on TODAY (out, date low, date high): s16 days, u16 years */
+#define TODAY 0xae2c90u
+#define INJURY_ROW 31u              /* [obj] + id * 31: +0x08 fitness ceiling, +0x0a condition, +0x0e record */
+#define INJURY_RECORD 48u           /* [obj + 4] + index * 48: +0x20 date, +0x28 recovery days, +0x2a injured days */
+#define CONDITION_FULL 10000
+#define CONDITION_STEP 500
 
 #define ITEM_ID 0x7d40u             /* "Edit player" in the Action popup. Ids that the original does not use. */
 #define STEP_ID 0x7d41u             /* data: field * 4 + step (0: -1, 1: +1, 2: -10, 3: +10) */
@@ -75,11 +88,17 @@ extern const uint32_t rt_site_profile_note;
 #define CLOSE 0xfffffff7u           /* -9: close the box, as Ok and Cancel of Game Settings (0x8259a0) */
 
 #define ATTRIBUTES 31
-#define FIELDS (2 + ATTRIBUTES)     /* 0 current ability, 1 potential ability, 2.. attributes 1..31 */
+/* 0 current ability, 1 potential ability, 2.. attributes 1..31, then condition, morale and injury. */
+#define FIELD_CONDITION (2 + ATTRIBUTES)
+#define FIELD_MORALE (FIELD_CONDITION + 1)
+#define FIELD_INJURY (FIELD_CONDITION + 2)
+#define FIELDS (FIELD_CONDITION + 3)
 #define ABILITY_MAX 200
 #define VALUE_MAX 20
 #define TEXT_SIZE 0x200u
 #define NAME_AT 0x300u              /* scratch + this: the person's name and the attribute names */
+#define OUT_AT 0x400u               /* scratch + this: the result of DAYS_SINCE */
+#define SCRATCH_SIZE 0x410u
 
 /* The byte of each attribute (index 1..31): player data + offset, or the staff for Determination. */
 static const uint8_t attribute_byte[ATTRIBUTES + 1] = {
@@ -89,7 +108,9 @@ static const uint8_t attribute_byte[ATTRIBUTES + 1] = {
 static uint32_t scratch;
 static uint32_t staff, data;        /* the player in the box */
 static int16_t old_ability, old_potential;
-static uint8_t old_bytes[ATTRIBUTES + 1];
+static uint8_t old_bytes[ATTRIBUTES + 1], old_morale;
+static int16_t old_ceiling, old_condition, old_recovery, old_injured;
+static uint32_t old_record;         /* the injury record when the box opened, 0 for none */
 static int edited, edited_before;   /* the game is edited; and before the box opened */
 static uint32_t handled_press = 0xffffffffu;
 
@@ -144,6 +165,53 @@ static int shown(int k)
     return (int)(call(ATTRIBUTE, 3, a) & 0xff);
 }
 
+/* The player's row of the injury object. */
+static uint32_t injury_row(void)
+{
+    return rd32(g_mem, rd32(g_mem, INJURIES)) + rd32(g_mem, staff) * INJURY_ROW;
+}
+
+/* The player's injury record, or 0. */
+static uint32_t injury_record(void)
+{
+    int32_t index = (int32_t)rd32(g_mem, injury_row() + 0x0e);
+    return index < 0 ? 0 : rd32(g_mem, rd32(g_mem, INJURIES) + 4) + (uint32_t)index * INJURY_RECORD;
+}
+
+/* The condition in %, as the profile shows it (0x87ab38). The call brings the row up to today first. */
+static int condition(void)
+{
+    uint32_t a[2] = {staff, 1};
+    return (int16_t)call_this(GET_CONDITION, rd32(g_mem, INJURIES), 2, a);
+}
+
+static int injury_status(void)
+{
+    uint32_t a[1] = {staff};
+    return (int)(call_this(INJURY_STATUS, rd32(g_mem, INJURIES), 1, a) & 0xff);
+}
+
+/* The days since the injury of record, as 0x62c400 counts them. */
+static int injury_days(uint32_t record)
+{
+    uint32_t a[3] = {scratch + OUT_AT, rd32(g_mem, record + 0x20), rd32(g_mem, record + 0x24)};
+    call_this(DAYS_SINCE, TODAY, 3, a);
+    return (int16_t)rd16(g_mem, scratch + OUT_AT) + (int)rd16(g_mem, scratch + OUT_AT + 2) * 365;
+}
+
+/* The days left of the injury (status 2) or of the recovery (status 1), else 0. */
+static int injury_left(int status)
+{
+    uint32_t record = injury_record();
+    if (!record || !status) return 0;
+    return (int16_t)rd16(g_mem, record + (status == 2 ? 0x2a : 0x28)) - injury_days(record);
+}
+
+static const char *morale_word(int m)
+{
+    return m < 4 ? "Very Low" : m < 8 ? "Low" : m < 12 ? "Ok" : m < 15 ? "Good" : m < 18 ? "Very Good" : "Superb";
+}
+
 int editor_game_edited(void) { return edited; }
 
 /* "recomp: player editor <what> staff <id> ca <n> pa <n> values <31 shown values>", for the test
@@ -153,7 +221,9 @@ static void log_values(const char *what)
     fprintf(stderr, "recomp: player editor %s staff %d ca %d pa %d values", what, (int32_t)rd32(g_mem, staff),
             (int16_t)rd16(g_mem, data + ABILITY), (int16_t)rd16(g_mem, data + POTENTIAL));
     for (int k = 1; k <= ATTRIBUTES; k++) fprintf(stderr, " %d", shown(k));
-    fprintf(stderr, "\n");
+    int status = injury_status();
+    fprintf(stderr, " condition %d morale %d injury %d %d\n", condition(), (int)rd8(g_mem, data + MORALE), status,
+            injury_left(status));
 }
 
 /* ---- The changes ---- */
@@ -202,12 +272,57 @@ static void step_ability(uint32_t offset, int by)
     mark_edited();
 }
 
+/* Condition: by steps the stored condition (+0x0a) by CONDITION_STEP; Full (by 0) sets it and the fitness
+ * ceiling (+0x08) to 10000, so the shown condition is 100% (or 90% while recovering, 0x62c603). */
+static void step_condition(int by)
+{
+    uint32_t row = injury_row();
+    int c0 = (int16_t)rd16(g_mem, row + 0x0a), v0 = condition();
+    int c = by ? c0 + by : CONDITION_FULL;
+    if (c < 100) c = 100;
+    if (c > CONDITION_FULL) c = CONDITION_FULL;
+    if (!by) wr16(g_mem, row + 0x08, CONDITION_FULL);
+    wr16(g_mem, row + 0x0a, (uint32_t)c);
+    fprintf(stderr, "recomp: player editor: staff %d condition %d%% -> %d%% (stored %d -> %d)\n",
+            (int32_t)rd32(g_mem, staff), v0, condition(), c0, c);
+    mark_edited();
+}
+
+static void step_morale(int by)
+{
+    int m0 = (int)rd8(g_mem, data + MORALE), m = m0 + by;
+    if (m < 1) m = 1;
+    if (m > VALUE_MAX) m = VALUE_MAX;
+    if (m == m0) return;
+    wr8(g_mem, data + MORALE, (uint32_t)m);
+    fprintf(stderr, "recomp: player editor: staff %d morale %d -> %d\n", (int32_t)rd32(g_mem, staff), m0, m);
+    mark_edited();
+}
+
+/* Cure: the injury and its recovery end today, as when their days have passed (0x62c400). */
+static void cure(void)
+{
+    uint32_t record = injury_record();
+    int status = injury_status();
+    if (!record || !status) return;
+    int days = injury_days(record);
+    if (days < 0) days = 0;
+    for (uint32_t at = 0x28; at <= 0x2a; at += 2)
+        if ((int16_t)rd16(g_mem, record + at) > days) wr16(g_mem, record + at, (uint32_t)days);
+    fprintf(stderr, "recomp: player editor: staff %d injury status %d -> %d after %d days\n",
+            (int32_t)rd32(g_mem, staff), status, injury_status(), days);
+    mark_edited();
+}
+
 static void step(int field, int op)
 {
     static const int by[4] = {-1, 1, -10, 10};
     if (field == 0) step_ability(ABILITY, by[op]);
     else if (field == 1) step_ability(POTENTIAL, by[op]);
-    else if (op < 2) step_attribute(field - 1, by[op]);
+    else if (field == FIELD_CONDITION) step_condition(op == 3 ? 0 : by[op] * CONDITION_STEP);
+    else if (field == FIELD_MORALE && op < 2) step_morale(by[op]);
+    else if (field == FIELD_INJURY && op == 3) cure();
+    else if (field < FIELD_CONDITION && op < 2) step_attribute(field - 1, by[op]);
 }
 
 static void snapshot(void)
@@ -215,6 +330,16 @@ static void snapshot(void)
     old_ability = (int16_t)rd16(g_mem, data + ABILITY);
     old_potential = (int16_t)rd16(g_mem, data + POTENTIAL);
     for (int k = 1; k <= ATTRIBUTES; k++) old_bytes[k] = (uint8_t)rd8(g_mem, byte_at(k));
+    old_morale = (uint8_t)rd8(g_mem, data + MORALE);
+    condition();                                    /* the row up to today, so Cancel restores today's values */
+    uint32_t row = injury_row();
+    old_ceiling = (int16_t)rd16(g_mem, row + 0x08);
+    old_condition = (int16_t)rd16(g_mem, row + 0x0a);
+    old_record = injury_record();
+    if (old_record) {
+        old_recovery = (int16_t)rd16(g_mem, old_record + 0x28);
+        old_injured = (int16_t)rd16(g_mem, old_record + 0x2a);
+    }
     edited_before = edited;
 }
 
@@ -223,6 +348,14 @@ static void restore(void)
     wr16(g_mem, data + ABILITY, (uint32_t)old_ability);
     wr16(g_mem, data + POTENTIAL, (uint32_t)old_potential);
     for (int k = 1; k <= ATTRIBUTES; k++) wr8(g_mem, byte_at(k), old_bytes[k]);
+    wr8(g_mem, data + MORALE, old_morale);
+    uint32_t row = injury_row();
+    wr16(g_mem, row + 0x08, (uint32_t)old_ceiling);
+    wr16(g_mem, row + 0x0a, (uint32_t)old_condition);
+    if (old_record) {
+        wr16(g_mem, old_record + 0x28, (uint32_t)old_recovery);
+        wr16(g_mem, old_record + 0x2a, (uint32_t)old_injured);
+    }
     edited = edited_before;
 }
 
@@ -249,14 +382,19 @@ static void box_text(int x1, int y1, int x2, int y2, uint32_t style, uint32_t co
     call_this(BOX_TEXT, SCREENS, 11, a);
 }
 
-/* The value: a yellow label with a frame, as Game Settings (0x82477b). */
+/* A value: a yellow label with a frame, as Game Settings (0x82477b). */
+static void value_text(int a, int column, const char *s)
+{
+    uint32_t y = colour16(TEXT_YELLOW);
+    uint32_t l[9] = {(uint32_t)a, (uint32_t)column, 0, 0x221, y, 0xc, 2, y, text(s)};
+    call_this(CELL_LABEL, SCREENS, 9, l);
+}
+
 static void value(int a, int column, int v)
 {
     char s[8];
     snprintf(s, sizeof s, "%d", v);
-    uint32_t y = colour16(TEXT_YELLOW);
-    uint32_t l[9] = {(uint32_t)a, (uint32_t)column, 0, 0x221, y, 0xc, 2, y, text(s)};
-    call_this(CELL_LABEL, SCREENS, 9, l);
+    value_text(a, column, s);
 }
 
 /* A step button: green, as the value buttons of Game Settings (0x8247a4). */
@@ -275,14 +413,17 @@ static void plain(int a, int column, const char *s, uint32_t colour)
 
 /* The ability row: name, -10, -, value, +, +10 for current and then potential ability. */
 static const uint8_t weights_ability[] = {27, 8, 6, 9, 6, 8, 4, 27, 8, 6, 9, 6, 8};
+/* The fitness row: condition (name, -, value, +, Full), morale (name, -, value, +) and injury (name, value,
+ * Cure), with small gaps. */
+static const uint8_t weights_fitness[] = {18, 5, 9, 5, 8, 3, 14, 5, 16, 5, 3, 13, 22, 8};
 /* An attribute row: name, -, value, +. */
 static const uint8_t weights_attribute[] = {50, 10, 12, 10};
 #define ROW_X1 160
 #define ROW_X2 729
 #define COLUMN_W 190
 #define ROWS_PER_COLUMN 11
-#define ROW_Y 156
-#define ROW_STEP 29
+#define ROW_Y 186
+#define ROW_STEP 27
 
 static void ability_cells(int a, int first, const char *label, int v, int field, uint32_t green, uint32_t light)
 {
@@ -296,7 +437,6 @@ static void ability_cells(int a, int first, const char *label, int v, int field,
 
 static void editor_build(void)
 {
-    if (!scratch) scratch = rt_alloc_zero(NAME_AT + 0x100);
     area(0, 0, 0x31f, 0x257, 1, NULL, 2, 0);                    /* the dark cover, 0x823a92 */
     uint32_t off[1] = {0};
     call(BACKGROUND_OFF, 1, off);
@@ -317,6 +457,28 @@ static void editor_build(void)
     ability_cells(a, 0, "Current ability", (int16_t)rd16(g_mem, data + ABILITY), 0, green, light);
     ability_cells(a, 7, "Potential ability", (int16_t)rd16(g_mem, data + POTENTIAL), 1, green, light);
 
+    /* Condition, morale and injury: - and + steps, Full, and Cure while the player is injured or recovering. */
+    int f = area(ROW_X1, 152, ROW_X2, 178, 14, weights_fitness, 1, 0);
+    char s[32];
+    plain(f, 0, "Condition", light);
+    button(f, 1, "-", FIELD_CONDITION, 0, green);
+    snprintf(s, sizeof s, "%d%%", condition());
+    value_text(f, 2, s);
+    button(f, 3, "+", FIELD_CONDITION, 1, green);
+    button(f, 4, "Full", FIELD_CONDITION, 3, green);
+    plain(f, 6, "Morale", light);
+    button(f, 7, "-", FIELD_MORALE, 0, green);
+    int m = (int)rd8(g_mem, data + MORALE);
+    snprintf(s, sizeof s, "%s %d", morale_word(m), m);
+    value_text(f, 8, s);
+    button(f, 9, "+", FIELD_MORALE, 1, green);
+    plain(f, 11, "Injury", light);
+    int status = injury_status();
+    if (status) snprintf(s, sizeof s, "%s %dd", status == 2 ? "Injured" : "Recov.", injury_left(status));
+    else snprintf(s, sizeof s, "None");
+    value_text(f, 12, s);
+    if (status) button(f, 13, "Cure", FIELD_INJURY, 3, green);
+
     for (int k = 1; k <= ATTRIBUTES; k++) {
         int col = (k - 1) / ROWS_PER_COLUMN, row = (k - 1) % ROWS_PER_COLUMN;
         int x = ROW_X1 + col * COLUMN_W, y = ROW_Y + row * ROW_STEP;
@@ -330,7 +492,7 @@ static void editor_build(void)
         value(r, 2, shown(k));
         button(r, 3, "+", k + 1, 1, green);
     }
-    box_text(ROW_X1, 478, ROW_X2, 500, 1, 0, 1, 1, light,
+    box_text(ROW_X1, 485, ROW_X2, 504, 1, 0, 1, 1, light,
              "Changes show at once. Cancel puts back the values from when the box opened.");
 
     int b = area(155, 509, 734, 539, 2, NULL, 1, 0);
@@ -377,6 +539,7 @@ static int editor_open(uint32_t person)
         fprintf(stderr, "recomp: player editor not opened\n");
         return 0;
     }
+    if (!scratch) scratch = rt_alloc_zero(SCRATCH_SIZE);
     staff = person;
     data = rd32(g_mem, person + PLAYER_DATA);
     set_slot(0, staff);

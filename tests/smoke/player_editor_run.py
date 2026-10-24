@@ -7,16 +7,21 @@ Usage:
 Runs, in classic mode, from start.sav (tests/fixtures):
     edit    player_editor = on. Opens a profile from the Arsenal squad, opens Edit player in its Action
             drop-down, clicks Finishing + and Acceleration +, and Cancel. Opens the box again, clicks current
-            ability +10, potential ability +, Finishing + and Pace +, and Save. Then Continue Game: the runtime
-            saves the game a day later (RECOMP_SAVE_AFTER_DAYS=1) as samesave.sav.
+            ability +10, potential ability +, Finishing +, Pace +, Condition Full and Morale +, and Save. Then
+            Continue Game: the runtime saves the game a day later (RECOMP_SAVE_AFTER_DAYS=1) as samesave.sav.
     load    player_editor = on. Loads that save and opens the box for the same player.
+    cure    player_editor = on. Opens the box of an injured player (Van Bronckhorst), clicks Cure and Save, then
+            Continue Game to the test save.
+    cured   loads that save and opens the box of the same player.
     off     player_editor = off. Opens the Action drop-down and clicks where Edit player would be.
 
 Checks:
     - edit: the box opens; Cancel gives back the values of the first opening, and the second opening shows
       them; Save shows current ability +10, potential ability +1, Pace +1 (a stored attribute) and a higher
       Finishing (a computed one); the save has the part bosman_editor.dat with the edited mark.
+    - edit: Save also shows condition 100% and morale +1.
     - load: the load reads the mark, and the box shows the values of the Save.
+    - cure: the player is injured when the box opens and fit after Cure; cured: still fit after the load.
     - off: the box never opens.
 The editor writes "recomp: player editor <opened|cancelled|saved> staff <id> ca <n> pa <n> values <31 values>".
 Pictures in <out>/<run>/: box.bmp, profile.bmp.
@@ -35,9 +40,10 @@ import fixtures  # noqa: E402
 import smoke_run  # noqa: E402
 import savfile  # noqa: E402
 
-# Positions for 800x600 (classic). The box: current ability +10 at 420 132, potential ability + at 682 132,
-# the attribute + buttons at x 334 (first column) and 524 (second), rows from y 168 every 29; Save 300 524,
-# Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
+# Positions for 800x600 (classic). The box: current ability +10 at 420 132, potential ability + at 682 132;
+# Condition Full at 334 165, Morale + at 523 165, Cure at 712 165; the attribute + buttons at x 334 (first
+# column) and 524 (second), rows from y 198 every 27; Save 300 524, Cancel 590 524. The profile's Action button
+# at 722 14, Edit player the 11th item at 680 267.
 PROFILE = ["1000 click 45 165",          # the manager's menu
            "2500 click 150 156",         # Arsenal Squad
            "6000 click 210 369"]         # a player of the squad list
@@ -46,15 +52,17 @@ EDIT_STEPS = fixtures.LOAD_STEPS + PROFILE + [
     "9500 " + ACTION,
     "12000 " + EDIT,
     "14000 dump {d}/box.bmp",
-    "14500 click 524 168",               # Finishing +
-    "16000 click 334 168",               # Acceleration +
+    "14500 click 524 198",               # Finishing +
+    "16000 click 334 198",               # Acceleration +
     "17500 click 590 524",               # Cancel
     "20000 " + ACTION,
     "22500 " + EDIT,
     "25000 click 420 132",               # current ability +10
     "26500 click 682 132",               # potential ability +
-    "28000 click 524 168",               # Finishing +
-    "29500 click 524 429",               # Pace +
+    "28000 click 524 198",               # Finishing +
+    "29500 click 524 441",               # Pace +
+    "30000 click 334 165",               # Condition Full
+    "30500 click 523 165",               # Morale +
     "31000 click 300 524",               # Save
     "34000 dump {d}/profile.bmp",
     "35000 click 45 120",                # Continue Game: the test save follows a day later
@@ -72,14 +80,30 @@ LOAD_STEPS = fixtures.LOAD_STEPS[:-1] + [
     "24000 dump {d}/box.bmp",
     "25000 quit",
 ]
+INJURED = "6000 click 260 346"          # Van Bronckhorst, "Inj" in the squad list of start.sav
+CURE_STEPS = fixtures.LOAD_STEPS + PROFILE[:2] + [INJURED,
+    "9500 " + ACTION,
+    "12000 " + EDIT,
+    "14000 click 712 165",               # Cure
+    "15500 dump {d}/box.bmp",
+    "16000 click 300 524",               # Save
+    "19000 click 45 120",
+    "29000 click 45 120",
+    "39000 click 45 120",
+    "49000 quit",
+]
+CURED_STEPS = LOAD_STEPS[:LOAD_STEPS.index("16000 click 210 369")] + ["16000 click 260 346"] + \
+    LOAD_STEPS[LOAD_STEPS.index("16000 click 210 369") + 1:]
 OFF_STEPS = fixtures.LOAD_STEPS + PROFILE + ["9500 " + ACTION, "12000 " + EDIT, "14000 dump {d}/after.bmp", "15000 quit"]
 
-LINE = re.compile(r"recomp: player editor (opened|cancelled|saved) staff (-?\d+) ca (-?\d+) pa (-?\d+) values((?: -?\d+){31})")
+LINE = re.compile(r"recomp: player editor (opened|cancelled|saved) staff (-?\d+) ca (-?\d+) pa (-?\d+) values((?: -?\d+){31})"
+                  r" condition (-?\d+) morale (-?\d+) injury (\d+) (-?\d+)")
 FINISHING, PACE = 12, 21                 # attribute indices (docs/research/2026-10-24-player-editor-attributes.md)
 
 
 def lines(log):
-    return [(m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), [int(v) for v in m.group(5).split()])
+    return [(m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), [int(v) for v in m.group(5).split()],
+             int(m.group(6)), int(m.group(7)), int(m.group(8)))
             for m in LINE.finditer(log)]
 
 
@@ -121,7 +145,10 @@ def main(argv):
 
     edit_user = new_user(work, "edit", start)
     off_user = new_user(work, "off", start)
-    with ThreadPoolExecutor(2) as pool:
+    cure_user = new_user(work, "cure", start)
+    with ThreadPoolExecutor(3) as pool:
+        cure = pool.submit(play, program, game, cure_user, os.path.join(out, "cure"), CURE_STEPS,
+                           [("player_editor", "on")], {"RECOMP_SAVE_AFTER_DAYS": "1"})
         edit = pool.submit(play, program, game, edit_user, os.path.join(out, "edit"), EDIT_STEPS,
                            [("player_editor", "on")], {"RECOMP_SAVE_AFTER_DAYS": "1"})
         off = pool.submit(play, program, game, off_user, os.path.join(out, "off"), OFF_STEPS,
@@ -144,6 +171,8 @@ def main(argv):
                   f"edit: Pace {first[4][PACE - 1]} -> {after[4][PACE - 1]}")
             check(after[4][FINISHING - 1] > first[4][FINISHING - 1] or first[4][FINISHING - 1] == 20,
                   f"edit: Finishing {first[4][FINISHING - 1]} -> {after[4][FINISHING - 1]}")
+            check(after[5] == 100 and after[6] == min(first[6] + 1, 20),
+                  f"edit: condition {first[5]} -> {after[5]}, morale {first[6]} -> {after[6]}")
         if os.path.exists(saved):
             try:
                 part = bytes(savfile.Sav(saved).read_member("bosman_editor.dat"))
@@ -154,6 +183,12 @@ def main(argv):
         code, log = off.result()
         check(code == 0 and "reached first-news" in log and "player editor" not in log,
               "off: the run loads the game, ends with code 0, and the box never opens")
+        code, log = cure.result()
+        cured = lines(log)
+        check(code == 0 and [c[0] for c in cured[:2]] == ["opened", "saved"] and cured[0][7] == 2 and cured[1][7] == 0,
+              f"cure: injured when the box opens, fit after Cure ({[(c[0], c[7]) for c in cured]})")
+        cure_save = os.path.join(cure_user, "samesave.sav")
+        check(os.path.exists(cure_save), "cure: the game is saved")
 
     if os.path.exists(os.path.join(edit_user, "samesave.sav")) and len(seen) >= 4:
         load_user = new_user(work, "load", os.path.join(edit_user, "samesave.sav"))
@@ -162,6 +197,12 @@ def main(argv):
         check(code == 0 and "the save is an edited game" in log, "load: the load reads the edited mark")
         check(bool(loaded) and loaded[0][0] == "opened" and loaded[0][1:] == seen[3][1:],
               f"load: the box shows the values of the Save ({loaded[0][1:] if loaded else None})")
+    if os.path.exists(os.path.join(cure_user, "samesave.sav")):
+        cured_user = new_user(work, "cured", os.path.join(cure_user, "samesave.sav"))
+        code, log = play(program, game, cured_user, os.path.join(out, "cured"), CURED_STEPS, [("player_editor", "on")])
+        again = lines(log)
+        check(code == 0 and bool(again) and again[0][1] == cured[0][1] and again[0][7] == 0,
+              f"cured: the player is still fit after the load ({[(c[1], c[7]) for c in again]})")
     print(f"pictures in {out}/<run>/; work folder {work}")
     return 0 if ok else 1
 
