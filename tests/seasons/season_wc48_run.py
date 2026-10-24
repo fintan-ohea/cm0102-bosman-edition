@@ -14,6 +14,9 @@ test logs RECOMP_SEASON_INTL_LOG=1 and RECOMP_SEASON_CHANGE_LOG=1. The runs:
             qualifying began (the draw fill, Q388), then the 2030 cycle (the six hosts, the sections of 2028)
     off     October 2023, 2023/24 to 2026/27, changing rules off: the rule edition of the start season is the
             2026 World Cup, so the finals have 48 teams too
+    2030    December 2025, 2025/26 to 2029/30, changing rules on: the 2030 cycle to its draw (O265, O259 A11): no
+            host in qualifying (three CONMEBOL hosts left out, two European paths), UEFA 14, CONMEBOL 3, CONCACAF 6,
+            CAF 8, AFC 8, OFC 1 and 2 from the tournament, a draw of 48 with no fill
     save    December 2025, changing rules on: the jump saves after SAVE_AFTER days (about 22 June 2026, in the
             group stage of the finals) and stops; a second game loads that save in a new user folder and plays to
             the end of 2027/28: no message box, the round of 32 and the 2030 cycle in the loaded game's log
@@ -50,6 +53,7 @@ RUNS = {
     "2025": (2025, 2027, "December 2025", "on"),
     "off": (2023, 2026, "October 2023", "off"),
     "save": (2025, 2027, "December 2025", "on"),
+    "2030": (2025, 2029, "December 2025", "on"),
 }
 SAVE_AFTER = 345
 LINES = {
@@ -58,12 +62,22 @@ LINES = {
              "wc qualifying 2026: path A", "wc qualifying 2026: Europe draws", "world_cup 2026 host",
              "wc qualifying 2026: Europe pool of 54 nations (Russia out"],
     "2025": ["world_cup 2026 draw of 48 teams in 12 groups", "world_cup 2026 round of 32",
+             # A start after the qualifying began: the real draw and play-off tournament (O259 A9, O274).
+             "world_cup 2026: the real draw, 48 of 48 teams",
+             "wc play-off 2026: seeds Democratic Republic of Congo, Iraq; semi-finals New Caledonia v Jamaica, "
+             "Bolivia v Surinam",
              "world_cup 2030 has 12 stages and 48 slots", "world_cup 2030 host Uruguay",
              "wc qualifying 2030: Europe draws"],
     "off": ["world_cup 2026 draw of 48 teams in 12 groups", "world_cup 2026 round of 32"],
+    # The 2030 shape (O265, O259 A11): six hosts, none in qualifying, 42 qualifiers.
+    "2030": ["world_cup 2030 draw of 48 teams in 12 groups", "wc qualifying 2030: CONMEBOL leaves out 3 hosts",
+             "wc qualifying 2030: path B:"],
 }
-QUALIFIERS = {"2023": 2026, "off": 2026}
+QUALIFIERS = {"2023": 2026, "off": 2026, "2030": 2030}
 BASE = {"UEFA": 16, "CONMEBOL": 6, "CONCACAF": 3, "CAF": 9, "AFC": 8, "OFC": 1}
+# 2030 (O265): each confederation keeps its 2026 total with its hosts counted in it.
+BASES = {2026: BASE, 2030: {"UEFA": 14, "CONMEBOL": 3, "CONCACAF": 6, "CAF": 8, "AFC": 8, "OFC": 1}}
+HOSTS = {2030: ["Morocco", "Portugal", "Spain", "Argentina", "Paraguay", "Uruguay"]}
 NEWS = {"2023": "The 2026 World Cup plays in"}
 BASE_ENV = {"RECOMP_STAFF_RESERVE": "23000", "RECOMP_SEASON_INTL_LOG": "1", "RECOMP_SEASON_CHANGE_LOG": "1"}
 QUALIFIER = re.compile(r"season intl: world_cup (\d+) qualifier (.*) \((\w+|\?)\)$")
@@ -92,6 +106,12 @@ def check(name, start, last, rules, work):
         if "Russia" in x and "Europe pool of" not in x and \
                 ("wc qualifying 2026" in x or "world_cup 2026 qualifier" in x or "wc play-off 2026" in x):
             fails.append(f"{name}: Russia in the 2026 qualifying: {x.strip()}")
+    # A fill, a qualifier in already and a full World Cup are faults in every run and every year (O334).
+    for x in log:
+        if "season intl: world_cup " in x and " filled" in x and not x.rstrip().endswith(" 0 filled"):
+            fails.append(f"{name}: a World Cup draw takes teams from the fill: {x.strip()}")
+        if "is in already" in x or "world_cup is full" in x:
+            fails.append(f"{name}: {x.strip()}")
     year = QUALIFIERS.get(name)
     if year:
         count = {}
@@ -102,16 +122,25 @@ def check(name, start, last, rules, work):
                 count[m.group(3)] = count.get(m.group(3), 0) + 1
                 teams.append(m.group(2))
         extra = 0
-        for conf, want in BASE.items():
+        base = BASES[year]
+        for conf, want in base.items():
             got = count.get(conf, 0)
             if got < want or (conf == "UEFA" and got != want):
                 fails.append(f"{name}: {conf} gives {got} qualifiers for {year}, the table {want}")
             extra += max(0, got - want)
-        if sum(count.values()) != 45 or extra != 2:
-            fails.append(f"{name}: {sum(count.values())} qualifiers for {year} ({count}), 45 with 2 from the "
+        total = sum(base.values()) + 2
+        if sum(count.values()) != total or extra != 2:
+            fails.append(f"{name}: {sum(count.values())} qualifiers for {year} ({count}), {total} with 2 from the "
                          f"play-off tournament")
         if len(set(teams)) != len(teams):
             fails.append(f"{name}: a nation qualifies twice for {year}")
+        for host in HOSTS.get(year, []):
+            if host in teams:
+                fails.append(f"{name}: the host {host} qualifies for {year} through qualifying")
+        # Only the 2030 shape (O265) has two paths; 2026 keeps its four paths A to D.
+        for x in log:
+            if year in HOSTS and f"wc qualifying {year}: path C" in x:
+                fails.append(f"{name}: {x.strip()}")
     want = NEWS.get(name)
     if want:
         news = [x for x in log if "season change: news" in x and want in x]
@@ -143,6 +172,11 @@ def save_run(program, game, keep, reuse):
     log_a = open(os.path.join(first, "stderr.txt"), encoding="latin-1").read().split("\n")
     log_b = open(os.path.join(second, "stderr.txt"), encoding="latin-1").read().split("\n")
     fails = [f"save: the loaded game: {x.strip()}" for x in log_b if "recomp: message box from" in x]
+    for x in log_a + log_b:                              # O334: in every run
+        if "season intl: world_cup " in x and " filled" in x and not x.rstrip().endswith(" 0 filled"):
+            fails.append(f"save: a World Cup draw takes teams from the fill: {x.strip()}")
+        if "is in already" in x or "world_cup is full" in x:
+            fails.append(f"save: {x.strip()}")
     if not any("world_cup 2026 draw of 48 teams in 12 groups" in x for x in log_a):
         fails.append("save: the first game made no draw of 48 before the save")
     if any("world_cup 2026 round of 32" in x for x in log_a):

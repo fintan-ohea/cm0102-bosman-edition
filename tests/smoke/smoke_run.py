@@ -536,7 +536,11 @@ RULES_PART = "bosman_season.dat"
 # morning check): the same build with the menu of the preview (RECOMP_SETUP_TEXT=0.6.0-preview) differs only in
 # the four parts and bosman_season.dat, and a heap trace of Setup Game is the same with changing rules on and
 # off, so the rules-on game's own memory move meets the new menu's layout. Only the new-game check uses this.
-RULES_ON_PARTS = ("fifa_rankings.dat", "general.dat", "national_teams.dat", "staff history.tmp", "contract.dat")
+# O323: a 2001 game with changing rules on holds the South American section of the 2006 cycle from its first day,
+# and that cycle's league ends on its real last matchday, 12 October 2005 (season_intl_qual.c, end_by_october), so
+# the section's part differs too.
+RULES_ON_PARTS = ("fifa_rankings.dat", "general.dat", "national_teams.dat", "staff history.tmp", "contract.dat",
+                  "World Cup South American Qualifying Section_440.tmp")
 # O128 (the standard of O107): in a new game the runs off and foreign-off may differ in club records.dat. The same
 # build with the menu of the preview (RECOMP_SETUP_TEXT=0.6.0-preview) equals normal in both, so the Setup Game
 # top row's layout (Q422) meets the memory move that those options already make (foreign_colours draws names in

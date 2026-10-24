@@ -271,14 +271,17 @@ int season_intl_uefa_from(const char *name)
 
 /* ---- The real draws of finals whose qualifying began before the game (O259 rows A9 and A16) ---- */
 
-/* The finalists of each World Cup and European Championship that a game can start into after its qualifying
- * began (a start in the finals' season or the one before, Q388: fill_allowed of season_intl.c). Names of the
- * data; '/' gives the other names of a nation, first the one of its season (the renames of season_intl_renames).
- * Sources (read 2026-10-23): https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_qualification and the pages of
- * 2010, 2014, 2018 and 2022 (the qualified teams), https://en.wikipedia.org/wiki/UEFA_Euro_2004_qualifying and
- * the pages of 2008, 2012, 2016, 2020 and 2024. Every name is a live record with a continent in each database
- * of the seasons two before to one after its edition (the O188 sweep script, natinv/real.py). The 2026 World
- * Cup and Euro 2028 are not here: their qualifying was not over when this table was made. */
+/* The finalists of each World Cup and European Championship that a game can start into after its qualifying began (a
+ * start in the finals' season or the one before, Q388: fill_allowed of season_intl.c). Names of the data; '/' gives
+ * the other names of a nation, first the one of its season (the renames of season_intl_renames). Sources (read
+ * 2026-10-23): https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_qualification and the pages of 2010, 2014, 2018 and
+ * 2022 (the qualified teams), https://en.wikipedia.org/wiki/UEFA_Euro_2004_qualifying and the pages of 2008, 2012,
+ * 2016, 2020 and 2024; for 2026 https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification (the 48 qualified
+ * teams, read 2026-10-23; O274). Every name is a live record with a continent in each database of the seasons two
+ * before to one after its edition (the O188 sweep script, natinv/real.py). Euro 2028 is not here: its qualifying
+ * starts in 2027, after every start season, so the game plays it in full; a start that meets it short keeps the logged
+ * reputation fill (a data default).
+ */
 static const struct { const char *file; int year; const char *teams; } real_draws[] = {
     {"world_cup", 2006, "Germany;Argentina;Brazil;Ecuador;Paraguay;Costa Rica;Mexico;United States;"
                         "Trinidad & Tobago/Trinidad and Tobago;Angola;Ivory Coast;Ghana;Togo;Tunisia;Australia;"
@@ -302,6 +305,12 @@ static const struct { const char *file; int year; const char *teams; } real_draw
                         "South Korea;Canada;Costa Rica;Mexico;United States;Argentina;Brazil;Ecuador;Uruguay;"
                         "Belgium;Croatia;Denmark;England;France;Germany;Holland/Netherlands;Poland;Portugal;"
                         "Serbia/Serbia and Montenegro/Yugoslavia;Spain;Switzerland;Wales"},
+    {"world_cup", 2026, "Canada;Mexico;United States;Japan;Iran;Uzbekistan;Jordan;South Korea;Australia;Qatar;"
+                        "Saudi Arabia;Iraq;Morocco;Tunisia;Egypt;Algeria;Ghana;Cape Verde Islands/Cape Verde;Senegal;"
+                        "South Africa;Ivory Coast;Democratic Republic of Congo/DR Congo;Panama;Cura\xe7" "ao;Haiti;"
+                        "Argentina;Brazil;Ecuador;Paraguay;Uruguay;Colombia;New Zealand;England;France;Croatia;"
+                        "Portugal;Norway;Germany;Holland/Netherlands;Switzerland;Scotland;Spain;Austria;Belgium;"
+                        "Bosnia-Herzegovina/Bosnia and Herzegovina;Sweden;T\xfcrkiye/Turkey;Czechia/Czech Republic"},
     {"euro_champ", 2004, "Portugal;Bulgaria;Croatia;Czech Republic/Czechia;Denmark;England;France;Germany;Greece;"
                          "Italy;Latvia;Holland/Netherlands;Russia;Spain;Sweden;Switzerland"},
     {"euro_champ", 2008, "Austria;Switzerland;Croatia;Czech Republic/Czechia;France;Germany;Greece;Italy;"
@@ -322,13 +331,19 @@ static const struct { const char *file; int year; const char *teams; } real_draw
 
 /* The inter-confederation play-offs of the same World Cups: the AFC team, its partner, then the other tie in
  * the order of season_intl_qual.c's ties table (the Oceania stage 2 pair). Sources: the qualification pages
- * above, section "Inter-confederation play-offs". */
-static const struct { int year; const char *teams[4]; } real_ties[] = {
+ * above, section "Inter-confederation play-offs". 2026 is the play-off tournament of six (season_wcq26.c,
+ * tournament_six): the two seeds, then the semi-finals 2 v 5 and 3 v 4 (New Caledonia 0-1 Jamaica, Bolivia 2-1
+ * Suriname, 26 March 2026; finals DR Congo 1-0 Jamaica, Iraq 2-1 Bolivia, 31 March 2026;
+ * https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_qualification_(inter-confederation_play-offs), read
+ * 2026-10-23). */
+static const struct { int year; const char *teams[6]; } real_ties[] = {
     {2006, {"Bahrain", "Trinidad & Tobago/Trinidad and Tobago", "Australia", "Uruguay"}},
     {2010, {"Bahrain", "New Zealand", "Costa Rica", "Uruguay"}},
     {2014, {"Jordan", "Uruguay", "New Zealand", "Mexico"}},
     {2018, {"Australia", "Honduras", "New Zealand", "Peru"}},
     {2022, {"Australia", "Peru", "New Zealand", "Costa Rica"}},
+    {2026, {"Democratic Republic of Congo/DR Congo", "Iraq", "New Caledonia", "Bolivia", "Suriname/Surinam",
+            "Jamaica"}},
 };
 
 const char *season_intl_real_draw(const char *file, int year)
@@ -346,6 +361,6 @@ int season_intl_late_start(const char *file, int year)
 const char *season_intl_real_tie(int year, int k)
 {
     for (size_t i = 0; i < sizeof real_ties / sizeof real_ties[0]; i++)
-        if (real_ties[i].year == year && k >= 0 && k < 4) return real_ties[i].teams[k];
+        if (real_ties[i].year == year && k >= 0 && k < 6) return real_ties[i].teams[k];
     return NULL;
 }
