@@ -84,3 +84,11 @@ Morale is player data `+0x45`, 1 to 20: staff_adjust_morale (0x544710) holds it 
 - The end date is `+0x2d`: STAFF_CONTRACT::format_end_date_text (0x85e8f0), which the profile's "  Expires" line calls (0x87d281), writes it with 0x54a650 from `this + 0x2d` (0x85e954). Before that it tests the type, the low 6 bits of `+0x35`: 3 "Contract Expired" (0xa8370c), 4 "Free" (0xa836e4), 1 "Rolling" (0xa836dc) (0x85e8f0..0x85e942).
 - At the start of a game STAFF_CONTRACT::generate_initial_contract (0x85e960) copies the end date from the staff record `+0x46` (0x85ec81..0x85ec8d). Inference: from then on the contract record is the end date the game uses; no other code reads staff `+0x46` as a date (no `lea reg, [reg + 0x46]` in the generated code). The editor changes only the contract record.
 - The editor moves the end date with Date::set 0x54a130 (thiscall: day 1 to 31, month 0 to 11, year, weekday or -1; `season.c`), so the leap flag stays right.
+
+## Club money (slice 5)
+
+- FinanceTable::get_club_finance (0x5a0590), `this` the table `[0xae2a38]` (the `mov ecx, [0xae2a38]` before all 25 calls), (club): after 0x540a50 (inference: the parent club of a reserve side) the record is `[this] + club id * 0x167` (0x5a062c..0x5a063c). The editor calls it, so it gets the same record as the game.
+- The bank balance is the signed 64-bit value at `+0` of the record (`tools/save/edit_money.py`: set by Finance::init_for_club 0x5961d0, changed by the income and cost functions from 0x5987c0).
+- The transfer budget has no field: Finance::get_transfer_budget (0x598800) works it out. It starts from the balance (the 64-bit value of `this`, 0x598807 and 0x598818) and adds, for each of the 50 squad places (club `+0xd7`), the staff `+0x52` value of players that 0x5444a0 accepts (0x59884c..0x59888b); the rest of its 1,246 lines (reputation, wage bill, board amount: `edit_money.py`) is not read yet.
+- Test (2026-10-24, start.sav, Arsenal, Finances view of the club screen): after the editor's +1m the balance read £15,976,338 in place of £14,976,338, and Transfer Funds stayed £14,500,000. So a balance edit does not move the budget at once, at least for a club like Arsenal. The editor changes the balance only.
+- A player's club is staff `+0x39` (`compare.c`, `print_pdf.c`), 0 for a player without a club.

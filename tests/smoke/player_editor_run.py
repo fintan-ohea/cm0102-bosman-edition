@@ -9,7 +9,7 @@ Runs, in classic mode, from start.sav (tests/fixtures):
             drop-down, clicks Finishing + and Acceleration +, and Cancel. Opens the box again, clicks current
             ability +10, potential ability +, Finishing +, Pace +, Condition Full and Morale +, and Save. Then
             Continue Game: the runtime saves the game a day later (RECOMP_SAVE_AFTER_DAYS=1) as samesave.sav.
-            Wage +10% and Contract +1y are clicked before Save too.
+            Wage +10%, Contract +1y and Club balance +1m are clicked before Save too.
     load    player_editor = on. Loads that save and opens the box for the same player.
     cure    player_editor = on. Opens the box of an injured player (Van Bronckhorst), clicks Cure and Save, then
             Continue Game to the test save.
@@ -20,7 +20,8 @@ Checks:
     - edit: the box opens; Cancel gives back the values of the first opening, and the second opening shows
       them; Save shows current ability +10, potential ability +1, Pace +1 (a stored attribute) and a higher
       Finishing (a computed one); the save has the part bosman_editor.dat with the edited mark.
-    - edit: Save also shows condition 100% and morale +1, a wage 10% higher and a contract a year longer.
+    - edit: Save also shows condition 100% and morale +1, a wage 10% higher, a contract a year longer and a
+      club balance 1,000,000 higher.
     - load: the load reads the mark, and the box shows the values of the Save.
     - cure: the player is injured when the box opens and fit after Cure; cured: still fit after the load.
     - off: the box never opens.
@@ -43,8 +44,8 @@ import savfile  # noqa: E402
 
 # Positions for 800x600 (classic). The box: current ability +10 at 420 132, potential ability + at 682 132;
 # Condition Full at 334 165, Morale + at 523 165, Cure at 712 165; Wage +10% at 421 195, Contract +1y at
-# 710 195; the attribute + buttons at x 334 (first column) and 524 (second), rows from y 225 every 25; Save
-# 300 524, Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
+# 710 195; the attribute + buttons at x 334 (first column) and 524 (second), rows from y 225 every 24; Club
+# balance +1m at 697 494; Save 300 524, Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
 PROFILE = ["1000 click 45 165",          # the manager's menu
            "2500 click 150 156",         # Arsenal Squad
            "6000 click 210 369"]         # a player of the squad list
@@ -61,11 +62,12 @@ EDIT_STEPS = fixtures.LOAD_STEPS + PROFILE + [
     "25000 click 420 132",               # current ability +10
     "26500 click 682 132",               # potential ability +
     "28000 click 524 225",               # Finishing +
-    "29500 click 524 450",               # Pace +
+    "29500 click 524 441",               # Pace +
     "30000 click 334 165",               # Condition Full
     "30300 click 523 165",               # Morale +
     "30600 click 421 195",               # Wage +10%
     "30800 click 710 195",               # Contract +1y
+    "30900 click 697 494",               # Club balance +1m
     "31000 click 300 524",               # Save
     "34000 dump {d}/profile.bmp",
     "35000 click 45 120",                # Continue Game: the test save follows a day later
@@ -100,14 +102,16 @@ CURED_STEPS = LOAD_STEPS[:LOAD_STEPS.index("16000 click 210 369")] + ["16000 cli
 OFF_STEPS = fixtures.LOAD_STEPS + PROFILE + ["9500 " + ACTION, "12000 " + EDIT, "14000 dump {d}/after.bmp", "15000 quit"]
 
 LINE = re.compile(r"recomp: player editor (opened|cancelled|saved) staff (-?\d+) ca (-?\d+) pa (-?\d+) values((?: -?\d+){31})"
-                  r" condition (-?\d+) morale (-?\d+) injury (\d+) (-?\d+) wage (?:none|(-?\d+) end (-?\d+) (-?\d+))")
+                  r" condition (-?\d+) morale (-?\d+) injury (\d+) (-?\d+) wage (?:none|(-?\d+) end (-?\d+) (-?\d+))"
+                  r" balance (none|-?\d+)")
 FINISHING, PACE = 12, 21                 # attribute indices (docs/research/2026-10-24-player-editor-attributes.md)
 
 
 def lines(log):
     return [(m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), [int(v) for v in m.group(5).split()],
              int(m.group(6)), int(m.group(7)), int(m.group(8)),
-             None if m.group(10) is None else (int(m.group(10)), int(m.group(11)), int(m.group(12))))
+             None if m.group(10) is None else (int(m.group(10)), int(m.group(11)), int(m.group(12))),
+             None if m.group(13) == "none" else int(m.group(13)))
             for m in LINE.finditer(log)]
 
 
@@ -181,6 +185,8 @@ def main(argv):
             fc, ac = first[8], after[8]
             check(fc is not None and ac == (fc[0] + max(fc[0] // 10, 100), fc[1] + 1, fc[2]),
                   f"edit: contract {fc} -> {ac} (wage +10%, a year longer)")
+            check(first[9] is not None and after[9] == first[9] + 1000000,
+                  f"edit: club balance {first[9]} -> {after[9]}")
         if os.path.exists(saved):
             try:
                 part = bytes(savfile.Sav(saved).read_member("bosman_editor.dat"))

@@ -10,7 +10,7 @@
  * (options_screen.c): the frame of Game Settings (0x823950), pushed with flag 1. It shows current ability
  * (player data +0x05), potential ability (+0x07) and the 31 attributes of 0x5431e0, with - and + buttons, and
  * (slice 3) the condition with Full, the morale (+0x45), and the injury with Cure while the player has one, and
- * (slice 4) the contract's wage and end date.
+ * (slice 4) the contract's wage and end date, and (slice 5) the bank balance of the player's club.
  * Each click changes the game's memory at once, so the box shows the game's own values. Save keeps the
  * changes and Cancel puts back the values that the player had when the box opened.
  *
@@ -90,6 +90,11 @@ extern const uint32_t rt_site_profile_note;
 #define DATE_SET 0x54a130u          /* Date::set, thiscall (day 1 to 31, month 0 to 11, year, weekday or -1) */
 #define WAGE_STEP 100
 
+/* Club money (slice 5): the balance, s64 at +0 of the club's finance record. */
+#define FINANCES 0xae2a38u          /* the finance table: the this of get_club_finance */
+#define CLUB_FINANCE 0x5a0590u      /* thiscall (club): the club's finance record */
+#define STAFF_CLUB 0x39u            /* staff: the club, 0 for none */
+
 #define ITEM_ID 0x7d40u             /* "Edit player" in the Action popup. Ids that the original does not use. */
 #define STEP_ID 0x7d41u             /* data: field * 4 + step (0: -1, 1: +1, 2: -10, 3: +10) */
 #define SAVE_ID 0x7d42u
@@ -105,7 +110,8 @@ extern const uint32_t rt_site_profile_note;
 #define FIELD_INJURY (FIELD_CONDITION + 2)
 #define FIELD_WAGE (FIELD_CONDITION + 3)
 #define FIELD_END (FIELD_CONDITION + 4)
-#define FIELDS (FIELD_CONDITION + 5)
+#define FIELD_BALANCE (FIELD_CONDITION + 5)
+#define FIELDS (FIELD_CONDITION + 6)
 #define ABILITY_MAX 200
 #define VALUE_MAX 20
 #define TEXT_SIZE 0x200u
@@ -126,6 +132,8 @@ static int16_t old_ceiling, old_condition, old_recovery, old_injured;
 static uint32_t old_record;         /* the injury record when the box opened, 0 for none */
 static uint32_t old_contract, old_wage;
 static uint8_t old_end[8];
+static uint32_t old_finance;
+static int64_t old_balance;
 static int edited, edited_before;   /* the game is edited; and before the box opened */
 static uint32_t handled_press = 0xffffffffu;
 
@@ -236,6 +244,31 @@ static int has_end_date(uint32_t c)
     return type != 1 && type != 3 && type != 4;
 }
 
+/* The finance record of the player's club, or 0 for a player without a club. */
+static uint32_t finance(void)
+{
+    uint32_t club = rd32(g_mem, staff + STAFF_CLUB);
+    if (!club) return 0;
+    uint32_t a[1] = {club};
+    return call_this(CLUB_FINANCE, rd32(g_mem, FINANCES), 1, a);
+}
+
+static int64_t balance_of(uint32_t f) { return (int64_t)rd64(g_mem, f); }
+
+/* A number with thousands commas, a minus for a debt. */
+static void money_text(int64_t v, char *out, size_t room)
+{
+    char digits[32];
+    snprintf(digits, sizeof digits, "%lld", (long long)(v < 0 ? -v : v));
+    size_t n = strlen(digits), o = 0;
+    if (v < 0 && o + 1 < room) out[o++] = '-';
+    for (size_t i = 0; i < n && o + 2 < room; i++) {
+        if (i && (n - i) % 3 == 0) out[o++] = ',';
+        out[o++] = digits[i];
+    }
+    out[o] = 0;
+}
+
 static int leap(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }
 
 /* Day of the year from 0 into month from 0 and day from 1. */
@@ -266,9 +299,12 @@ static void log_values(const char *what)
     fprintf(stderr, " condition %d morale %d injury %d %d", condition(), (int)rd8(g_mem, data + MORALE), status,
             injury_left(status));
     uint32_t c = contract();
-    if (c) fprintf(stderr, " wage %d end %d %d\n", (int32_t)rd32(g_mem, c + CONTRACT_WAGE),
+    if (c) fprintf(stderr, " wage %d end %d %d", (int32_t)rd32(g_mem, c + CONTRACT_WAGE),
                    (int16_t)rd16(g_mem, c + CONTRACT_END + 2), (int16_t)rd16(g_mem, c + CONTRACT_END));
-    else fprintf(stderr, " wage none\n");
+    else fprintf(stderr, " wage none");
+    uint32_t f = finance();
+    if (f) fprintf(stderr, " balance %lld\n", (long long)balance_of(f));
+    else fprintf(stderr, " balance none\n");
 }
 
 /* ---- The changes ---- */
@@ -395,6 +431,21 @@ static void step_end(int by)
     mark_edited();
 }
 
+/* The club's balance: 100,000 and 1,000,000 down or up. */
+static void step_balance(int op)
+{
+    static const int64_t by[4] = {-100000, 100000, -1000000, 1000000};
+    uint32_t f = finance();
+    if (!f) return;
+    int64_t b0 = balance_of(f), b = b0 + by[op];
+    const int64_t most = (int64_t)1 << 50;
+    if (b > most || b < -most) return;
+    wr64(g_mem, f, (uint64_t)b);
+    fprintf(stderr, "recomp: player editor: club %#x balance %lld -> %lld\n", rd32(g_mem, staff + STAFF_CLUB),
+            (long long)b0, (long long)b);
+    mark_edited();
+}
+
 static void step(int field, int op)
 {
     static const int by[4] = {-1, 1, -10, 10};
@@ -405,6 +456,7 @@ static void step(int field, int op)
     else if (field == FIELD_INJURY && op == 3) cure();
     else if (field == FIELD_WAGE) step_wage(op);
     else if (field == FIELD_END && op < 2) step_end(by[op]);
+    else if (field == FIELD_BALANCE) step_balance(op);
     else if (field < FIELD_CONDITION && op < 2) step_attribute(field - 1, by[op]);
 }
 
@@ -428,6 +480,8 @@ static void snapshot(void)
         old_wage = rd32(g_mem, old_contract + CONTRACT_WAGE);
         memcpy(old_end, g_mem + old_contract + CONTRACT_END, sizeof old_end);
     }
+    old_finance = finance();
+    if (old_finance) old_balance = balance_of(old_finance);
     edited_before = edited;
 }
 
@@ -448,6 +502,7 @@ static void restore(void)
         wr32(g_mem, old_contract + CONTRACT_WAGE, old_wage);
         memcpy(g_mem + old_contract + CONTRACT_END, old_end, sizeof old_end);
     }
+    if (old_finance) wr64(g_mem, old_finance, (uint64_t)old_balance);
     edited = edited_before;
 }
 
@@ -510,6 +565,8 @@ static const uint8_t weights_ability[] = {27, 8, 6, 9, 6, 8, 4, 27, 8, 6, 9, 6, 
 static const uint8_t weights_fitness[] = {18, 5, 9, 5, 8, 3, 14, 5, 16, 5, 3, 13, 22, 8};
 /* The contract row: wage (name, -10%, -, value, +, +10%) and end date (name, -1y, value, +1y). */
 static const uint8_t weights_contract[] = {14, 9, 5, 16, 5, 9, 3, 18, 8, 22, 8};
+/* The club row: name, -1m, -100k, balance, +100k, +1m. */
+static const uint8_t weights_club[] = {20, 9, 9, 22, 9, 9};
 /* An attribute row: name, -, value, +. */
 static const uint8_t weights_attribute[] = {50, 10, 12, 10};
 #define ROW_X1 160
@@ -517,7 +574,7 @@ static const uint8_t weights_attribute[] = {50, 10, 12, 10};
 #define COLUMN_W 190
 #define ROWS_PER_COLUMN 11
 #define ROW_Y 214
-#define ROW_STEP 25
+#define ROW_STEP 24
 
 static void ability_cells(int a, int first, const char *label, int v, int field, uint32_t green, uint32_t light)
 {
@@ -612,8 +669,22 @@ static void editor_build(void)
         value(r, 2, shown(k));
         button(r, 3, "+", k + 1, 1, green);
     }
-    box_text(ROW_X1, 488, ROW_X2, 506, 1, 0, 1, 1, light,
-             "Changes show at once. Cancel puts back the values from when the box opened.");
+    /* The balance of the player's club (slice 5). The transfer budget is not a field: 0x598800 works it out from the
+     * balance and more, and a test with Arsenal kept the same budget after +1m. */
+    int cr = area(ROW_X1, 482, ROW_X2, 506, 6, weights_club, 1, 0);
+    plain(cr, 0, "Club balance", light);
+    uint32_t fin = finance();
+    if (!fin) {
+        value_text(cr, 3, "No club");
+    } else {
+        char money[40];
+        money_text(balance_of(fin), money, sizeof money);
+        button(cr, 1, "-1m", FIELD_BALANCE, 2, green);
+        button(cr, 2, "-100k", FIELD_BALANCE, 0, green);
+        value_text(cr, 3, money);
+        button(cr, 4, "+100k", FIELD_BALANCE, 1, green);
+        button(cr, 5, "+1m", FIELD_BALANCE, 3, green);
+    }
 
     int b = area(155, 509, 734, 539, 2, NULL, 1, 0);
     uint32_t save[11] = {(uint32_t)b, 0, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3, colour16(BUTTON_TEXT),
