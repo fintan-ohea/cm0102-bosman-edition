@@ -1218,37 +1218,177 @@ static int no_fixed_list(void)
 RT_WRAP(00658750, c2b_fixed_list) { if (!no_fixed_list()) o_00658750(); }
 RT_WRAP(0065c8e0, c2c_fixed_list) { if (!no_fixed_list()) o_0065c8e0(); }
 
-/* ---- The Coppa Italia Serie C in the era (Q625) ----
+/* ---- The Coppa Italia Serie C in the era (O259, row A21; Q628) ----
  *
- * ItaCCup::select_entrants 0x63dfe0 sets 90 entrants (+0xf2 0x5a at 0x63dff4, a block of 0x168 bytes at +0xee) and
- * takes the Italian clubs whose division is C1/A, C1/B, C2/A, C2/B or C2/C (0x63e094..0x63e107) up to 90; the code
- * after it reads all 90 slots (0x63e109..). The original's C1 and C2 hold 90; the era's three groups hold 60 or fewer,
- * and the constructor (0x63ccce) stopped at "Database..cpp 16398". Until slice 21 gives the cup its real 60 entrants
- * (ita-235), the clubs that are short come from the Serie D by reputation: for the call they count as C2/B clubs,
- * after it their division is the Serie D again. The two C2 groups of 2011/12 to 2013/14 hold 36 to 40 clubs, so the
- * C1 and C2 clubs are 72 to 76 then, and the same fill makes 90 (Q529). */
+ * The original's cup is made for 90 clubs, the clubs of C1 and C2 (ItaCCup::select_entrants 0x63dfe0: +0xf2 0x5a at
+ * 0x63dff4, a block of 0x168 bytes at +0xee, the clubs of C1/A to C2/C at 0x63e094..0x63e107). Its shape:
+ * - 16 groups of 5: the cup object is group 1 (init_first_group 0x63d5e0, +0x3e 5 at 0x63d5ee) and each step makes
+ *   the next group of +0x3e clubs from the list (create_group_stage 0x63d9e0, 0x63da9a..0x63dace) until +0x30 is
+ *   15 (advance_stage 0x63d950, 0x63d9cc); the group match days are 5 (create_schedule 0x63cf90, 0x63cfd8);
+ * - a knockout of 32 in stage slot 15 (create_knockout_stage 0x63dc10): the 16 group winners (0x63dd91..0x63ddb7),
+ *   the 6 best runners-up by a table of the 16 second rows (0x63dca4..0x63dd3e, 0x63ddc6..0x63de5f: 0x162 = 6 rows)
+ *   and from place 22 (0x63de7b) the 10 seeds, the clubs that select_entrants moved to the end of the list: the
+ *   clubs relegated from Serie B and places 3 to 5 of C1 (0x63e109..0x63e199).
+ * The Serie C era has three groups of 54 to 60 clubs, and a two-group C2 season (Q529) C1 and two C2 groups of 72 to
+ * 76, so the 90 slots stopped the constructor at "Database..cpp 16398" (0x63ccce). Real cups of these seasons
+ * (ita-184 to ita-252) play three-club groups, then knockout rounds. So in these seasons the cup takes the clubs of
+ * the Serie C divisions (N) and keeps the original's shape with smaller groups: 16 groups of g clubs, g the size with
+ * 16 x g <= N <= 16 x g + 16 (3 for 54 to 60, 4 for 72 to 76), and the other N - 16 x g clubs go straight into the
+ * knockout with the 16 winners and the 16 - (N - 16 x g) best runners-up. A group plays g match days for an odd g
+ * (a club rests each day), g - 1 for an even g. The stage numbers stay the original's (slot 15 and stage index 15
+ * are the knockout in 0x63cf9a, 0x63d4c4, 0x63d770, 0x63e275). The base game keeps the original's cup. */
+#define CCUP_GROUPS 16
+#define CCUP_KO 32
+#define F_SHUFFLE_LIST 0x004afb40u      /* comp_util_shuffle_pointer_array, cdecl (list, count), as 0x63e1ae */
+#define F_LONGITUDE 0x0053fe50u         /* database_compare_clubs_by_longitude, as 0x63e1b9 */
+
+static const uint32_t CCUP_KEY[4] = {KEY_C1A, KEY_C1B, KEY_C2A, KEY_C2B};
+
+/* The divisions that play (the cup's clubs): the three groups in the era, C1 and the two C2 groups in a two-group
+ * season; 0 for the original's cup. Not every C1 and C2 division: in a game without the flag the C2 divisions keep
+ * clubs that no league plays (the original's cup takes them, 0x63e094..0x63e107), so a change into the era gave 96. */
+static int ccup_divisions(uint32_t cup)
+{
+    if (!readable(cup)) return 0;
+    int y = (int16_t)rd16(g_mem, cup + 0x40);
+    return era_of_year(y) ? 3 : two_c2_of_year(y) ? 4 : 0;
+}
+
+/* The clubs of the cup (N), or 0 (the original's cup). */
+static int ccup_clubs(uint32_t cup)
+{
+    int d = ccup_divisions(cup), n = 0;
+    for (int k = 0; k < d; k++) n += clubs_of(CCUP_KEY[k]);
+    return n >= CCUP_GROUPS * 3 && n <= CCUP_GROUPS * 6 ? n : 0;      /* groups of 3 to 5 */
+}
+
+/* The group size g of N clubs: 16 x g <= N <= 16 x g + 16. */
+static int ccup_group(int n) { return (n - 1) / CCUP_GROUPS; }
+
+/* The seed order: the clubs relegated from Serie B, then the best last places, then reputation. */
+static uint32_t seed_b;
+static int by_seed(const void *a, const void *b)
+{
+    uint32_t x = *(const uint32_t *)a, y = *(const uint32_t *)b;
+    uint32_t lx = rd32(g_mem, x + 0x5b), ly = rd32(g_mem, y + 0x5b);
+    int kx = lx && lx == seed_b ? 0 : lx ? g_mem[x + 0x5f] : 99, ky = ly && ly == seed_b ? 0 : ly ? g_mem[y + 0x5f] : 99;
+    if (kx != ky) return kx - ky;
+    return by_reputation(a, b);
+}
+
 void o_0063dfe0(void);
 
+/* select_entrants, thiscall () returning 1 (0x63e25d). In those seasons the list (+0xee, +0xf2 N) is the 16 x g
+ * group clubs, shuffled (0x4afb40), ordered by longitude (0x53fe50) and shuffled in blocks of 2 x g (the original's
+ * 80 in blocks of 10, 0x63e1a5..0x63e255), so each group is regional, then the seeds. */
 RT_WRAP(0063dfe0, ita_ccup_entrants)
 {
     uint32_t cup = cpu.ecx;
-    int need = 90 - clubs_of(KEY_C1A) - clubs_of(KEY_C1B) - clubs_of(KEY_C2A) - clubs_of(KEY_C2B) - clubs_of(KEY_C2C);
-    uint32_t serie_d = record_of(KEY_SERIE_D), c2b = record_of(KEY_C2B);
-    int y = (int16_t)rd16(g_mem, cup + 0x40);
-    if (need <= 0 || !(era_of_year(y) || two_c2_of_year(y)) || !serie_d || !c2b) {
+    int n = ccup_clubs(cup);
+    if (!n) {
         o_0063dfe0();
         return;
     }
-    static uint32_t extra[4096];
-    int m = pool(serie_d, extra, 4096);
-    qsort(extra, (size_t)m, sizeof *extra, by_reputation);
-    if (m > need) m = need;
-    for (int i = 0; i < m; i++) wr32(g_mem, extra[i] + 0x57, c2b);
-    o_0063dfe0();
-    uint32_t eax = cpu.eax;
-    for (int i = 0; i < m; i++) wr32(g_mem, extra[i] + 0x57, serie_d);
-    cpu.eax = eax;
-    fprintf(stderr, "recomp: serie c: Coppa Italia Serie C takes %d clubs of the Serie D\n", m);
+    static uint32_t clubs[96];
+    uint32_t rec[4];
+    int d = ccup_divisions(cup);
+    for (int k = 0; k < 4; k++) rec[k] = k < d ? record_of(CCUP_KEY[k]) : 0;
+    uint32_t table = rd32(g_mem, CLUBS);
+    int count = (int)rd32(g_mem, CLUB_COUNT), m = 0;
+    for (int i = 0; readable(table) && i < count && m < n; i++) {
+        uint32_t c = table + CLUB_SIZE * (uint32_t)i, dv = rd32(g_mem, c + 0x57);
+        for (int k = 0; k < 4 && dv; k++)
+            if (dv == rec[k]) {
+                clubs[m++] = c;
+                break;
+            }
+    }
+    seed_b = record_of(KEY_B);
+    qsort(clubs, (size_t)m, sizeof *clubs, by_seed);
+    int g = ccup_group(m), seeds = m - CCUP_GROUPS * g, grouped = m - seeds;
+    uint32_t sz[1] = {4u * (uint32_t)m};
+    uint32_t list = call_cdecl(F_MALLOC, 1, sz);
+    if (rt_unwinding || !readable(list)) return;
+    for (int i = 0; i < grouped; i++) wr32(g_mem, list + 4u * (uint32_t)i, clubs[seeds + i]);
+    for (int i = 0; i < seeds; i++) wr32(g_mem, list + 4u * (uint32_t)(grouped + i), clubs[i]);
+    wr32(g_mem, cup + 0xee, list);
+    wr32(g_mem, cup + 0xf2, (uint32_t)m);
+    uint32_t a[2] = {list, (uint32_t)grouped};
+    call_cdecl(F_SHUFFLE_LIST, 2, a);
+    uint32_t q[4] = {list, (uint32_t)grouped, 4, F_LONGITUDE};
+    if (!rt_unwinding) call_cdecl(F_QSORT, 4, q);
+    for (int i = 0; i < grouped && !rt_unwinding; i += 2 * g) {
+        uint32_t b[2] = {list + 4u * (uint32_t)i, 2u * (uint32_t)g};
+        call_cdecl(F_SHUFFLE_LIST, 2, b);
+    }
+    if (rt_unwinding) return;
+    fprintf(stderr, "recomp: serie c: Coppa Italia Serie C %d: %d clubs, %d groups of %d and %d seeds in the "
+                    "knockout of %d\n", (int16_t)rd16(g_mem, cup + 0x40), m, CCUP_GROUPS, g, seeds, CCUP_KO);
+    rt_ret_cdecl(1);
+}
+
+/* The group size (init_first_group 0x63d5ee, read by create_group_stage at 0x63dac5). The cup object is group 1 and
+ * lives on from edition to edition, so it keeps the matches per club (+0xa7) that check_complete 0x689ad0 made for
+ * its last group: (5 - 1) x 1 = 4 in the original, where every group has 5 clubs. Groups 2 to 16 are new objects
+ * (0x68b100 at 0x63db49) with -1. When g changes (5 to 4 in 2011/12, 4 to 3 in 2014/15, changing rules on), group 1
+ * kept the old value, was never complete, the knockout was never made (advance_stage 0x63d950) and the cup stayed at
+ * that edition. So the store gives -1 when the value is not the one of g clubs, and check_complete counts again (as
+ * own_clubs does for C2/A). */
+uint32_t rt_ita_ccup_group(uint32_t cup, uint32_t original)
+{
+    int n = ccup_clubs(cup);
+    if (!n) return original;
+    int g = ccup_group(n), m = (int16_t)rd16(g_mem, cup + 0xa7), meet = (int)g_mem[cup + 0x3c];
+    if (m != -1 && m != (g - 1) * meet) {
+        wr16(g_mem, cup + 0xa7, 0xffffu);
+        fprintf(stderr, "recomp: serie c: Coppa Italia Serie C %d: group 1 counts its matches again (%d of the last "
+                        "edition, groups of %d now)\n", (int16_t)rd16(g_mem, cup + 0x40), m, g);
+    }
+    return (uint32_t)g;
+}
+
+/* The match days of a group (create_schedule 0x63cfd8): the first of the original's five dates. */
+uint32_t rt_ita_ccup_days(uint32_t cup, uint32_t original)
+{
+    int n = ccup_clubs(cup), g = n ? ccup_group(n) : 0;
+    return n ? (uint32_t)(g & 1 ? g : g - 1) : original;
+}
+
+/* The knockout (create_knockout_stage 0x63dc10): the bytes of the runners-up rows it takes (0x63de55, 0x162 = 6 rows
+ * of 0x3b) and the first place of the seeds (0x63de7b, 0x16 = 16 + 6): 16 - S runners-up and the place 32 - S, for
+ * S = N - 16 x g seeds. */
+uint32_t rt_ita_ccup_seconds(uint32_t cup, uint32_t original)
+{
+    int n = ccup_clubs(cup);
+    return n ? (uint32_t)(CCUP_GROUPS - (n - CCUP_GROUPS * ccup_group(n))) * ROW_SIZE : original;
+}
+
+uint32_t rt_ita_ccup_first_seed(uint32_t cup, uint32_t original)
+{
+    int n = ccup_clubs(cup);
+    if (!n) return original;
+    uint32_t list = rd32(g_mem, cup + 0xee), stages = rd32(g_mem, cup + 0xc);
+    int left = 0, sizes = (int16_t)rd16(g_mem, cup + 0x3e);
+    for (int i = 0; readable(list) && i < (int)rd32(g_mem, cup + 0xf2); i++) left += rd32(g_mem, list + 4u * (uint32_t)i) != 0;
+    for (int i = 0; readable(stages) && i < CCUP_GROUPS - 1; i++) {
+        uint32_t st = rd32(g_mem, stages + 4u * (uint32_t)i);
+        sizes += readable(st) ? (int16_t)rd16(g_mem, st + 0x3e) : 0;
+    }
+    fprintf(stderr, "recomp: serie c: Coppa Italia Serie C knockout: %d clubs in the groups, %d seeds left, %d best "
+                    "runners-up\n", sizes, left, CCUP_GROUPS - (n - CCUP_GROUPS * ccup_group(n)));
+    return (uint32_t)(CCUP_KO - (n - CCUP_GROUPS * ccup_group(n)));
+}
+
+/* The slot the seed loop writes first (0x63de86, lea edx, [ecx + 0x58]). The original fixes the slot at place 22 and
+ * counts places in esi from 0x63de7b, so with the first place 32 - S moved the S seeds went to places 22 to 21 + S:
+ * places 32 - S to 21 stayed empty and the last 22 - (32 - S) seeds were written past the list of 32 (0x80 bytes,
+ * 0x63dd43). For 12 seeds that was places 20 and 21 empty and two writes past the end. The slot now follows the first
+ * place: list + 4 x esi, which is list + 0x58 in the original's cup. */
+uint32_t rt_ita_ccup_seed_slot(uint32_t cup, uint32_t list, uint32_t first)
+{
+    if (!ccup_clubs(cup)) return list + 0x58u;
+    fprintf(stderr, "recomp: serie c: Coppa Italia Serie C knockout: seeds from place %u of %d\n", first, CCUP_KO);
+    return list + 4u * first;
 }
 
 /* ItaCup::select_entrants 0x63faf0, the two compares with the C1/B id (0x63fc79, 0x63fcf9): in the Serie C era the id
