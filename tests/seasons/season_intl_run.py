@@ -11,6 +11,7 @@ test log RECOMP_SEASON_INTL_LOG=1. The runs:
     2003    October 2003, 2003/04 to 2004/05, changing rules on (Euro 2004, no golden goal from 2004/05)
     2005    September 2005, 2005/06 to 2006/07, changing rules on (World Cup 2006, Australia to Asia)
     2008    September 2008, 2008/09 to 2009/10, changing rules on (the 2010 inter-confederation play-offs)
+    2010    September 2010, 2010/11 to 2011/12, changing rules on (Netherlands Antilles to Curacao in 2011)
     2014    October 2014, 2014/15 to 2015/16, changing rules on (Euro 2016 qualifying in full: a draw of 24
             with no fill)
     2015    October 2015, 2015/16 to 2016/17, changing rules on (Euro 2016 with 24 teams)
@@ -58,6 +59,7 @@ RUNS = {
     "2003": (2003, "October 2003", "on"),
     "2005": (2005, "September 2005", "on"),
     "2008": (2008, "September 2008", "on"),
+    "2010": (2010, "September 2010 ODB", "on"),
     "2014": (2014, "October 2014", "on"),
     "2015": (2015, "October 2015", "on"),
     "2017": (2017, "October 2017", "on"),
@@ -70,6 +72,7 @@ RUNS = {
 # The nation renames each run must log (season_intl.c, int-world rows): the old name and the new.
 RENAMES = {
     "2005": [("Yugoslavia", "Serbia and Montenegro"), ("Serbia and Montenegro", "Serbia")],
+    "2010": [("Netherlands Antilles", "Cura\xe7ao")],
     "2017": [("Czech Republic", "Czechia"), ("Swaziland", "Eswatini"), ("FYR of Macedonia", "North Macedonia")],
     "2019": [("Czech Republic", "Czechia")],
     "2021": [("Czech Republic", "Czechia"), ("Turkey", "T\xfcrkiye")],
@@ -80,6 +83,9 @@ UNRENAMED = {r: [("Yugoslavia", "Serbia and Montenegro")] for r in ("2017", "201
 # The databases from 2019 hold a live "eSwatini" beside a dead "Swaziland" (O188): no rename.
 for r in ("2019", "2021"):
     UNRENAMED[r].append(("Swaziland", "Eswatini"))
+# A renamed nation plays on (the 2011 rename of the Netherlands Antilles, O306): the record is renamed once, the old
+# name is in no later log line, and the run goes on to the end of the next season with no fault about the nation.
+PLAYS_ON = {"2010": ("Netherlands Antilles", "Cura\xe7ao")}
 # The finals that each run must move to the table's first day (log "moves by").
 MOVES = {"2021": [("world_cup", 2022, 161)]}
 # Log lines each run must hold (season_intl_euro.c: the Euro of 24 teams).
@@ -163,6 +169,13 @@ def check(name, start, rules, work):
     for old, new in UNRENAMED.get(name, []):
         if any(f"season intl: nation {old} is now {new} " in x for x in log):
             fails.append(f"{name}: {old} must keep its name (the database has a later name of the chain)")
+    for old, new in ([PLAYS_ON[name]] if name in PLAYS_ON else []):
+        at = [i for i, x in enumerate(log) if f"season intl: nation {old} is now {new} " in x]
+        if len(at) != 1:
+            fails.append(f"{name}: {len(at)} renames of {old} to {new} in the log, expected 1")
+        for x in log[(at[0] + 1 if at else len(log)):]:
+            if old in x or ("not in the data" in x and new in x):
+                fails.append(f"{name}: {new} does not play on after the rename: {x.strip()}")
     for text in LINES.get(name, []):
         if not any(text in x for x in log):
             fails.append(f"{name}: no log line {text!r}")
