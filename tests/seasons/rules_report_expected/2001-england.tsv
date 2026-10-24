@@ -1401,7 +1401,6 @@
 2024	not_held	world_club_cup (Intercontinental Cup), row club-world-438: the game holds 2024, the table says not held
 2024	not_in_game	eng-262 eng_conf 'National League' (England)
 2024	not_in_game	eng-439 eng_fa_trophy 'FA Trophy' (England)
-2024	not_in_game	eng-441 new 'National League Cup' (England)
 2024	not_in_game	int-continental-256 new '2024-25 UEFA Nations League' (UEFA)
 2024	not_in_game	uefa-185 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2024	not_in_game	uefa-190 new 'UEFA Conference League' (UEFA)
@@ -1477,7 +1476,6 @@
 2025	not_held	world_club_cup (Intercontinental Cup), row club-world-457: the game holds 2025, the table says not held
 2025	not_in_game	eng-272 eng_conf 'National League' (England)
 2025	not_in_game	eng-445 eng_fa_trophy 'FA Trophy' (England)
-2025	not_in_game	eng-447 new 'National League Cup' (England)
 2025	not_in_game	int-continental-267 new '2024-25 UEFA Nations League (C/D play-offs)' (UEFA)
 2025	not_in_game	uefa-193 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2025	not_in_game	uefa-198 new 'UEFA Conference League' (UEFA)
@@ -1542,7 +1540,6 @@
 2026	not_held	world_club_cup (Intercontinental Cup), row club-world-476: the game holds 2026, the table says not held
 2026	not_in_game	eng-282 eng_conf 'National League' (England)
 2026	not_in_game	eng-451 eng_fa_trophy 'FA Trophy' (England)
-2026	not_in_game	eng-453 new 'National League Cup' (England)
 2026	not_in_game	int-continental-278 new '2026-27 UEFA Nations League' (UEFA)
 2026	not_in_game	uefa-201 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2026	not_in_game	uefa-206 new 'UEFA Conference League' (UEFA)
@@ -1610,7 +1607,6 @@
 2027	not_held	world_club_cup (Intercontinental Cup), row club-world-495: the game holds 2027, the table says not held
 2027	not_in_game	eng-292 eng_conf 'National League' (England)
 2027	not_in_game	eng-457 eng_fa_trophy 'FA Trophy' (England)
-2027	not_in_game	eng-459 new 'National League Cup' (England)
 2027	not_in_game	uefa-209 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2027	not_in_game	uefa-214 new 'UEFA Conference League' (UEFA)
 2027	playoffs	eng_first (English First Division), row eng-289: game 4 up and 0 down play-off places, table 6 and 0 ('3rd-8th: 5v8 and 6v7 single-leg eliminators (higher club at home), then semi-fin')

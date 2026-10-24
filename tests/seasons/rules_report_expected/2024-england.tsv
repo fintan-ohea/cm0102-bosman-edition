@@ -21,7 +21,6 @@
 2024	no_row	record_utils (Under 21 International): no table row
 2024	not_in_game	eng-262 eng_conf 'National League' (England)
 2024	not_in_game	eng-439 eng_fa_trophy 'FA Trophy' (England)
-2024	not_in_game	eng-441 new 'National League Cup' (England)
 2024	not_in_game	uefa-185 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2025	bench	eur_super_cup (UEFA Super Cup), row uefa-200: game 9, table 12 (12)
 2025	bench	european_cup (UEFA Champions League), row uefa-194: game 9, table 12 (12)
@@ -50,6 +49,5 @@
 2025	not_held	world_club_champ (FIFA Club World Cup), row club-world-458: the game holds 2024, the table says not held
 2025	not_in_game	eng-272 eng_conf 'National League' (England)
 2025	not_in_game	eng-445 eng_fa_trophy 'FA Trophy' (England)
-2025	not_in_game	eng-447 new 'National League Cup' (England)
 2025	not_in_game	uefa-193 uefa_seeding 'UEFA access list and seeding' (UEFA)
 2025	subs_used	world_cup (FIFA World Cup), row int-world-290: game 3, table 5 (5 in normal time, a sixth in extra time)
