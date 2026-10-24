@@ -1,6 +1,6 @@
 # Training assistant (fork of fintan-ohea)
 
-Status: Slice 1 built on `feature/save-editor`, 2026-10-24 (`src/recomp_rt/win/training.c`).
+Status: Slices 1 to 4 built on `feature/save-editor`, 2026-10-24 (`src/recomp_rt/win/training.c`), as three tabs of one box: Schedules (slices 1 and 4), Explain (slice 2), Coaches (slice 3).
 
 ## Problem
 
@@ -18,8 +18,8 @@ Every number the assistant shows or uses is read from the code first, with its a
 
 1. **One-click schedules.** The box shows two schedules from the forum topic, Outfield (Fitness Medium, Tactics Intensive, Shooting Medium, Skills Intensive, Goalkeeping None) and Keepers (Fitness Medium, Tactics Medium, Shooting None, Skills Medium, Goalkeeping Intensive), with their workload (94 and 81 by the game's own formula, not the 95 and 82.5 of the forum topic: research note). Apply writes them into the manager's two "Unused" schedule slots and puts every player of the first team on one of them by position. A slot that is not unused is not written; the box says so.
 2. **Training explainer.** The box lists the manager's schedules with their levels and workload, and for each category the attributes it trains (after that mapping is read from the code).
-3. **Coach advisor.** The box shows each coach's rating for each category and the effect of one coach on several categories, and suggests one specialist per category. Apply sets the assignments. Only after the rating formulas are read from the code.
-4. **Automatic 5/2 cycle.** A second switch in the box: the Outfield schedule trains Intensive in four categories for five days and Medium for two, every week, without the player's clicks. Keepers stay as they are. It changes how the player's team trains, so it is off until the player turns it on, and the box says what it does.
+3. **Coach advisor.** The box shows each coach's rating for each category and the effect of one coach on several categories, and suggests one specialist per category. Apply sets the assignments. Only after the rating formulas are read from the code. Built: the ratings and factors use the formulas of the research note, and the box checks itself against the game (the factors it works out equal get_coaching_factor 0x8b41d0). The suggestion tries every assignment with up to two categories per coach and keeps the one that gives the most first team player-categories a training quality above 100 (where a player can improve), then at least 110, then the highest factors weighted by players, then the fewest assignments. Maximising the factors alone left Shooting at 50 in a test, where Medium Shooting has quality 100 and trains nothing. The box refreshes the coach table with the game's own update_coach_assignments (0x8b2880) when the tab opens.
+4. **Automatic 5/2 cycle.** A second switch in the box: the Outfield schedule trains Intensive in four categories for five days and Medium for two, every week, without the player's clicks. Keepers stay as they are. It changes how the player's team trains, so it is off until the player turns it on, and the box says what it does. Built: the option `training_cycle` (also a row of the Tools tab); each human turn (0x5cde40, `testrun.c`) sets Outfield to Intensive from Sunday to Thursday and Medium on Friday and Saturday (Shephard: Medium on the two days before the weekend match), for every human manager whose slot 8 holds the assistant's Outfield. Turning it off puts Outfield back to its plan. Like a change on the Training screen it does not bring players up to date first (research note), so it does what the manual method does. The check that a save equals a run with the same changes by hand is not built.
 
 ## The data (3.9.68), read so far
 

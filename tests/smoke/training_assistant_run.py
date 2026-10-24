@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Training assistant check (fork; docs/specs/2026-10-24-training-assistant-spec.md, slice 1).
+"""Training assistant check (fork; docs/specs/2026-10-24-training-assistant-spec.md, slices 1 to 4).
 
 Usage:
     python3 tests/smoke/training_assistant_run.py <cm0102_recomp> <game folder> <out folder> [--dir <fixtures folder>]
@@ -9,12 +9,21 @@ Runs, in classic mode, from start.sav (tests/fixtures):
             Apply and Close, then Continue Game: the runtime saves the game a day later (RECOMP_SAVE_AFTER_DAYS=1).
     load    loads that save and opens the box again.
     off     training_assistant = off: opens the Assistant drop-down and clicks where Training setup would be.
+    explain opens the box, Apply, the Explain tab.
+    coaches opens the box, the Coaches tab, Apply suggestion.
+    cycle   training_cycle = on. Opens the box on Saturday 14.7.01, Apply, Close, then goes on holiday; the runtime
+            saves the game 8 days later.
 
 Checks:
     - apply: slots 8 and 9 are unused when the box opens; Apply writes both and puts players on them; the box's
       workload equals the game's own (TRAINING_SCHEDULE::get_training_load 0x8b4f60) for both.
     - load: slots 8 and 9 hold Outfield and Keepers with their levels, and the players are still on them.
     - off: the box never opens.
+    - explain: the tab draws (the run ends with code 0 and its picture exists).
+    - coaches: the factors that the box works out equal the game's get_coaching_factor (0x8b41d0) for the coach
+      table as it is and after Apply suggestion, and the suggestion has no fewer player-categories above 100.
+    - cycle: Outfield goes Medium on Saturday at Apply, Intensive on Sunday 15.7 and Medium on Friday 20.7, in that
+      order; the save holds Outfield with Medium levels (Saturday 21.7 is a Medium day).
 Pictures in <out>/<run>/: box.bmp, applied.bmp, training.bmp.
 """
 import os
@@ -50,6 +59,19 @@ LOAD_STEPS = fixtures.LOAD_STEPS[:-1] + ["11000 click 45 165", "12500 click 150 
                                          "16500 click 545 262", "18500 dump {d}/box.bmp", "19000 quit"]
 OFF_STEPS = fixtures.LOAD_STEPS + SQUAD + ["5000 click 592 135", "6500 click 545 262", "8500 dump {d}/after.bmp",
                                            "9000 quit"]
+# The tabs at 258, 444 and 631 on y 112; Apply suggestion is the left button (300 524).
+EXPLAIN_STEPS = fixtures.LOAD_STEPS + SQUAD + ["5000 click 592 135", "6500 click 545 262", "8500 click 300 524",
+                                               "10000 click 444 112", "12000 dump {d}/explain.bmp", "13000 quit"]
+COACHES_STEPS = fixtures.LOAD_STEPS + SQUAD + ["5000 click 592 135", "6500 click 545 262", "8500 click 631 112",
+                                               "10500 dump {d}/coaches.bmp", "11000 click 300 524",
+                                               "12500 dump {d}/applied.bmp", "13000 quit"]
+# The holiday as in smoke_run.STEPS: the manager's menu, Go on Holiday, Please Confirm: Yes.
+CYCLE_STEPS = fixtures.LOAD_STEPS + SQUAD + ["5000 click 592 135", "6500 click 545 262", "8500 click 300 524",
+                                             "10000 click 590 524", "12000 click 45 165", "14000 click 150 427",
+                                             "16500 click 705 572", "400000 quit"]
+FACTORS = re.compile(r"factors(?:| now)((?: \d+/\d+){5}) \((worked out|suggested)/game\)")
+ABOVE = re.compile(r"above 100: now (\d+), suggested (\d+)")
+CYCLE = re.compile(r"recomp: training cycle: manager \d+ (\w+), Outfield (\w+)")
 SLOT = re.compile(r"recomp: training assistant slot (\d) type (-?\d+) levels (\d+) (\d+) (\d+) (\d+) (\d+) name (.*)")
 PLAYERS = re.compile(r"recomp: training assistant players on slot 8 (\d+), slot 9 (\d+)")
 WORKLOAD = re.compile(r"recomp: training assistant (\w+) workload box (\d+) game (\d+)")
@@ -104,7 +126,14 @@ def main(argv):
 
     start = os.path.join(folder, "start.sav")
     apply_user, off_user = user("apply", start), user("off", start)
-    with ThreadPoolExecutor(2) as pool:
+    cycle_user = user("cycle", start)
+    with ThreadPoolExecutor(5) as pool:
+        explain = pool.submit(play, program, game, user("explain", start), os.path.join(out, "explain"), EXPLAIN_STEPS,
+                              [("training_assistant", "on")])
+        coaches = pool.submit(play, program, game, user("coaches", start), os.path.join(out, "coaches"), COACHES_STEPS,
+                              [("training_assistant", "on")])
+        cycle = pool.submit(play, program, game, cycle_user, os.path.join(out, "cycle"), CYCLE_STEPS,
+                            [("training_assistant", "on"), ("training_cycle", "on")], {"RECOMP_SAVE_AFTER_DAYS": "8"})
         apply = pool.submit(play, program, game, apply_user, os.path.join(out, "apply"), APPLY_STEPS,
                             [("training_assistant", "on")], {"RECOMP_SAVE_AFTER_DAYS": "1"})
         off = pool.submit(play, program, game, off_user, os.path.join(out, "off"), OFF_STEPS,
@@ -121,6 +150,19 @@ def main(argv):
         code, log = off.result()
         check(code == 0 and "reached first-news" in log and "training assistant" not in log,
               "off: the run loads the game, ends with code 0, and the box never opens")
+        code, log = explain.result()
+        check(code == 0 and os.path.exists(os.path.join(out, "explain", "explain.bmp")), "explain: the tab draws")
+        code, log = coaches.result()
+        pairs = [(kind, [tuple(map(int, x.split("/"))) for x in vals.split()]) for vals, kind in FACTORS.findall(log)]
+        check(code == 0 and len(pairs) == 2 and all(a == b for _, v in pairs for a, b in v),
+              f"coaches: the box's factors equal the game's, now and after Apply suggestion ({pairs})")
+        a = ABOVE.search(log)
+        check(bool(a) and int(a.group(2)) >= int(a.group(1)), f"coaches: player-categories above 100 ({a and a.groups()})")
+        code, log = cycle.result()
+        steps = CYCLE.findall(log)
+        want = [("Saturday", "Medium"), ("Sunday", "Intensive"), ("Friday", "Medium")]
+        check(code == 0 and steps[:3] == want, f"cycle: Medium at Apply, Intensive from Sunday, Medium on Friday ({steps})")
+        check(os.path.exists(os.path.join(cycle_user, "samesave.sav")), "cycle: the game is saved 8 days later")
     if os.path.exists(os.path.join(apply_user, "samesave.sav")):
         code, log = play(program, game, user("load", os.path.join(apply_user, "samesave.sav")),
                          os.path.join(out, "load"), LOAD_STEPS, [("training_assistant", "on")])

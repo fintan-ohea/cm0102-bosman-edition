@@ -67,6 +67,8 @@ static const OptionDef defs[OPT_COUNT] = {
     /* Fork of fintan-ohea: docs/specs/2026-10-24-training-assistant-spec.md. */
     [OPT_TRAINING_ASSISTANT] = {"training_assistant", KIND_SWITCH, "off", NULL,
         "training_assistant = on adds Training setup to the Assistant drop-down of your squad screen. It sets up training schedules for your first team."},
+    [OPT_TRAINING_CYCLE] = {"training_cycle", KIND_SWITCH, "off", NULL,
+        "training_cycle = on makes the Outfield schedule of the training assistant train Intensive from Sunday to Thursday and Medium on Friday and Saturday, every week."},
 };
 
 #define TEXT_MAX 1100

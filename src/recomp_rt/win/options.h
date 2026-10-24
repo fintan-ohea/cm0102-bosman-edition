@@ -37,6 +37,7 @@ typedef enum {
     OPT_SEASON,                /* enum: 2001/02 (default) to 2025/26: the season of a new game (season_screen.c) */
     OPT_PLAYER_EDITOR,         /* switch, off: Edit player in the profile's Action drop-down (editor.c) */
     OPT_TRAINING_ASSISTANT,    /* switch, off: Training setup in the squad's Assistant drop-down (training.c) */
+    OPT_TRAINING_CYCLE,        /* switch, off: the weekly Intensive/Medium cycle of the Outfield schedule (training.c) */
     OPT_COUNT
 } OptionId;
 
