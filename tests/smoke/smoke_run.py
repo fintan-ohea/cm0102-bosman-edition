@@ -205,7 +205,7 @@ SAME_SAVE_RUNS = [
              "match_columns": "off", "condition_colours": "off", "save_backups": "off", "remember_window": "off",
              "squad_views": "off", "attribute_groups": "off", "foreign_colours": "off",
              "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
-             "training_assistant": "off", "training_cycle": "off"}),
+             "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
@@ -218,6 +218,8 @@ SAME_SAVE_RUNS = [
     ("training-off", {"faster_days": "off", "training_assistant": "off"}),
     # The cycle (fork) acts only on the assistant's Outfield schedule, which a new game does not have.
     ("cycle-on", {"faster_days": "off", "training_assistant": "on", "training_cycle": "on"}),
+    # Automatic scouting (fork): off must give the save of normal. On changes the game on purpose (the scouts work).
+    ("scouting-off", {"faster_days": "off", "auto_scouting": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),

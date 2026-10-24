@@ -351,12 +351,12 @@ RT_WRAP(0082e430, save_game)
     snprintf(path, sizeof path, "%.1023s", win_str(rt_arg(0)));
     if (!season_code_on()) {
         o_0082e430();
-        if (!save_too_big() && !rt_unwinding && cpu.eax == 1) editor_saved(path);
+        if (!save_too_big() && !rt_unwinding && cpu.eax == 1) editor_saved(path), scouting_saved(path);
         return;
     }
     o_0082e430();
     if (save_too_big() || rt_unwinding) return;
-    if (cpu.eax == 1) editor_saved(path);       /* the player editor's mark (editor.c, fork) */
+    if (cpu.eax == 1) editor_saved(path), scouting_saved(path);  /* the fork's parts (editor.c, scouting.c) */
     if (cpu.eax != 1 || !part_needed()) return;
     char host[2048];
     if (win_existing_file(path, host, sizeof host) && !add_part(host)) return;
@@ -380,11 +380,12 @@ RT_WRAP(0082a9c0, load_game)
     season_dates_forget();                      /* slice 11b: the data comes from the save */
     char host[2048], path[1024];
     snprintf(path, sizeof path, "%.1023s", win_str(rt_arg(0)));
-    editor_loading(path);                       /* the player editor's mark (editor.c, fork) */
+    editor_loading(path);                       /* the fork's parts (editor.c, scouting.c) */
+    scouting_loading(path);
     if (!season_code_on()) {
         o_0082a9c0();
         if (!rt_unwinding && cpu.eax) game_on = 1;
-        if (!rt_unwinding) editor_loaded(cpu.eax != 0);
+        if (!rt_unwinding) editor_loaded(cpu.eax != 0), scouting_loaded(cpu.eax != 0);
         return;
     }
     int year = SEASON_FIRST_YEAR, rules = 0;
@@ -409,6 +410,7 @@ RT_WRAP(0082a9c0, load_game)
     o_0082a9c0();
     if (rt_unwinding) return;
     editor_loaded(cpu.eax != 0);
+    scouting_loaded(cpu.eax != 0);
     if (cpu.eax) {
         game_on = 1;
         season_change_loaded();
@@ -435,6 +437,7 @@ RT_WRAP(00828110, create_game)
     season_change_creating(0);
     if (!rt_unwinding && cpu.eax) {
         editor_new_game();
+        scouting_new_game();
         game_on = 1;
         season_change_new_game();
     }

@@ -69,6 +69,9 @@ static const OptionDef defs[OPT_COUNT] = {
         "training_assistant = on adds Training setup to the Assistant drop-down of your squad screen. It sets up training schedules for your first team."},
     [OPT_TRAINING_CYCLE] = {"training_cycle", KIND_SWITCH, "off", NULL,
         "training_cycle = on makes the Outfield schedule of the training assistant train Intensive from Sunday to Thursday and Medium on Friday and Saturday, every week."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-24-auto-scouting-spec.md. */
+    [OPT_AUTO_SCOUTING] = {"auto_scouting", KIND_SWITCH, "off", NULL,
+        "auto_scouting = on gives your free scouts duties on their own and turns what they find into Scout reports, in the Assistant drop-down of your squad screen."},
 };
 
 #define TEXT_MAX 1100

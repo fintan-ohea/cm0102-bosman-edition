@@ -16,7 +16,7 @@
  * an Assistant button with Team views only, in the same cell.
  *
  * With training_assistant = on (fork), the drop-down of the player's own squad ends with Training setup, which
- * opens the training assistant (training.c). */
+ * opens the training assistant (training.c), and with auto_scouting = on by Scout reports (scouting.c). */
 #include "win.h"
 #include "options.h"
 
@@ -42,6 +42,7 @@ extern const uint32_t rt_site_squad_clear, rt_site_squad_filter;
 #define NEW_SCREEN 0xfffffffcu   /* -4: build the screen on top, after a push (as the start screen menu) */
 #define VIEWS_KIND 4u            /* the data of the Team views item (views.c) */
 #define TRAINING_KIND 5u         /* the data of the Training setup item (training.c, fork) */
+#define SCOUTING_KIND 6u         /* the data of the Scout reports item (scouting.c, fork) */
 #define CELL_BUTTON 0x8040a0u    /* the cell button create, for the Assistant button of another club */
 #define BUTTON_COLOUR 0xae317eu  /* u16 colours of the Clear Squad button (0x458ad0) */
 #define BUTTON_TEXT 0xae3184u
@@ -74,7 +75,7 @@ static uint32_t text(int i)
 {
     static const char *const texts[] = {"Assistant", "Pick best team", "Pick most match-fit team",
                                         "Pick under-21 team", "Clear squad", "Undo clear", "Team views",
-                                        "Training setup"};
+                                        "Training setup", "Scout reports"};
     enum { TEXTS = sizeof texts / sizeof texts[0] };
     static uint32_t at[TEXTS];
     if (!at[0])
@@ -140,6 +141,7 @@ RT_WRAP(008040a0, cell_button)
     popup_item(popup, text(undo ? 5 : 4), CLEAR_ID, undo);
     if (options_bool(OPT_SQUAD_VIEWS)) popup_item(popup, text(6), PICK_ID, VIEWS_KIND);
     if (options_bool(OPT_TRAINING_ASSISTANT)) popup_item(popup, text(7), PICK_ID, TRAINING_KIND);
+    if (options_bool(OPT_AUTO_SCOUTING)) popup_item(popup, text(8), PICK_ID, SCOUTING_KIND);
     cpu.eax = button;
 }
 
@@ -161,6 +163,11 @@ RT_WRAP(004671f0, squad_input)
     if (kind == VIEWS_KIND) {
         views_open(club, team);
         rt_ret_cdecl(NEW_SCREEN);
+        return;
+    }
+    if (kind == SCOUTING_KIND) {
+        if (scouting_open()) rt_ret_cdecl(NEW_SCREEN);
+        else rt_ret_cdecl(REBUILD);
         return;
     }
     if (kind == TRAINING_KIND) {

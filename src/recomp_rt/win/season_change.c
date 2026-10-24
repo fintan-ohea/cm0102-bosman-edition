@@ -549,6 +549,10 @@ RT_WRAP(0077bc80, news_write_text)
 {
     uint32_t item = cpu.ecx, text = rt_arg(1);
     if (!our_item(item) || !readable(text)) {
+        if (readable(text) && scouting_news_write(item, text, rt_arg(2) != 0)) {  /* scouting.c (fork) */
+            if (!rt_unwinding) rt_ret_stdcall(1, 4);
+            return;
+        }
         o_0077bc80();
         return;
     }
@@ -576,7 +580,7 @@ RT_WRAP(0077bc80, news_write_text)
 /* NewsItem::get_action_button, thiscall (manager, label, label size, handler): no button. */
 RT_WRAP(00782b70, news_action_button)
 {
-    if (!our_item(cpu.ecx)) {
+    if (!our_item(cpu.ecx) && !scouting_news_item(cpu.ecx)) {
         o_00782b70();
         return;
     }
@@ -589,7 +593,7 @@ RT_WRAP(00782b70, news_action_button)
 /* NewsItem::is_important_for, thiscall (manager): not important. */
 RT_WRAP(00784eb0, news_important)
 {
-    if (!our_item(cpu.ecx)) {
+    if (!our_item(cpu.ecx) && !scouting_news_item(cpu.ecx)) {
         o_00784eb0();
         return;
     }
@@ -599,7 +603,7 @@ RT_WRAP(00784eb0, news_important)
 /* NewsItem::auto_respond, thiscall (manager, club): the item needs no reply. */
 RT_WRAP(00784100, news_auto_respond)
 {
-    if (!our_item(cpu.ecx)) {
+    if (!our_item(cpu.ecx) && !scouting_news_item(cpu.ecx)) {
         o_00784100();
         return;
     }

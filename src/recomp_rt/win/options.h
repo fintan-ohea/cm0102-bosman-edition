@@ -38,6 +38,7 @@ typedef enum {
     OPT_PLAYER_EDITOR,         /* switch, off: Edit player in the profile's Action drop-down (editor.c) */
     OPT_TRAINING_ASSISTANT,    /* switch, off: Training setup in the squad's Assistant drop-down (training.c) */
     OPT_TRAINING_CYCLE,        /* switch, off: the weekly Intensive/Medium cycle of the Outfield schedule (training.c) */
+    OPT_AUTO_SCOUTING,         /* switch, off: free scouts get duties and file reports on their own (scouting.c) */
     OPT_COUNT
 } OptionId;
 

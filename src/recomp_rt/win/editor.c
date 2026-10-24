@@ -28,9 +28,7 @@
  * is made at the first profile build whatever the option, so on and off make the same heap blocks. */
 #include "win.h"
 #include "options.h"
-#include "../host.h"
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -889,75 +887,19 @@ RT_WRAP(00888260, profile_input)
     o_00888260();
 }
 
-/* ---- The mark in the save ---- */
+/* ---- The mark in the save (savepart.c) ---- */
 
 #define PART_NAME "bosman_editor.dat"
 #define PART_SIZE 16u               /* format, length, edited, count of adjustments */
 #define ENTRY_SIZE 12u              /* an adjustment: s32 club id, s64 amount */
 #define PART_MAX (PART_SIZE + MAX_ADJUSTMENTS * ENTRY_SIZE)
-#define HEADER_ROWS 1000u
-#define ROW_SIZE 0x10cu
-#define ROW_NAME 8u
-#define NAME_SIZE 260u
-#define MAX_PARTS 999u              /* zopen 0x9326e0 refuses a new part at 999 (season.c) */
-
-static int read_at(int fd, int64_t at, void *buf, uint32_t n)
-{
-    return host_seek(fd, at, SEEK_SET) == at && host_read(fd, buf, n) == (long)n;
-}
-
-static int write_at(int fd, int64_t at, const void *buf, uint32_t n)
-{
-    return host_seek(fd, at, SEEK_SET) == at && host_write(fd, buf, n) == (long)n;
-}
 
 static void put32(uint8_t *p, uint32_t v) { memcpy(p, &v, 4); }
 static uint32_t get32(const uint8_t *p) { uint32_t v; memcpy(&v, p, 4); return v; }
 
-/* The part's bytes as the container stores them: as they are (version 1 and 3), or with the byte run code of
- * zwrite 0x932e10 (version 2 and 4), which stores a byte above 0x80 or a run as a count and a byte. */
-static uint32_t stored_form(const uint8_t *in, uint32_t n, uint8_t *out, uint32_t version)
-{
-    if (version != 2 && version != 4) {
-        memcpy(out, in, n);
-        return n;
-    }
-    uint32_t o = 0;
-    for (uint32_t i = 0; i < n;) {
-        uint32_t j = i + 1;
-        while (j < n && in[j] == in[i] && j - i < 0x7f) j++;
-        if (j - i < 2 && in[i] < 0x81) out[o++] = in[i];
-        else out[o++] = (uint8_t)(j - i + 0x80), out[o++] = in[i];
-        i = j;
-    }
-    return o;
-}
-
-/* Finds the part's row: its index, or count when the file has none. -1 when the file is no container. */
-static int find_row(int fd, uint32_t *version, uint32_t *count, uint8_t *row)
-{
-    uint8_t head[12];
-    if (!read_at(fd, 0, head, 12)) return -1;
-    *version = get32(head);
-    *count = get32(head + 8);
-    if (*version < 1 || *version > 4 || *count > HEADER_ROWS) return -1;
-    for (uint32_t k = 0; k < *count; k++) {
-        if (!read_at(fd, 12 + (int64_t)k * ROW_SIZE, row, ROW_SIZE)) return -1;
-        if (!strncmp((const char *)row + ROW_NAME, PART_NAME, NAME_SIZE)) return (int)k;
-    }
-    return (int)*count;
-}
-
 static int add_part(const char *host)
 {
-    int fd = host_open(host, O_RDWR, 0);
-    if (fd < 0) return 1;
-    int bad = 1;
-    uint32_t version, count;
-    static uint8_t part[PART_MAX], stored[2 * PART_MAX];
-    uint8_t row[ROW_SIZE];
-    int at = find_row(fd, &version, &count, row);
-    if (at < 0 || ((uint32_t)at == count && count >= MAX_PARTS)) goto done;
+    static uint8_t part[PART_MAX];
     uint32_t size = PART_SIZE + (uint32_t)adjustment_count * ENTRY_SIZE;
     memset(part, 0, size);
     put32(part, 1);
@@ -969,75 +911,30 @@ static int add_part(const char *host)
         put32(e, (uint32_t)adjustments[i].club);
         memcpy(e + 4, &adjustments[i].amount, 8);
     }
-    uint32_t n = stored_form(part, size, stored, version);
-    int64_t end = host_seek(fd, 0, SEEK_END);
-    if (end < 12 + (int64_t)HEADER_ROWS * ROW_SIZE || end + n > 0xfffffffe) goto done;
-    /* The bytes, then the row, then the count, as season.c: a write that stops leaves the old file whole. */
-    if (!write_at(fd, end, stored, n)) goto done;
-    memset(row, 0, sizeof row);
-    put32(row, (uint32_t)end);
-    put32(row + 4, size);
-    memcpy(row + ROW_NAME, PART_NAME, sizeof PART_NAME);
-    if (!write_at(fd, 12 + (int64_t)at * ROW_SIZE, row, ROW_SIZE)) goto done;
-    if ((uint32_t)at == count) {
-        uint8_t c[4];
-        put32(c, count + 1);
-        if (!write_at(fd, 8, c, 4)) goto done;
-    }
-    bad = 0;
-done:
-    host_close(fd);
-    return bad;
-}
-
-/* The decoder of zread 0x932c30 (season.c): n bytes out of room stored bytes. 0 when the bytes end early. */
-static int decode(const uint8_t *in, uint32_t room, uint8_t *out, uint32_t n)
-{
-    uint32_t o = 0, i = 0;
-    while (o < n && i < room) {
-        uint8_t b = in[i++];
-        if (b < 0x81) { out[o++] = b; continue; }
-        if (i >= room) return 0;
-        for (uint32_t k = 0; k < (uint32_t)(b - 0x80) && o < n; k++) out[o++] = in[i];
-        i++;
-    }
-    return o == n;
+    return savepart_write(host, PART_NAME, part, size);
 }
 
 static int loading_count;            /* the adjustments of the save being loaded */
 static struct { int32_t club; int64_t amount; } loading[MAX_ADJUSTMENTS];
 
 /* 1 when the save has the part with the edited mark, with its adjustments in loading. A part of slice 1 has 16
- * bytes and no adjustments. A stored part takes at most twice its size. */
+ * bytes and no adjustments. */
 static int read_mark(const char *host)
 {
+    static uint8_t part[PART_MAX];
     loading_count = 0;
-    int fd = host_open(host, O_RDONLY, 0);
-    if (fd < 0) return 0;
-    uint32_t version, count;
-    static uint8_t stored[2 * PART_MAX], part[PART_MAX];
-    uint8_t row[ROW_SIZE];
-    int at = find_row(fd, &version, &count, row), mark = 0;
-    uint32_t size = at >= 0 && (uint32_t)at < count ? get32(row + 4) : 0;
-    if (size >= PART_SIZE && size <= PART_MAX) {
-        int64_t end = host_seek(fd, 0, SEEK_END), offset = get32(row);
-        uint32_t room = end - offset < (int64_t)sizeof stored ? (uint32_t)(end - offset) : (uint32_t)sizeof stored;
-        int ok = end > offset && read_at(fd, offset, stored, room);
-        if (ok && (version == 2 || version == 4)) ok = decode(stored, room, part, size);
-        else if (ok) ok = room >= size && (memcpy(part, stored, size), 1);
-        uint32_t n = ok ? get32(part + 12) : 0;
-        mark = ok && get32(part) >= 1 && get32(part + 8) == 1;
-        if (mark && n <= MAX_ADJUSTMENTS && PART_SIZE + n * ENTRY_SIZE <= size) {
-            for (uint32_t i = 0; i < n; i++) {
-                const uint8_t *e = part + PART_SIZE + i * ENTRY_SIZE;
-                loading[i].club = (int32_t)get32(e);
-                memcpy(&loading[i].amount, e + 4, 8);
-            }
-            loading_count = (int)n;
+    int size = savepart_read(host, PART_NAME, part, sizeof part);
+    if (size < (int)PART_SIZE || get32(part) < 1 || get32(part + 8) != 1) return 0;
+    uint32_t n = get32(part + 12);
+    if (n <= MAX_ADJUSTMENTS && PART_SIZE + n * ENTRY_SIZE <= (uint32_t)size) {
+        for (uint32_t i = 0; i < n; i++) {
+            const uint8_t *e = part + PART_SIZE + i * ENTRY_SIZE;
+            loading[i].club = (int32_t)get32(e);
+            memcpy(&loading[i].amount, e + 4, 8);
         }
+        loading_count = (int)n;
     }
-    host_close(fd);
-    return mark;
+    return 1;
 }
 
 /* After a save that wrote path (season.c). A failed mark only costs the name of later saves. */

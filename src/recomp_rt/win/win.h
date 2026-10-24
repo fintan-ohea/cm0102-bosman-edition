@@ -186,6 +186,17 @@ int picker_check_turn(void);                   /* at each human turn: the picker
 void views_open(uint32_t club, uint32_t team);
 int training_open(uint32_t club);              /* the training assistant (training.c, fork); 0 when it fails */
 void training_turn(void);                      /* each human turn: the weekly cycle (training.c) */
+void scouting_turn(void);                      /* each human turn: automatic scouting (scouting.c, fork) */
+int scouting_open(void);                       /* the Scout reports box; 0 when it fails */
+void scouting_saved(const char *path);         /* after a save that wrote path: adds the reports */
+void scouting_loading(const char *path);       /* before a load of path: reads its reports */
+void scouting_loaded(int ok);                  /* after that load */
+void scouting_new_game(void);                  /* a new game has no reports */
+int scouting_news_item(uint32_t item);          /* 1 for the weekly news item of scouting.c */
+int scouting_news_write(uint32_t item, uint32_t text, int full);  /* its headline or body; 0 for other items */
+/* Parts of the fork in a saved game (savepart.c): write 0 on success; read the size, 0 none, -1 damaged. */
+int savepart_write(const char *host, const char *name, const uint8_t *data, uint32_t size);
+int savepart_read(const char *host, const char *name, uint8_t *data, uint32_t room);
 uint32_t columns_attribute_colour(int value);   /* 1 to 20: the attribute colour (RGB565), else 0 */
 void views_widget_drawn(uint32_t widget);      /* after the game draws a widget: the pitch */
 /* Faster commentary (commentary.c): at each widget create, before the rect is scaled. */
