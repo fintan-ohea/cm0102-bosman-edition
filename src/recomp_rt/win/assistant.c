@@ -111,6 +111,7 @@ static int clear_made;  /* the squad list made its Clear Squad button in this bu
 RT_WRAP(008040a0, cell_button)
 {
     foreign_cell_button();      /* the squad list's names (foreign.c) */
+    if (shortlist_all_cell_button()) return;   /* Shortlist All after Filters of Player & Staff Search */
     uint32_t site = rd32(g_mem, cpu.esp);
     if (site == rt_site_squad_filter) {
         int other = !clear_made;

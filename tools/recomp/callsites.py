@@ -66,6 +66,10 @@ CALL_SITES = {
     # Club editor (fork): the tab bar of the club screen build 0x454900, with the ten entries of its tabs and
     # links (docs/research/2026-10-25-club-editor.md). Edit Club joins them.
     "club_tab_bar": (0x455243, 0x5ED780),
+    # Shortlist All (fork): the area of the Filters and Delete buttons of the Player & Staff Search build 0x808690,
+    # and the Filters button in it (docs/research/2026-10-25-shortlist-all.md). Shortlist All goes left of them.
+    "search_buttons_area": (0x80ACEA, 0x55FBA0),
+    "search_filters": (0x80AD2B, 0x8040A0),
     # Options box (#56): the input poll of the main loop 0x7fc7e0. Its result goes to the Game Settings hook
     # test at 0x7fcd25.
     "main_poll": (0x7FCC14, 0x55F620),

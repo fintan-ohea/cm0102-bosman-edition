@@ -77,6 +77,7 @@ void o_005e5ad0(void);
 RT_WRAP(0055fba0, area_create)
 {
     columns_area_before();
+    shortlist_all_area_before();    /* reads the row of Filters and Delete in classic pixels (shortlist_all.c) */
     scale_rect_args(0);
     groups_area_before();
     o_0055fba0();

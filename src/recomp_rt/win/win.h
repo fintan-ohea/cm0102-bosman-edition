@@ -142,6 +142,8 @@ int editor_set_adjustment(int32_t club, int64_t amount);   /* 0 when the table i
 int64_t editor_funds(uint32_t finance);        /* the transfer funds, with the adjustment */
 void editor_money_text(int64_t v, int round, char *out, size_t room);   /* money as shown */
 int club_editor_input(int16_t widget);         /* the club screen input: 1 when the Edit Club tab took it */
+void shortlist_all_area_before(void);          /* the area create: the row of Filters and Delete (shortlist_all.c) */
+int shortlist_all_cell_button(void);           /* the cell button create: 1 when it made Filters and Shortlist All */
 uint32_t win_press_count(void);                /* user32.c: the count of mouse presses so far */
 void win_sharp_picture_changed(void);          /* user32.c: applies the option sharp_picture at once */
 void win_picture_way(char *out, size_t n);    /* user32.c: how the picture is scaled now, for the display report */

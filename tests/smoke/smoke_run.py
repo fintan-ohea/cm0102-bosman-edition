@@ -37,8 +37,9 @@ With --save, each run loads that saved test game (tests/fixtures/fixtures.py) in
 takes the same Go on Holiday steps. The game is saved n game days after the load.
 
 Search check (--same-save --save <name> --search): the runs open the player search and close it before
-the holiday: search-off, search-on and search-on-again (full_player_search). Each save is compared with
-the save of search-off.
+the holiday: search-off, search-on and search-on-again (full_player_search), and shortlist-on and
+shortlist-off (shortlist_all, whose button the screen then shows). Each save is compared with the save of
+search-off.
 
 Options box check (--same-save --save <name> --options): the runs open the Bosman Edition Options box from the
 side bar before the holiday (0.5.0 slice 6). options and options-again switch Faster holidays off and on and
@@ -206,7 +207,7 @@ SAME_SAVE_RUNS = [
              "squad_views": "off", "attribute_groups": "off", "foreign_colours": "off",
              "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
              "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off",
-             "money_scale": "off", "club_editor": "off"}),
+             "money_scale": "off", "club_editor": "off", "shortlist_all": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
@@ -227,6 +228,9 @@ SAME_SAVE_RUNS = [
     # Club editor (fork): on, with the tab never opened, must give the save of normal.
     ("club-on", {"faster_days": "off", "club_editor": "on"}),
     ("club-off", {"faster_days": "off", "club_editor": "off"}),
+    # Shortlist All (fork): on, with the button never clicked, must give the save of normal.
+    ("shortlist-on", {"faster_days": "off", "shortlist_all": "on"}),
+    ("shortlist-off", {"faster_days": "off", "shortlist_all": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),
@@ -326,6 +330,8 @@ MATCH_RUNS = [
     ("money-off", {"money_scale": "off"}),
     ("club-on", {"club_editor": "on"}),
     ("club-off", {"club_editor": "off"}),
+    ("shortlist-on", {"shortlist_all": "on"}),
+    ("shortlist-off", {"shortlist_all": "off"}),
     ("rules-on", {"changing_rules": "on"}),
     ("rules-off", {"changing_rules": "off"}),
     ("sleep-off", {"_env": {"RECOMP_IDLE_SLEEP": "0"}}),
@@ -513,6 +519,9 @@ SEARCH_RUNS = [
     ("search-off", {"faster_days": "off", "full_player_search": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
     ("search-on-again", {"faster_days": "off", "full_player_search": "on"}),
+    # Shortlist All (fork): the screen shows the button but nobody clicks it.
+    ("shortlist-on", {"faster_days": "off", "shortlist_all": "on"}),
+    ("shortlist-off", {"faster_days": "off", "shortlist_all": "off"}),
 ]
 
 
