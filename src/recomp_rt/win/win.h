@@ -135,6 +135,13 @@ void editor_saved(const char *path);           /* after a save that wrote path: 
 void editor_loading(const char *path);         /* before a load of path: reads its edited mark */
 void editor_loaded(int ok);                    /* after that load */
 void editor_new_game(void);                    /* a new game has no edit */
+void editor_mark_edited(void);                 /* marks the game as edited (the club editor too) */
+uint32_t editor_finance(uint32_t club);        /* the club's finance record, 0 for none */
+int64_t editor_adjustment(int32_t club);       /* the club's transfer funds adjustment */
+int editor_set_adjustment(int32_t club, int64_t amount);   /* 0 when the table is full */
+int64_t editor_funds(uint32_t finance);        /* the transfer funds, with the adjustment */
+void editor_money_text(int64_t v, int round, char *out, size_t room);   /* money as shown */
+int club_editor_input(int16_t widget);         /* the club screen input: 1 when the Edit Club tab took it */
 uint32_t win_press_count(void);                /* user32.c: the count of mouse presses so far */
 void win_sharp_picture_changed(void);          /* user32.c: applies the option sharp_picture at once */
 void win_picture_way(char *out, size_t n);    /* user32.c: how the picture is scaled now, for the display report */

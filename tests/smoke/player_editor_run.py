@@ -9,7 +9,8 @@ Runs, in classic mode, from start.sav (tests/fixtures):
             drop-down, clicks Finishing + and Acceleration +, and Cancel. Opens the box again, clicks current
             ability +10, potential ability +, Finishing +, Pace +, Condition Full and Morale +, and Save. Then
             Continue Game: the runtime saves the game a day later (RECOMP_SAVE_AFTER_DAYS=1) as samesave.sav.
-            Wage +10%, Contract +1y, Club balance +1m and Transfer funds +1m are clicked before Save too.
+            Wage +10% and Contract +1y are clicked before Save too, and where the club row was (it moved to the
+            Edit Club tab, club_editor_run.py).
     load    player_editor = on. Loads that save and opens the box for the same player.
     cure    player_editor = on. Opens the box of an injured player (Van Bronckhorst), clicks Cure and Save, then
             Continue Game to the test save.
@@ -20,9 +21,8 @@ Checks:
     - edit: the box opens; Cancel gives back the values of the first opening, and the second opening shows
       them; Save shows current ability +10, potential ability +1, Pace +1 (a stored attribute) and a higher
       Finishing (a computed one); the save has the part bosman_editor.dat with the edited mark.
-    - edit: Save also shows condition 100% and morale +1, a wage 10% higher, a contract a year longer, a
-      club balance 1,000,000 higher and transfer funds 1,000,000 higher than the game's own figure.
-    - load: the save's funds adjustment comes back with the load.
+    - edit: Save also shows condition 100% and morale +1, a wage 10% higher, a contract a year longer, and the
+      club's balance and transfer funds as they were (the box has no club row).
     - load: the load reads the mark, and the box shows the values of the Save.
     - cure: the player is injured when the box opens and fit after Cure; cured: still fit after the load.
     - off: the box never opens.
@@ -46,8 +46,8 @@ import savfile  # noqa: E402
 
 # Positions for 800x600 (classic). The box: current ability +10 at 420 132, potential ability + at 682 132;
 # Condition Full at 334 165, Morale + at 523 165, Cure at 712 165; Wage +10% at 421 195, Contract +1y at
-# 710 195; the attribute + buttons at x 334 (first column) and 524 (second), rows from y 225 every 24; Club
-# balance +1m at 419 494, Transfer funds +1m at 707 494; Save 300 524, Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
+# 710 195; the attribute + buttons at x 334 (first column) and 524 (second), rows from y 225 every 24; where the
+# club row's Balance +1m and Funds +1m were, 419 494 and 707 494; Save 300 524, Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
 PROFILE = ["1000 click 45 165",          # the manager's menu
            "2500 click 150 156",         # Arsenal Squad
            "6000 click 210 369"]         # a player of the squad list
@@ -69,8 +69,8 @@ EDIT_STEPS = fixtures.LOAD_STEPS + PROFILE + [
     "30300 click 523 165",               # Morale +
     "30600 click 421 195",               # Wage +10%
     "30800 click 710 195",               # Contract +1y
-    "30900 click 419 494",               # Club balance +1m
-    "30950 click 707 494",               # Transfer funds +1m
+    "30900 click 419 494",               # where Club balance +1m was
+    "30950 click 707 494",               # where Transfer funds +1m was
     "31000 click 300 524",               # Save
     "34000 dump {d}/profile.bmp",
     "35000 click 45 120",                # Continue Game: the test save follows a day later
@@ -189,13 +189,8 @@ def main(argv):
             fc, ac = first[8], after[8]
             check(fc is not None and ac == (fc[0] + max(fc[0] // 10, 100), fc[1] + 1, fc[2]),
                   f"edit: contract {fc} -> {ac} (wage +10%, a year longer)")
-            check(first[9] is not None and after[9] == first[9] + 1000000,
-                  f"edit: club balance {first[9]} -> {after[9]}")
-            # The balance is 1m higher too, and the game's own figure may follow it: compare with the funds that the
-            # log line after the balance step reports (the step before Funds +1m).
-            steps = re.findall(r"transfer funds (-?\d+) -> (-?\d+) \(adjustment (-?\d+)\)", log)
-            check(len(steps) == 1 and int(steps[0][1]) == int(steps[0][0]) + 1000000 and after[10] == int(steps[0][1])
-                  and int(steps[0][2]) == 1000000, f"edit: transfer funds +1m ({steps}, saved {after[10]})")
+            check(first[9] is not None and after[9:11] == first[9:11] and "transfer funds" not in log,
+                  f"edit: the box has no club row: balance and funds {first[9:11]} -> {after[9:11]}")
         if os.path.exists(saved):
             try:
                 part = bytes(savfile.Sav(saved).read_member("bosman_editor.dat"))
@@ -207,8 +202,8 @@ def main(argv):
                 n = struct.unpack_from("<I", part, 12)[0]
                 entries = [struct.unpack_from("<iq", part, 16 + 12 * i) for i in range(n) if 28 + 12 * i <= len(part)]
             check(part is not None and len(part) == 16 + 12 * len(entries) and part[8] == 1 and
-                  [amount for _, amount in entries] == [1000000],
-                  f"edit: the save has bosman_editor.dat with the mark and the funds adjustment ({entries})")
+                  entries == [],
+                  f"edit: the save has bosman_editor.dat with the mark and no funds adjustment ({entries})")
         code, log = off.result()
         check(code == 0 and "reached first-news" in log and "player editor" not in log,
               "off: the run loads the game, ends with code 0, and the box never opens")
@@ -223,8 +218,8 @@ def main(argv):
         load_user = new_user(work, "load", os.path.join(edit_user, "samesave.sav"))
         code, log = play(program, game, load_user, os.path.join(out, "load"), LOAD_STEPS, [("player_editor", "on")])
         loaded = lines(log)
-        check(code == 0 and "the save is an edited game, 1 funds adjustments" in log,
-              "load: the load reads the edited mark and the funds adjustment")
+        check(code == 0 and "the save is an edited game, 0 funds adjustments" in log,
+              "load: the load reads the edited mark")
         check(bool(loaded) and loaded[0][0] == "opened" and loaded[0][1:] == seen[3][1:],
               f"load: the box shows the values of the Save ({loaded[0][1:] if loaded else None})")
     if os.path.exists(os.path.join(cure_user, "samesave.sav")):

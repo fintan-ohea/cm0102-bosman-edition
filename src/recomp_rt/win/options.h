@@ -40,6 +40,7 @@ typedef enum {
     OPT_TRAINING_CYCLE,        /* switch, off: the weekly Intensive/Medium cycle of the Outfield schedule (training.c) */
     OPT_AUTO_SCOUTING,         /* switch, off: free scouts get duties and file reports on their own (scouting.c) */
     OPT_MONEY_SCALE,           /* enum: off (default), 5, 7, 10: every amount shown x the factor (money.c) */
+    OPT_CLUB_EDITOR,           /* switch, off: the Edit Club tab of the club screen (club_editor.c) */
     OPT_COUNT
 } OptionId;
 

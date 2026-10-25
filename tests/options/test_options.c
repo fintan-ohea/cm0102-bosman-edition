@@ -83,6 +83,7 @@ static void check_defaults(void)
     CHECK(options_bool(OPT_TRAINING_CYCLE) == 0);
     CHECK(options_bool(OPT_AUTO_SCOUTING) == 0);
     CHECK(options_enum(OPT_MONEY_SCALE) == 0 && !strcmp(options_string(OPT_MONEY_SCALE), "off"));
+    CHECK(options_bool(OPT_CLUB_EDITOR) == 0);
 }
 
 int main(void)
@@ -121,6 +122,7 @@ int main(void)
     CHECK(strstr(get(), "\nauto_scouting = off\n") != NULL);
     CHECK(strstr(get(), "auto_scouting = on gives your free scouts duties") != NULL);
     CHECK(strstr(get(), "\nmoney_scale = off\n") != NULL);
+    CHECK(strstr(get(), "\nclub_editor = off\n") != NULL);
     CHECK(strstr(get(), "money_scale = 5, 7 or 10 shows every amount of money") != NULL);
     static char first[16384];
     snprintf(first, sizeof first, "%s", get());

@@ -149,6 +149,7 @@ RT_WRAP(008040a0, cell_button)
 RT_WRAP(004671f0, squad_input)
 {
     int16_t w = (int16_t)rt_arg(0);
+    if (club_editor_input(w)) return;              /* the Edit Club tab (club_editor.c) */
     if (w < 0 || node_slot(4) != 1) {
         o_004671f0();
         return;

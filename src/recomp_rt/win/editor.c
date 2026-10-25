@@ -10,7 +10,8 @@
  * (options_screen.c): the frame of Game Settings (0x823950), pushed with flag 1. It shows current ability
  * (player data +0x05), potential ability (+0x07) and the 31 attributes of 0x5431e0, with - and + buttons, and
  * (slice 3) the condition with Full, the morale (+0x45), and the injury with Cure while the player has one, and
- * (slice 4) the contract's wage and end date, and (slice 5) the bank balance of the player's club.
+ * (slice 4) the contract's wage and end date. The club's balance and transfer funds (slice 5) moved to the Edit
+ * Club tab of the club screen (club_editor.c), which uses the funds adjustments kept here.
  * Each click changes the game's memory at once, so the box shows the game's own values. Save keeps the
  * changes and Cancel puts back the values that the player had when the box opened.
  *
@@ -97,7 +98,6 @@ extern const uint32_t rt_site_profile_note;
 #define DISPLAY_AMOUNT 0x43f460u    /* Cash::get_display_amount, thiscall on an s64 (6, 6): rounded, as 0x463b2c */
 #define FORMAT_MONEY 0x441c10u      /* cash_format_money, cdecl (text, size, s64): "£14,500,000" (0x463b3d) */
 #define MAX_ADJUSTMENTS 256
-#define FUNDS_STEP 1000000
 
 #define ITEM_ID 0x7d40u             /* "Edit player" in the Action popup. Ids that the original does not use. */
 #define STEP_ID 0x7d41u             /* data: field * 4 + step (0: -1, 1: +1, 2: -10, 3: +10) */
@@ -114,9 +114,7 @@ extern const uint32_t rt_site_profile_note;
 #define FIELD_INJURY (FIELD_CONDITION + 2)
 #define FIELD_WAGE (FIELD_CONDITION + 3)
 #define FIELD_END (FIELD_CONDITION + 4)
-#define FIELD_BALANCE (FIELD_CONDITION + 5)
-#define FIELD_FUNDS (FIELD_CONDITION + 6)
-#define FIELDS (FIELD_CONDITION + 7)
+#define FIELDS (FIELD_CONDITION + 5)
 #define ABILITY_MAX 200
 #define VALUE_MAX 20
 #define TEXT_SIZE 0x200u
@@ -139,8 +137,6 @@ static int16_t old_ceiling, old_condition, old_recovery, old_injured;
 static uint32_t old_record;         /* the injury record when the box opened, 0 for none */
 static uint32_t old_contract, old_wage;
 static uint8_t old_end[8];
-static uint32_t old_finance;
-static int64_t old_balance, old_adjustment;
 
 /* Transfer funds adjustments: an amount per club id that the wrap of 0x598800 adds to the game's own figure.
  * They go into the save part, and a load or a new game replaces them. */
@@ -256,18 +252,20 @@ static int has_end_date(uint32_t c)
     return type != 1 && type != 3 && type != 4;
 }
 
-/* The finance record of the player's club, or 0 for a player without a club. */
-static uint32_t finance(void)
+/* The finance record of a club (club_editor.c). */
+uint32_t editor_finance(uint32_t club)
 {
-    uint32_t club = rd32(g_mem, staff + STAFF_CLUB);
     if (!club) return 0;
     uint32_t a[1] = {club};
     return call_this(CLUB_FINANCE, rd32(g_mem, FINANCES), 1, a);
 }
 
+/* The finance record of the player's club, or 0 for a player without a club. */
+static uint32_t finance(void) { return editor_finance(rd32(g_mem, staff + STAFF_CLUB)); }
+
 static int64_t balance_of(uint32_t f) { return (int64_t)rd64(g_mem, f); }
 
-static int64_t adjustment_of(int32_t club)
+int64_t editor_adjustment(int32_t club)
 {
     for (int i = 0; i < adjustment_count; i++)
         if (adjustments[i].club == club) return adjustments[i].amount;
@@ -275,7 +273,7 @@ static int64_t adjustment_of(int32_t club)
 }
 
 /* Sets the amount of a club; 0 removes it. 0 when the table is full. */
-static int set_adjustment(int32_t club, int64_t amount)
+int editor_set_adjustment(int32_t club, int64_t amount)
 {
     for (int i = 0; i < adjustment_count; i++) {
         if (adjustments[i].club != club) continue;
@@ -310,7 +308,7 @@ static int64_t call_this64(uint32_t fn, uint32_t self, int n, const uint32_t *ar
     return (int64_t)(((uint64_t)hi << 32) | lo);
 }
 
-static int64_t funds_of(uint32_t f)
+int64_t editor_funds(uint32_t f)
 {
     static const uint32_t a[5] = {0, 0, 0, 1, 0};
     return call_this64(TRANSFER_BUDGET, f, 5, a);
@@ -318,8 +316,9 @@ static int64_t funds_of(uint32_t f)
 
 /* An amount as the game writes money, in the shown currency and money scale (money.c); rounded as the finance
  * screen rounds the transfer funds when round is 1 (Cash::get_display_amount reads an int32). */
-static void money_game_text(int64_t v, int round, char *out, size_t room)
+void editor_money_text(int64_t v, int round, char *out, size_t room)
 {
+    if (!scratch) scratch = rt_alloc_zero(SCRATCH_SIZE);
     if (round && v >= INT32_MIN && v <= INT32_MAX) {
         uint32_t at = scratch + OUT_AT;
         wr32(g_mem, at, (uint32_t)(int32_t)v);
@@ -367,13 +366,13 @@ static void log_values(const char *what)
                    (int16_t)rd16(g_mem, c + CONTRACT_END + 2), (int16_t)rd16(g_mem, c + CONTRACT_END));
     else fprintf(stderr, " wage none");
     uint32_t f = finance();
-    if (f) fprintf(stderr, " balance %lld funds %lld\n", (long long)balance_of(f), (long long)funds_of(f));
+    if (f) fprintf(stderr, " balance %lld funds %lld\n", (long long)balance_of(f), (long long)editor_funds(f));
     else fprintf(stderr, " balance none\n");
 }
 
 /* ---- The changes ---- */
 
-static void mark_edited(void)
+void editor_mark_edited(void)
 {
     if (!edited) fprintf(stderr, "recomp: player editor: the game is now edited\n");
     edited = 1;
@@ -391,7 +390,7 @@ static void step_attribute(int k, int dir)
         if (dir > 0 ? v > v0 : v < v0) {
             fprintf(stderr, "recomp: player editor: staff %d attribute %d %d -> %d (byte %d -> %d)\n",
                     (int32_t)rd32(g_mem, staff), k, v0, v, b0, b);
-            mark_edited();
+            editor_mark_edited();
             return;
         }
     }
@@ -414,7 +413,7 @@ static void step_ability(uint32_t offset, int by)
     fprintf(stderr, "recomp: player editor: staff %d %s %d -> %d (ca %d, pa %d)\n", (int32_t)rd32(g_mem, staff),
             offset == ABILITY ? "current ability" : "potential ability", v0, v,
             (int16_t)rd16(g_mem, data + ABILITY), (int16_t)rd16(g_mem, data + POTENTIAL));
-    mark_edited();
+    editor_mark_edited();
 }
 
 /* Condition: by steps the stored condition (+0x0a) by CONDITION_STEP; Full (by 0) sets it and the fitness
@@ -430,7 +429,7 @@ static void step_condition(int by)
     wr16(g_mem, row + 0x0a, (uint32_t)c);
     fprintf(stderr, "recomp: player editor: staff %d condition %d%% -> %d%% (stored %d -> %d)\n",
             (int32_t)rd32(g_mem, staff), v0, condition(), c0, c);
-    mark_edited();
+    editor_mark_edited();
 }
 
 static void step_morale(int by)
@@ -441,7 +440,7 @@ static void step_morale(int by)
     if (m == m0) return;
     wr8(g_mem, data + MORALE, (uint32_t)m);
     fprintf(stderr, "recomp: player editor: staff %d morale %d -> %d\n", (int32_t)rd32(g_mem, staff), m0, m);
-    mark_edited();
+    editor_mark_edited();
 }
 
 /* Cure: the injury and its recovery end today, as when their days have passed (0x62c400). */
@@ -456,7 +455,7 @@ static void cure(void)
         if ((int16_t)rd16(g_mem, record + at) > days) wr16(g_mem, record + at, (uint32_t)days);
     fprintf(stderr, "recomp: player editor: staff %d injury status %d -> %d after %d days\n",
             (int32_t)rd32(g_mem, staff), status, injury_status(), days);
-    mark_edited();
+    editor_mark_edited();
 }
 
 /* The wage: - and + by WAGE_STEP, the outer buttons by 10%. */
@@ -473,7 +472,7 @@ static void step_wage(int op)
     if (w == w0) return;
     wr32(g_mem, c + CONTRACT_WAGE, (uint32_t)w);
     fprintf(stderr, "recomp: player editor: staff %d wage %d -> %d\n", (int32_t)rd32(g_mem, staff), w0, w);
-    mark_edited();
+    editor_mark_edited();
 }
 
 /* The end date: a year earlier or later, through Date::set so the leap flag fits. 29 February becomes 28. The
@@ -493,36 +492,7 @@ static void step_end(int by)
     call_this(DATE_SET, at, 4, a);
     fprintf(stderr, "recomp: player editor: staff %d contract end %d.%d.%d -> %d.%d.%d\n", (int32_t)rd32(g_mem, staff),
             day, month + 1, year, day, month + 1, (int16_t)rd16(g_mem, at + 2));
-    mark_edited();
-}
-
-/* The club's balance: 100,000 and 1,000,000 down or up. */
-static void step_balance(int op)
-{
-    static const int64_t by[4] = {-100000, 100000, -1000000, 1000000};
-    uint32_t f = finance();
-    if (!f) return;
-    int64_t b0 = balance_of(f), b = b0 + money_internal(by[op]);   /* the steps as shown */
-    const int64_t most = (int64_t)1 << 50;
-    if (b > most || b < -most) return;
-    wr64(g_mem, f, (uint64_t)b);
-    fprintf(stderr, "recomp: player editor: club %#x balance %lld -> %lld\n", rd32(g_mem, staff + STAFF_CLUB),
-            (long long)b0, (long long)b);
-    mark_edited();
-}
-
-/* The transfer funds: 1,000,000 down or up, as an adjustment of the club (see adjustments). */
-static void step_funds(int op)
-{
-    uint32_t f = finance();
-    if (!f) return;
-    int32_t club = (int32_t)rd32(g_mem, f + FINANCE_CLUB);
-    int64_t step = money_internal(FUNDS_STEP);    /* as shown */
-    int64_t a0 = adjustment_of(club), a = a0 + (op ? step : -step), v0 = funds_of(f);
-    if (a > ((int64_t)1 << 50) || a < -((int64_t)1 << 50) || !set_adjustment(club, a)) return;
-    fprintf(stderr, "recomp: player editor: club %d transfer funds %lld -> %lld (adjustment %lld)\n", club,
-            (long long)v0, (long long)funds_of(f), (long long)a);
-    mark_edited();
+    editor_mark_edited();
 }
 
 static void step(int field, int op)
@@ -535,8 +505,6 @@ static void step(int field, int op)
     else if (field == FIELD_INJURY && op == 3) cure();
     else if (field == FIELD_WAGE) step_wage(op);
     else if (field == FIELD_END && op < 2) step_end(by[op]);
-    else if (field == FIELD_BALANCE) step_balance(op);
-    else if (field == FIELD_FUNDS && op < 2) step_funds(op);
     else if (field < FIELD_CONDITION && op < 2) step_attribute(field - 1, by[op]);
 }
 
@@ -560,11 +528,6 @@ static void snapshot(void)
         old_wage = rd32(g_mem, old_contract + CONTRACT_WAGE);
         memcpy(old_end, g_mem + old_contract + CONTRACT_END, sizeof old_end);
     }
-    old_finance = finance();
-    if (old_finance) {
-        old_balance = balance_of(old_finance);
-        old_adjustment = adjustment_of((int32_t)rd32(g_mem, old_finance + FINANCE_CLUB));
-    }
     edited_before = edited;
 }
 
@@ -584,10 +547,6 @@ static void restore(void)
     if (old_contract) {
         wr32(g_mem, old_contract + CONTRACT_WAGE, old_wage);
         memcpy(g_mem + old_contract + CONTRACT_END, old_end, sizeof old_end);
-    }
-    if (old_finance) {
-        wr64(g_mem, old_finance, (uint64_t)old_balance);
-        set_adjustment((int32_t)rd32(g_mem, old_finance + FINANCE_CLUB), old_adjustment);
     }
     edited = edited_before;
 }
@@ -651,8 +610,6 @@ static const uint8_t weights_ability[] = {27, 8, 6, 9, 6, 8, 4, 27, 8, 6, 9, 6, 
 static const uint8_t weights_fitness[] = {18, 5, 9, 5, 8, 3, 14, 5, 16, 5, 3, 13, 22, 8};
 /* The contract row: wage (name, -10%, -, value, +, +10%) and end date (name, -1y, value, +1y). */
 static const uint8_t weights_contract[] = {14, 9, 5, 16, 5, 9, 3, 18, 8, 22, 8};
-/* The club row: balance (name, -1m, value, +1m) and transfer funds (name, -1m, value, +1m). */
-static const uint8_t weights_club[] = {13, 8, 21, 8, 3, 11, 8, 21, 8};
 /* An attribute row: name, -, value, +. */
 static const uint8_t weights_attribute[] = {50, 10, 12, 10};
 #define ROW_X1 160
@@ -726,7 +683,7 @@ static void editor_build(void)
         button(k, 1, "-10%", FIELD_WAGE, 2, green);
         button(k, 2, "-", FIELD_WAGE, 0, green);
         char money[64];
-        money_game_text((int32_t)rd32(g_mem, con + CONTRACT_WAGE), 0, money, sizeof money);
+        editor_money_text((int32_t)rd32(g_mem, con + CONTRACT_WAGE), 0, money, sizeof money);
         snprintf(s, sizeof s, "%s/w", money);
         value_text(k, 3, s);
         button(k, 4, "+", FIELD_WAGE, 1, green);
@@ -754,26 +711,6 @@ static void editor_build(void)
         value(r, 2, shown(k));
         button(r, 3, "+", k + 1, 1, green);
     }
-    /* The balance and the transfer funds of the player's club (slice 5). The funds are not a field: 0x598800 works
-     * them out from the balance and more, so the editor adds an adjustment to its result (see adjustments). */
-    int cr = area(ROW_X1, 482, ROW_X2, 506, 9, weights_club, 1, 0);
-    plain(cr, 0, "Balance", light);
-    uint32_t fin = finance();
-    if (!fin) {
-        value_text(cr, 2, "No club");
-    } else {
-        char money[64];
-        money_game_text(balance_of(fin), 0, money, sizeof money);
-        button(cr, 1, "-1m", FIELD_BALANCE, 2, green);
-        value_text(cr, 2, money);
-        button(cr, 3, "+1m", FIELD_BALANCE, 3, green);
-        plain(cr, 5, "Funds", light);
-        money_game_text(funds_of(fin), 1, money, sizeof money);
-        button(cr, 6, "-1m", FIELD_FUNDS, 0, green);
-        value_text(cr, 7, money);
-        button(cr, 8, "+1m", FIELD_FUNDS, 1, green);
-    }
-
     int b = area(155, 509, 734, 539, 2, NULL, 1, 0);
     uint32_t save[11] = {(uint32_t)b, 0, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3, colour16(BUTTON_TEXT),
                          text("Save"), SAVE_ID, 0};
@@ -866,7 +803,7 @@ RT_WRAP(00598800, transfer_budget)
     uint32_t f = cpu.ecx;
     o_00598800();
     if (!adjustment_count || rt_unwinding) return;
-    int64_t extra = adjustment_of((int32_t)rd32(g_mem, f + FINANCE_CLUB));
+    int64_t extra = editor_adjustment((int32_t)rd32(g_mem, f + FINANCE_CLUB));
     if (!extra) return;
     int64_t v = (int64_t)(((uint64_t)cpu.edx << 32) | cpu.eax) + extra;
     if (v < 0) v = 0;
@@ -963,7 +900,7 @@ void editor_loaded(int ok)
     if (!ok) return;
     edited = loading_mark;
     adjustment_count = 0;
-    for (int i = 0; i < loading_count; i++) set_adjustment(loading[i].club, loading[i].amount);
+    for (int i = 0; i < loading_count; i++) editor_set_adjustment(loading[i].club, loading[i].amount);
     if (edited) fprintf(stderr, "recomp: player editor: the save is an edited game, %d funds adjustments\n",
                         adjustment_count);
 }
