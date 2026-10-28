@@ -285,6 +285,105 @@ static void test_prepare_without_zip(void)
     free(list);
 }
 
+static void remove_tree(const char *dir, int depth);
+
+static void put16le(FILE *f, unsigned v) { fputc(v & 0xff, f); fputc((v >> 8) & 0xff, f); }
+static void put32le(FILE *f, uint32_t v) { put16le(f, v & 0xffff); put16le(f, v >> 16); }
+
+/* A zip of stored entries "<folder>/<file>" for the first n of the 20 data files, each holding its own name. */
+static void write_db_zip(const char *path, const char *folder, int n)
+{
+    static const char *const files[] = {
+        "city.dat", "club.dat", "club_comp.dat", "club_comp_history.dat", "colour.dat", "common_names.dat",
+        "continent.dat", "first_names.dat", "index.dat", "nat_club.dat", "nation.dat", "nation_comp.dat",
+        "nation_comp_history.dat", "officials.dat", "second_names.dat", "stadium.dat", "staff.dat",
+        "staff_comp.dat", "staff_comp_history.dat", "staff_history.dat"};
+    uint32_t offs[20], crcs[20];
+    char names[20][300];
+    FILE *f = fopen(path, "wb");
+    for (int i = 0; i < n; i++) {
+        snprintf(names[i], sizeof names[i], "%s/%s", folder, files[i]);
+        size_t nl = strlen(names[i]), dl = strlen(files[i]);
+        crcs[i] = seasons_crc32(0, files[i], dl);
+        offs[i] = (uint32_t)ftell(f);
+        put32le(f, 0x04034b50); put16le(f, 20); put16le(f, 0); put16le(f, 0); put16le(f, 0); put16le(f, 0);
+        put32le(f, crcs[i]); put32le(f, (uint32_t)dl); put32le(f, (uint32_t)dl); put16le(f, (unsigned)nl); put16le(f, 0);
+        fwrite(names[i], 1, nl, f);
+        fwrite(files[i], 1, dl, f);
+    }
+    uint32_t cd = (uint32_t)ftell(f);
+    for (int i = 0; i < n; i++) {
+        size_t nl = strlen(names[i]), dl = strlen(files[i]);
+        put32le(f, 0x02014b50); put16le(f, 20); put16le(f, 20); put16le(f, 0); put16le(f, 0); put16le(f, 0); put16le(f, 0);
+        put32le(f, crcs[i]); put32le(f, (uint32_t)dl); put32le(f, (uint32_t)dl); put16le(f, (unsigned)nl);
+        put16le(f, 0); put16le(f, 0); put16le(f, 0); put16le(f, 0); put32le(f, 0); put32le(f, offs[i]);
+        fwrite(names[i], 1, nl, f);
+    }
+    uint32_t cd_end = (uint32_t)ftell(f);
+    put32le(f, 0x06054b50); put16le(f, 0); put16le(f, 0); put16le(f, (unsigned)n); put16le(f, (unsigned)n);
+    put32le(f, cd_end - cd); put32le(f, cd); put16le(f, 0);
+    fclose(f);
+}
+
+/* Custom databases in the download (Seasons/Custom/<name>.zip): unpacked once into Databases. */
+static void test_bundled(void)
+{
+    char game[1100], save[1100], cdir[1200], zp[1300], p[1400];
+    path_of(game, sizeof game, root, "bgame");
+    path_of(save, sizeof save, root, "bsave");
+    mkdir(game, 0755);
+    mkdir(save, 0755);
+    CHECK(seasons_db_unpack_bundled_in(game, save) == 0);       /* no Seasons/Custom: nothing */
+    snprintf(cdir, sizeof cdir, "%s/Seasons", game);
+    mkdir(cdir, 0755);
+    snprintf(cdir, sizeof cdir, "%s/Seasons/Custom", game);
+    mkdir(cdir, 0755);
+    path_of(zp, sizeof zp, cdir, "Test Preview.zip");
+    write_db_zip(zp, "Test Preview", 20);
+    path_of(zp, sizeof zp, cdir, "Broken.zip");
+    write_db_zip(zp, "Broken", 19);                              /* lacks staff_history.dat */
+
+    /* The scan of the Choose Season screen unpacks it and lists it on the Custom tile. */
+    SeasonsList *list = malloc(sizeof *list);
+    seasons_db_scan_in(game, save, list);
+    int found = 0;
+    for (int i = 0; i < list->custom_count; i++) found |= !strcmp(list->custom[i], "Test Preview");
+    CHECK(found && list->custom_count == 1);
+    HostStat st;
+    path_of(p, sizeof p, save, "Databases/Test Preview/staff_history.dat");
+    CHECK(host_stat(p, &st) == 0 && st.size == strlen("staff_history.dat"));
+    path_of(p, sizeof p, save, "Databases/Broken");
+    CHECK(host_stat(p, &st) != 0);
+    path_of(p, sizeof p, save, "unpack-tmp");
+    CHECK(host_stat(p, &st) != 0);
+    char buf[256];
+    path_of(p, sizeof p, save, "bundled-databases.txt");
+    int n = read_all(p, buf, sizeof buf - 1);
+    buf[n > 0 ? n : 0] = 0;
+    CHECK(n > 0 && !strcmp(buf, "Test Preview\n"));             /* the broken one is not marked: tried again */
+
+    /* Once only: a second call does nothing, and a folder the player removed stays gone. */
+    CHECK(seasons_db_unpack_bundled_in(game, save) == 0);
+    char dbdir[1300];
+    path_of(dbdir, sizeof dbdir, save, "Databases/Test Preview");
+    remove_tree(dbdir, 0);
+    CHECK(seasons_db_unpack_bundled_in(game, save) == 0);
+    CHECK(host_stat(dbdir, &st) != 0);
+
+    /* A new save folder with a folder of that name already there: it is kept as it is, not replaced. */
+    char save2[1100], d2[1300];
+    path_of(save2, sizeof save2, root, "bsave2");
+    mkdir(save2, 0755);
+    path_of(d2, sizeof d2, save2, "Databases");
+    mkdir(d2, 0755);
+    path_of(d2, sizeof d2, save2, "Databases/Test Preview");
+    mkdir(d2, 0755);
+    CHECK(seasons_db_unpack_bundled_in(game, save2) == 0);
+    path_of(p, sizeof p, d2, "club.dat");
+    CHECK(host_stat(p, &st) != 0);
+    free(list);
+}
+
 /* Removes a folder that this test made: files and folders up to four levels deep. */
 static void remove_tree(const char *dir, int depth)
 {
@@ -348,6 +447,7 @@ int main(int argc, char **argv)
     test_table();
     test_zip();
     test_prepare_without_zip();
+    test_bundled();
     remove_tree(root, 0);
     if (failures) {
         printf("%d checks failed\n", failures);

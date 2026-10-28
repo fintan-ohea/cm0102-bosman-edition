@@ -121,3 +121,20 @@ Spot checks: Salah Trabzonspor CA 160 (May: Liverpool 170), Haaland and Mbappé 
 Limits of the merged build: new people's reputations are approximate (/50) and their creation-made kept bytes
 stay as the save has them; a May value that the Update Team changed in a rescaled byte cannot be seen and stays
 May's; people renamed or with a changed birth date count as gone + new; awards of 2025/26 are missing.
+
+## Shipped in the downloads (2026-10-28)
+
+The downloads carry the folder of step 3 as a custom database (Q417 leaves one database per season on Choose
+Season, so it is not a version of 2025/26):
+- `tools/release/make_custom_db_zip.py <folder> <out> --name "2026 Preview Data Update"` writes
+  `<out>/2026 Preview Data Update.zip`: one folder with the 20 data files, the same zip for the same input,
+  read back and compared with the folder.
+- `make_release.sh --custom-dbs <out>` copies the zips to `Seasons/Custom/` of the game folder and adds them to the
+  download manifest.
+- The game: `seasons_db_unpack_bundled_in` (src/recomp_rt/win/seasons_db.c), called by the Choose Season scan,
+  unpacks each zip once into `Databases/<name>` of the save folder, through `unpack-tmp` and a rename as a season
+  unpack. `bundled-databases.txt` in the save folder names the ones done: a folder that the player removes or
+  renames does not come back, and an existing folder of that name is never replaced. A zip that lacks a data
+  file is not unpacked and is tried again at the next scan. The folder is unknown to the signatures table, so
+  the screen lists it on the Custom tile, where the player names its season.
+- Test: `tests/seasons/test_seasons_db.c` (test_bundled).

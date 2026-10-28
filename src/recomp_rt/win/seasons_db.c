@@ -265,6 +265,7 @@ static int zip_path(const char *game_dir, const SeasonKnownDb *db, char *out, si
 
 void seasons_db_scan_in(const char *game_dir, const char *save_dir, SeasonsList *out)
 {
+    seasons_db_unpack_bundled_in(game_dir, save_dir);    /* so they show on the Custom tile */
     memset(out, 0, sizeof *out);
     for (int i = 0; i < SEASONS_COUNT; i++) {
         SeasonsEntry *s = &out->season[i];
@@ -408,25 +409,27 @@ static int safe_entry_name(const char *name, const char **base)
     return **base != 0;
 }
 
-/* Unpacks the zip into tmp (a new folder) and checks club.dat and staff.dat against the row. 0 on success,
- * else r->error is set. The caller removes tmp. */
-static int unpack_zip(const char *zip, const char *tmp, const SeasonKnownDb *row, SeasonsPrepare *r)
+/* Unpacks the 20 data files of the zip into tmp (a new folder). label names the database in the error text.
+ * club_hex and staff_hex get the SHA-256 of club.dat and staff.dat, the sizes their sizes. 0 on success, else
+ * r->error is set. The caller removes tmp. */
+static int unpack_files(const char *zip, const char *tmp, const char *label, SeasonsPrepare *r, char club_hex[65],
+                        uint64_t *club_size, char staff_hex[65], uint64_t *staff_size)
 {
     SeasonsZip z;
     char err[160] = "";
     if (seasons_zip_open(&z, zip, err, sizeof err)) {
-        say(r, "Could not read %s: %s.", row->name, err);
+        say(r, "Could not read %s: %s.", label, err);
         return -1;
     }
     int seen[FILE_COUNT] = {0}, done = 0;
-    char club_hex[65] = "", staff_hex[65] = "";
-    uint64_t club_size = 0, staff_size = 0;
+    club_hex[0] = staff_hex[0] = 0;
+    *club_size = *staff_size = 0;
     for (int i = 0; i < z.count; i++) {
         const SeasonsZipEntry *e = &z.e[i];
         const char *base;
         if (e->is_dir) continue;
         if (!safe_entry_name(e->name, &base)) {
-            say(r, "The file for %s holds a name that is not allowed.", row->name, "");
+            say(r, "The file for %s holds a name that is not allowed.", label, "");
             seasons_zip_close(&z);
             return -1;
         }
@@ -434,7 +437,7 @@ static int unpack_zip(const char *zip, const char *tmp, const SeasonKnownDb *row
         for (k = 0; k < FILE_COUNT; k++) if (!strcasecmp(base, data_files[k])) break;
         if (k == FILE_COUNT) continue;              /* a readme or a picture: not part of a database */
         if (seen[k]) {
-            say(r, "The file for %s holds %s twice.", row->name, data_files[k]);
+            say(r, "The file for %s holds %s twice.", label, data_files[k]);
             seasons_zip_close(&z);
             return -1;
         }
@@ -442,22 +445,32 @@ static int unpack_zip(const char *zip, const char *tmp, const SeasonKnownDb *row
         char out[1400], hex[65];
         snprintf(out, sizeof out, "%s/%s", tmp, data_files[k]);
         if (seasons_zip_extract(&z, i, out, hex, err, sizeof err)) {
-            say(r, "Could not unpack %s: %s.", row->name, err);
+            say(r, "Could not unpack %s: %s.", label, err);
             seasons_zip_close(&z);
             return -1;
         }
-        if (!strcmp(data_files[k], "club.dat")) { memcpy(club_hex, hex, 65); club_size = e->size; }
-        if (!strcmp(data_files[k], "staff.dat")) { memcpy(staff_hex, hex, 65); staff_size = e->size; }
+        if (!strcmp(data_files[k], "club.dat")) { memcpy(club_hex, hex, 65); *club_size = e->size; }
+        if (!strcmp(data_files[k], "staff.dat")) { memcpy(staff_hex, hex, 65); *staff_size = e->size; }
         done++;
         if (r->progress) r->progress(r->progress_ctx, done, FILE_COUNT);
     }
     seasons_zip_close(&z);
     for (int k = 0; k < FILE_COUNT; k++) {
         if (!seen[k]) {
-            say(r, "The file for %s lacks %s.", row->name, data_files[k]);
+            say(r, "The file for %s lacks %s.", label, data_files[k]);
             return -1;
         }
     }
+    return 0;
+}
+
+/* Unpacks the zip into tmp (a new folder) and checks club.dat and staff.dat against the row. 0 on success,
+ * else r->error is set. The caller removes tmp. */
+static int unpack_zip(const char *zip, const char *tmp, const SeasonKnownDb *row, SeasonsPrepare *r)
+{
+    char club_hex[65], staff_hex[65];
+    uint64_t club_size, staff_size;
+    if (unpack_files(zip, tmp, row->name, r, club_hex, &club_size, staff_hex, &staff_size)) return -1;
     if (club_size != row->club_size || staff_size != row->staff_size || strcmp(club_hex, row->club_sha256) ||
         strcmp(staff_hex, row->staff_sha256)) {
         say(r, "The data in the file for %s is not the expected season database.", row->name, "");
@@ -566,3 +579,97 @@ SeasonsPrepareStatus seasons_db_prepare(int start_year, SeasonsPrepare *r)
 {
     return seasons_db_prepare_in(win_game_dir, win_databases_root(), start_year, r);
 }
+
+/* ---- Custom databases in the download ---- */
+
+#define BUNDLED_LIST "bundled-databases.txt"
+
+/* 1 when the list of unpacked bundled databases in the save folder names this database. */
+static int bundled_done(const char *save_dir, const char *name)
+{
+    char path[1100], line[DBFOLDER_NAME + 2];
+    snprintf(path, sizeof path, "%s/%s", save_dir, BUNDLED_LIST);
+    FILE *f = host_fopen(path, "r");
+    if (!f) return 0;
+    int found = 0;
+    while (!found && fgets(line, sizeof line, f)) {
+        line[strcspn(line, "\r\n")] = 0;
+        found = !strcmp(line, name);
+    }
+    fclose(f);
+    return found;
+}
+
+static void bundled_mark(const char *save_dir, const char *name)
+{
+    char path[1100];
+    snprintf(path, sizeof path, "%s/%s", save_dir, BUNDLED_LIST);
+    FILE *f = host_fopen(path, "a");
+    if (!f) return;
+    fprintf(f, "%s\n", name);
+    fclose(f);
+}
+
+int seasons_db_unpack_bundled_in(const char *game_dir, const char *save_dir)
+{
+    char dir[1100], zips[16][DBFOLDER_NAME];
+    int n = 0, unpacked = 0;
+    snprintf(dir, sizeof dir, "%s/Seasons/Custom", game_dir);
+    HostDir *d = host_opendir(dir);
+    if (!d) return 0;
+    const char *e;
+    while ((e = host_readdir(d)) && n < 16) {
+        size_t len = strlen(e);
+        if (e[0] == '.' || len <= 4 || len - 4 >= DBFOLDER_NAME || strcasecmp(e + len - 4, ".zip")) continue;
+        snprintf(zips[n], DBFOLDER_NAME, "%.*s", (int)(len - 4), e);
+        n++;
+    }
+    host_closedir(d);
+    for (int i = 0; i < n; i++) {
+        const char *name = zips[i];
+        char zip[1300], dbs[1100], dest[1300], base[1100], tmp[1300];
+        snprintf(dbs, sizeof dbs, "%s/Databases", save_dir);
+        snprintf(dest, sizeof dest, "%s/%s", dbs, name);
+        /* Once only: a folder that the player removed or renamed stays gone. */
+        if (bundled_done(save_dir, name)) continue;
+        if (exists_dir(dest)) {
+            bundled_mark(save_dir, name);
+            continue;
+        }
+        snprintf(zip, sizeof zip, "%s/%s.zip", dir, name);
+        snprintf(base, sizeof base, "%s/unpack-tmp", save_dir);
+        snprintf(tmp, sizeof tmp, "%s/%s.%lu-%llu", base, name, (unsigned long)getpid(),
+                 (unsigned long long)host_unix_time_us());
+        if (!exists_dir(base)) host_mkdir(base);
+        remove_stale_folders(base);
+        if (host_mkdir(tmp)) continue;
+        SeasonsPrepare r;
+        memset(&r, 0, sizeof r);
+        char club_hex[65], staff_hex[65];
+        uint64_t club_size, staff_size;
+        int ok = !unpack_files(zip, tmp, name, &r, club_hex, &club_size, staff_hex, &staff_size);
+        if (ok) {
+            if (!exists_dir(dbs)) host_mkdir(dbs);
+            ok = !host_mkdir(dest);              /* claims the name; fails when it exists */
+            if (ok) {
+#ifdef _WIN32
+                host_rmdir(dest);
+#endif
+                ok = !host_rename(tmp, dest);
+                if (!ok) host_rmdir(dest);
+            }
+        }
+        if (ok) {
+            bundled_mark(save_dir, name);
+            unpacked++;
+            fprintf(stderr, "recomp: custom database %s unpacked into Databases\n", name);
+        } else {
+            remove_flat_folder(tmp);
+            fprintf(stderr, "recomp: custom database %s not unpacked: %s\n", name, r.error[0] ? r.error : "no folder");
+        }
+        host_rmdir(base);                         /* only when empty */
+    }
+    return unpacked;
+}
+
+int seasons_db_unpack_bundled(void) { return seasons_db_unpack_bundled_in(win_game_dir, win_databases_root()); }

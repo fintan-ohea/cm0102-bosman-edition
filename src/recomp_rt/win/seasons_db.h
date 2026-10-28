@@ -146,4 +146,13 @@ typedef struct {
 SeasonsPrepareStatus seasons_db_prepare(int start_year, SeasonsPrepare *r);
 SeasonsPrepareStatus seasons_db_prepare_in(const char *game_dir, const char *save_dir, int start_year, SeasonsPrepare *r);
 
+/* Custom databases in the download: Seasons/Custom/<name>.zip in the game folder, each a database folder with the
+ * 20 data files (tools/release/make_custom_db_zip.py), such as the Update Team's 2026 preview. Each zip is unpacked
+ * once into Databases/<name> of the save folder, where the Choose Season screen lists it on the Custom tile. The
+ * save folder's bundled-databases.txt names the ones done, so a folder that the player removes or renames is not
+ * unpacked again; an existing folder of that name is never replaced. seasons_db_scan calls it. Returns the number
+ * unpacked by this call. */
+int seasons_db_unpack_bundled(void);
+int seasons_db_unpack_bundled_in(const char *game_dir, const char *save_dir);
+
 #endif
