@@ -88,11 +88,12 @@ For a problem with the picture or the window, such as blurred text or a picture 
 - Sports Interactive made Championship Manager 01/02, and Eidos published it and made it free in 2008.
 - u/gundenaf on Reddit asked for the Linux version, the database choice, the polygon analyser, the HD layout and the attribute groups.
 - The CM 01/02 Update Team at [champman0102.co.uk](https://champman0102.co.uk) makes the yearly databases that the custom databases feature will load.
+- nakre and the [champman0102.net](https://champman0102.net) community made and tested the benchmark tactics in the downloads ([cm0102-tactic-benchmark](https://gitlab.com/nakre/cm0102-tactic-benchmark)). Each tactic is the work of its creator; `tactics/Benchmark tactics.txt` in the game folder names them.
 
 ## Legal
 
 The Bosman Edition is an unofficial fan project. It is not affiliated with or endorsed by Sports Interactive, SEGA, Eidos or Square Enix. Championship Manager is a trademark of Square Enix. The downloads include the game files from the 2008 free release.
 
-From 0.6.0 the code in this repository is released under the [GNU General Public License v3.0](LICENSE). Releases up to 0.5.0 were released under CC0 1.0. The licence covers only the code written for this project. It does not cover the original game, its data, its logo or the Update Team databases, which belong to their owners.
+From 0.6.0 the code in this repository is released under the [GNU General Public License v3.0](LICENSE). Releases up to 0.5.0 were released under CC0 1.0. The licence covers only the code written for this project. It does not cover the original game, its data, its logo, the Update Team databases or the benchmark tactics, which belong to their owners.
 
 The function map (`docs/research/function-map/`) and the data map (`docs/research/data-map/`) are under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), as in their own repository, [cm0102-function-map](https://github.com/maxevans60/cm0102-function-map).
