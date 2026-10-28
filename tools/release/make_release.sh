@@ -4,7 +4,7 @@
 # Usage:
 #   tools/release/make_release.sh --game <clean files> --data-3960 <folder> --data-3965 <folder>
 #       --sdl2-mac <folder> --sdl2-mingw <folder> --site-assets <folder> --season-dbs <folder> --own-dbs <folder>
-#       --custom-dbs <folder> [--publish]
+#       --custom-dbs <folder> --tactics <folder> [--publish]
 #
 #   --game         the clean files (tools/clean_files/make_clean_files.py). The script checks them
 #                  against tools/clean_files/manifest.tsv.
@@ -24,6 +24,9 @@
 #                  Team's 2026 preview (tools/release/make_custom_db_zip.py makes them). They go in Seasons/Custom/
 #                  of the game folder; the game unpacks each once into Databases of the save folder, where the
 #                  Choose Season screen lists it on the Custom tile (src/recomp_rt/win/seasons_db.h).
+#   --tactics      the folder that tools/release/make_benchmark_tactics.py made: its tactics folder (the best
+#                  800 tactics of the tactics benchmark and their credits) goes to tactics/ of the game folder,
+#                  where the Load dialog of the tactics screen lists them.
 #   --sdl2-mac     the folder with mac-arm64 and mac-x86_64 SDL2 builds (tools/mac/build_sdl2.sh)
 #   --sdl2-mingw   the SDL2 mingw development release (SDL2-2.x.y)
 #   --site-assets  the site's pictures (logo, screenshots). They go into site-assets.zip on the release,
@@ -40,7 +43,7 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GH_REPO="maxevans60/cm0102-bosman-edition"
-GAME=""; DATA_3960=""; DATA_3965=""; SDL_MAC=""; SDL_MINGW=""; SITE=""; SEASON_DBS=""; OWN_DBS=""; CUSTOM_DBS=""; STAGE_ONLY=0; PUBLISH=0
+GAME=""; DATA_3960=""; DATA_3965=""; SDL_MAC=""; SDL_MINGW=""; SITE=""; SEASON_DBS=""; OWN_DBS=""; CUSTOM_DBS=""; TACTICS=""; STAGE_ONLY=0; PUBLISH=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --game) GAME="$2"; shift 2 ;;
@@ -52,13 +55,14 @@ while [ $# -gt 0 ]; do
         --season-dbs) SEASON_DBS="$2"; shift 2 ;;
         --own-dbs) OWN_DBS="$2"; shift 2 ;;
         --custom-dbs) CUSTOM_DBS="$2"; shift 2 ;;
+        --tactics) TACTICS="$2"; shift 2 ;;
         --stage-only) STAGE_ONLY=1; shift ;;
         --publish) PUBLISH=1; shift ;;
         *) echo "make_release.sh: unknown option $1" >&2; exit 2 ;;
     esac
 done
-NEEDED="GAME DATA_3960 DATA_3965 SDL_MAC SDL_MINGW SITE SEASON_DBS OWN_DBS CUSTOM_DBS"
-[ "$STAGE_ONLY" = 1 ] && NEEDED="GAME DATA_3960 DATA_3965 SITE SEASON_DBS OWN_DBS CUSTOM_DBS"
+NEEDED="GAME DATA_3960 DATA_3965 SDL_MAC SDL_MINGW SITE SEASON_DBS OWN_DBS CUSTOM_DBS TACTICS"
+[ "$STAGE_ONLY" = 1 ] && NEEDED="GAME DATA_3960 DATA_3965 SITE SEASON_DBS OWN_DBS CUSTOM_DBS TACTICS"
 for v in $NEEDED; do
     [ -n "${!v}" ] || { echo "make_release.sh: give --$(echo $v | tr 'A-Z_' 'a-z-' | sed 's/sdl-/sdl2-/')." >&2; exit 2; }
 done
@@ -97,6 +101,11 @@ python3 -I "$REPO/tools/release/make_season_zips.py" --season-dbs "$SEASON_DBS" 
 ls "$CUSTOM_DBS"/*.zip > /dev/null 2>&1 || { echo "make_release.sh: $CUSTOM_DBS holds no zip." >&2; exit 2; }
 mkdir -p "$STAGE/Seasons/Custom"
 cp "$CUSTOM_DBS"/*.zip "$STAGE/Seasons/Custom/"
+# The benchmark tactics: the game lists the .tct files of tactics/ in the game folder in its Load dialog. The
+# clean files have no tactics folder, so the folder holds these files only.
+ls "$TACTICS"/tactics/*.tct > /dev/null 2>&1 || { echo "make_release.sh: $TACTICS/tactics holds no .tct file." >&2; exit 2; }
+mkdir -p "$STAGE/tactics"
+cp "$TACTICS"/tactics/* "$STAGE/tactics/"
 # The rules table of the game (0.6.0 slice 12): one file from the parts of docs/research/rules-0.6.0. The game
 # reads Seasons/rules.tsv at the start (src/recomp_rt/win/season_rules.c). The tool stops on a row it cannot read.
 python3 -I "$REPO/tools/seasons/make_rules.py" --out "$STAGE/Seasons/rules.tsv"
@@ -118,6 +127,9 @@ MANIFEST="$OUT/manifest-download.tsv"
     done
     for z in "$STAGE"/Seasons/Custom/*.zip; do
         printf '%s\t%s\tSeasons/Custom/%s\n' "$(shasum -a 256 "$z" | cut -d ' ' -f 1)" "$(wc -c < "$z" | tr -d ' ')" "$(basename "$z")"
+    done
+    for f in "$STAGE"/tactics/*; do
+        printf '%s\t%s\ttactics/%s\n' "$(shasum -a 256 "$f" | cut -d ' ' -f 1)" "$(wc -c < "$f" | tr -d ' ')" "$(basename "$f")"
     done
     for t in rules names clubs club_records; do
         printf '%s\t%s\tSeasons/%s.tsv\n' "$(shasum -a 256 "$STAGE/Seasons/$t.tsv" | cut -d ' ' -f 1)" \
