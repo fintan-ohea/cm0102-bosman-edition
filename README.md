@@ -54,6 +54,20 @@ Each feature is a line in `settings.txt` in the save folder and can be switched 
 
 Saved games are in `~/Library/Application Support/cm0102` on a Mac, `%APPDATA%\cm0102` on Windows and `~/.local/share/cm0102` on Linux. A new version does not touch them.
 
+### Start a game with the data updates and the benchmark tactics
+
+From 0.6.0 the download holds the season databases, the Update Team's 2026 preview data and 800 benchmark tactics. You do not install any of them by hand.
+
+1. Install the game as above and start it.
+2. Click Start New Game. In Setup Game, click the season button at the top left. Choose Season opens.
+3. Pick a database:
+   - For a season from 2001/02 to 2025/26, click its tile. The first time you start a season, the game unpacks its database into `Databases` in the save folder.
+   - For the 2026 preview data, click the Custom database tile. Its database is "2026 Preview Data Update" (if you have other folders in `Databases`, click Next folder until it shows). Use the arrows next to Season to set 2025/26.
+4. Click the yellow Start button, choose your leagues and your club, and start the game as usual.
+5. On the tactics screen, click Tactics, then Load. The list shows the 800 benchmark tactics next to your own. Pick one and click Ok. `tactics/Benchmark tactics.txt` in the game folder ranks them and names the creator of each.
+
+The Load list holds about 1,075 tactics. Past that, the dialog has no room for its Ok and Cancel buttons, so keep at most about 250 tactics of your own in the `tactics` folder of the save folder.
+
 ## Roadmap
 
 0.6.0 (released TODO-DATE) added Choose Season: any season from 2001/02 to 2025/26 with its own squads, leagues, cups and rules, and rules that change each July in a long game.
