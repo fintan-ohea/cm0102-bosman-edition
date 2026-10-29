@@ -66,6 +66,21 @@ From 0.6.0 the download holds the season databases, the Update Team's 2026 previ
 4. Click the yellow Start button, choose your leagues and your club, and start the game as usual.
 5. On the tactics screen, click Tactics, then Load. The list shows the 800 benchmark tactics next to your own. Pick one and click Ok. `tactics/Benchmark tactics.txt` in the game folder ranks them and names the creator of each.
 
+The ten best tactics of the benchmark, by average points per season over 100 seasons. Each name links to its forum post.
+
+| Rank | Tactic | Creator | Formation | Average points |
+|---|---|---|---|---|
+| 1 | [21421](https://champman0102.net/viewtopic.php?p=64298#p64298) | kvlz | 0-2-1-4-2-1 | 72.10 |
+| 2 | [d_champman_v2](https://champman0102.net/viewtopic.php?p=103944#p103944) | Sky18akavenator | 0-2-1-4-2-1 | 71.47 |
+| 3 | [Demolishc](https://champman0102.net/viewtopic.php?p=89905#p89905) | scemoka | 0-2-1-6-0-1 | 70.83 |
+| 4 | [Demolishk](https://champman0102.net/viewtopic.php?p=66301#p66301) | scemoka | 0-2-0-5-2-1 | 70.49 |
+| 5 | [262 AMM](https://champman0102.net/viewtopic.php?p=100032#p100032) | scemoka | 0-2-1-4-1-2 | 69.69 |
+| 6 | [2-7-1 MMC](https://champman0102.net/viewtopic.php?f=30&p=61415#p61415) | Germaniac | 0-2-1-4-2-1 | 69.53 |
+| 7 | [262 MMJ](https://champman0102.net/viewtopic.php?f=81&t=2174) | scemoka | 0-2-1-5-0-2 | 69.48 |
+| 8 | [262 MMC](https://champman0102.net/viewtopic.php?p=61162#p61162) | scemoka | 0-2-1-4-1-2 | 69.28 |
+| 9 | [Demolishx](https://champman0102.net/viewtopic.php?f=81&t=1834) | scemoka | 0-2-1-6-0-1 | 69.06 |
+| 10 | [262 MMJ_4](https://champman0102.net/viewtopic.php?p=82292#p82292) | FELIGOL | 0-2-1-5-0-2 | 68.99 |
+
 The Load list holds about 1,075 tactics. Past that, the dialog has no room for its Ok and Cancel buttons, so keep at most about 250 tactics of your own in the `tactics` folder of the save folder.
 
 ## Roadmap
