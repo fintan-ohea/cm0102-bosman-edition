@@ -78,6 +78,9 @@ static const OptionDef defs[OPT_COUNT] = {
     /* Fork of fintan-ohea: docs/specs/2026-10-25-shortlist-all-spec.md. */
     [OPT_SHORTLIST_ALL] = {"shortlist_all", KIND_SWITCH, "off", NULL,
         "shortlist_all = on adds a Shortlist All button to Player & Staff Search. It adds every person the list shows, after its filters, to your shortlist."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-30-value-range-spec.md. */
+    [OPT_VALUE_RANGE] = {"value_range", KIND_SWITCH, "off", NULL,
+        "value_range = on adds From and To drop-downs to the Value row of the search Filters, so a search lists the players whose value lies between the two amounts."},
     /* Fork of fintan-ohea: docs/specs/2026-10-24-money-scale-spec.md. */
     [OPT_MONEY_SCALE] = {"money_scale", KIND_ENUM, "off", "off|5|7|10",
         "money_scale = 5, 7 or 10 shows every amount of money (values, wages, fees, budgets, balances) that many times larger, for the money of today, and divides the amounts you enter by it. The game itself keeps its own amounts."},

@@ -136,6 +136,7 @@ static const Row rows[] = {
     {3, OPT_AUTO_SCOUTING, ROW_SWITCH, "Automatic scouting", "Free scouts get duties;\nScout reports in Assistant"},
     {3, OPT_CLUB_EDITOR, ROW_SWITCH, "Club editor", "Edit Club tab on the\nclub screen"},
     {3, OPT_SHORTLIST_ALL, ROW_SWITCH, "Shortlist all", "Button on Player &\nStaff Search"},
+    {3, OPT_VALUE_RANGE, ROW_SWITCH, "Value range", "From and To on the Value\nrow of search Filters"},
     {3, OPT_MONEY_SCALE, ROW_SCALE, "Money scale", "All money shown x factor,\nfor today's amounts"},
 };
 #define ROW_COUNT ((int)(sizeof rows / sizeof rows[0]))

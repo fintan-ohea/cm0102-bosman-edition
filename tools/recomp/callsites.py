@@ -70,6 +70,9 @@ CALL_SITES = {
     # and the Filters button in it (docs/research/2026-10-25-shortlist-all.md). Shortlist All goes left of them.
     "search_buttons_area": (0x80ACEA, 0x55FBA0),
     "search_filters": (0x80AD2B, 0x8040A0),
+    # Value range (fork): the Range drop-down button of the Value row in the Filters build 0x8133a0
+    # (docs/research/2026-10-30-value-range.md). Its area and row take the From and To drop-downs.
+    "filters_value_band": (0x8167BC, 0x8040A0),
     # Options box (#56): the input poll of the main loop 0x7fc7e0. Its result goes to the Game Settings hook
     # test at 0x7fcd25.
     "main_poll": (0x7FCC14, 0x55F620),

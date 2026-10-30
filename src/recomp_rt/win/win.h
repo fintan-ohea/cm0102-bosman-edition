@@ -144,6 +144,7 @@ void editor_money_text(int64_t v, int round, char *out, size_t room);   /* money
 int club_editor_input(int16_t widget);         /* the club screen input: 1 when the Edit Club tab took it */
 void shortlist_all_area_before(void);          /* the area create: the row of Filters and Delete (shortlist_all.c) */
 int shortlist_all_cell_button(void);           /* the cell button create: 1 when it made Filters and Shortlist All */
+void value_range_cell_button(void);            /* the cell button create: the Value row of the search Filters */
 uint32_t win_press_count(void);                /* user32.c: the count of mouse presses so far */
 void win_sharp_picture_changed(void);          /* user32.c: applies the option sharp_picture at once */
 void win_picture_way(char *out, size_t n);    /* user32.c: how the picture is scaled now, for the display report */

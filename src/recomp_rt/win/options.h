@@ -42,6 +42,7 @@ typedef enum {
     OPT_MONEY_SCALE,           /* enum: off (default), 5, 7, 10: every amount shown x the factor (money.c) */
     OPT_CLUB_EDITOR,           /* switch, off: the Edit Club tab of the club screen (club_editor.c) */
     OPT_SHORTLIST_ALL,         /* switch, off: the Shortlist All button of Player & Staff Search (shortlist_all.c) */
+    OPT_VALUE_RANGE,           /* switch, off: From and To value amounts in the search Filters (value_range.c) */
     OPT_COUNT
 } OptionId;
 

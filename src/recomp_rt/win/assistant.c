@@ -112,6 +112,7 @@ RT_WRAP(008040a0, cell_button)
 {
     foreign_cell_button();      /* the squad list's names (foreign.c) */
     if (shortlist_all_cell_button()) return;   /* Shortlist All after Filters of Player & Staff Search */
+    value_range_cell_button();      /* the Value row of the search Filters (value_range.c) */
     uint32_t site = rd32(g_mem, cpu.esp);
     if (site == rt_site_squad_filter) {
         int other = !clear_made;

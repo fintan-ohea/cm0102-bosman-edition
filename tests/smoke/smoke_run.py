@@ -207,7 +207,8 @@ SAME_SAVE_RUNS = [
              "squad_views": "off", "attribute_groups": "off", "foreign_colours": "off",
              "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
              "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off",
-             "money_scale": "off", "club_editor": "off", "shortlist_all": "off"}),
+             "money_scale": "off", "club_editor": "off", "shortlist_all": "off",
+             "value_range": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
@@ -231,6 +232,9 @@ SAME_SAVE_RUNS = [
     # Shortlist All (fork): on, with the button never clicked, must give the save of normal.
     ("shortlist-on", {"faster_days": "off", "shortlist_all": "on"}),
     ("shortlist-off", {"faster_days": "off", "shortlist_all": "off"}),
+    # Value range (fork): on, with the Filters never opened, must give the save of normal.
+    ("range-on", {"faster_days": "off", "value_range": "on"}),
+    ("range-off", {"faster_days": "off", "value_range": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),
@@ -332,6 +336,8 @@ MATCH_RUNS = [
     ("club-off", {"club_editor": "off"}),
     ("shortlist-on", {"shortlist_all": "on"}),
     ("shortlist-off", {"shortlist_all": "off"}),
+    ("range-on", {"value_range": "on"}),
+    ("range-off", {"value_range": "off"}),
     ("rules-on", {"changing_rules": "on"}),
     ("rules-off", {"changing_rules": "off"}),
     ("sleep-off", {"_env": {"RECOMP_IDLE_SLEEP": "0"}}),
