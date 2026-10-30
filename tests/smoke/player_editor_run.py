@@ -15,6 +15,9 @@ Runs, in classic mode, from start.sav (tests/fixtures):
     cure    player_editor = on. Opens the box of an injured player (Van Bronckhorst), clicks Cure and Save, then
             Continue Game to the test save.
     cured   loads that save and opens the box of the same player.
+    release player_editor = on. Opens the box of the same Arsenal player, clicks Release player twice (the first
+            click asks), opens the box of the same row of the Arsenal squad again and cancels, then Continue Game
+            to the test save.
     off     player_editor = off. Opens the Action drop-down and clicks where Edit player would be.
 
 Checks:
@@ -25,6 +28,8 @@ Checks:
       club's balance and transfer funds as they were (the box has no club row).
     - load: the load reads the mark, and the box shows the values of the Save.
     - cure: the player is injured when the box opens and fit after Cure; cured: still fit after the load.
+    - release: the second click releases the player: no club and no contract, the box closes; the same row of
+      the squad now shows another player; the game plays a day and saves.
     - off: the box never opens.
 The editor writes "recomp: player editor <opened|cancelled|saved> staff <id> ca <n> pa <n> values <31 values>".
 Pictures in <out>/<run>/: box.bmp, profile.bmp.
@@ -47,7 +52,7 @@ import savfile  # noqa: E402
 # Positions for 800x600 (classic). The box: current ability +10 at 420 132, potential ability + at 682 132;
 # Condition Full at 334 165, Morale + at 523 165, Cure at 712 165; Wage +10% at 421 195, Contract +1y at
 # 710 195; the attribute + buttons at x 334 (first column) and 524 (second), rows from y 225 every 24; where the
-# club row's Balance +1m and Funds +1m were, 419 494 and 707 494; Save 300 524, Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
+# club row's Balance +1m and Funds +1m were, 419 494 and 707 494; Save 300 524, Release player 445 524 (for a player with a club), Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
 PROFILE = ["1000 click 45 165",          # the manager's menu
            "2500 click 150 156",         # Arsenal Squad
            "6000 click 210 369"]         # a player of the squad list
@@ -102,6 +107,26 @@ CURE_STEPS = fixtures.LOAD_STEPS + PROFILE[:2] + [INJURED,
 ]
 CURED_STEPS = LOAD_STEPS[:LOAD_STEPS.index("16000 click 210 369")] + ["16000 click 260 346"] + \
     LOAD_STEPS[LOAD_STEPS.index("16000 click 210 369") + 1:]
+RELEASE_STEPS = fixtures.LOAD_STEPS + PROFILE + [
+    "9500 " + ACTION,
+    "12000 " + EDIT,
+    "14000 click 445 524",               # Release player
+    "15500 dump {d}/asked.bmp",
+    "16000 click 445 524",               # Click again to release
+    "18500 dump {d}/profile.bmp",
+    "19000 " + PROFILE[0].split(" ", 1)[1],
+    "20500 " + PROFILE[1].split(" ", 1)[1],
+    "24000 " + PROFILE[2].split(" ", 1)[1],
+    "27500 " + ACTION,
+    "30000 " + EDIT,
+    "32000 dump {d}/box.bmp",
+    "32500 click 590 524",               # Cancel
+    "35000 click 45 120",
+    "45000 click 45 120",
+    "55000 click 45 120",
+    "65000 quit",
+]
+RELEASED = re.compile(r"recomp: player editor: staff (-?\d+) released by club (-?\d+), now club (-?\d+), contract (\w+)")
 OFF_STEPS = fixtures.LOAD_STEPS + PROFILE + ["9500 " + ACTION, "12000 " + EDIT, "14000 dump {d}/after.bmp", "15000 quit"]
 
 LINE = re.compile(r"recomp: player editor (opened|cancelled|saved) staff (-?\d+) ca (-?\d+) pa (-?\d+) values((?: -?\d+){31})"
@@ -158,7 +183,10 @@ def main(argv):
     edit_user = new_user(work, "edit", start)
     off_user = new_user(work, "off", start)
     cure_user = new_user(work, "cure", start)
-    with ThreadPoolExecutor(3) as pool:
+    release_user = new_user(work, "release", start)
+    with ThreadPoolExecutor(4) as pool:
+        release = pool.submit(play, program, game, release_user, os.path.join(out, "release"), RELEASE_STEPS,
+                              [("player_editor", "on")], {"RECOMP_SAVE_AFTER_DAYS": "1"})
         cure = pool.submit(play, program, game, cure_user, os.path.join(out, "cure"), CURE_STEPS,
                            [("player_editor", "on")], {"RECOMP_SAVE_AFTER_DAYS": "1"})
         edit = pool.submit(play, program, game, edit_user, os.path.join(out, "edit"), EDIT_STEPS,
@@ -213,6 +241,16 @@ def main(argv):
               f"cure: injured when the box opens, fit after Cure ({[(c[0], c[7]) for c in cured]})")
         cure_save = os.path.join(cure_user, "samesave.sav")
         check(os.path.exists(cure_save), "cure: the game is saved")
+        code, log = release.result()
+        rel = lines(log)
+        freed = RELEASED.findall(log)
+        check(len(freed) == 1 and freed[0][2] == "-1" and freed[0][3] == "none",
+              f"release: the second click releases the player, with no club and no contract ({freed})")
+        check([r[0] for r in rel] == ["opened", "saved", "opened", "cancelled"] and rel[1][8] is None and
+              rel[1][9] is None and rel[2][1] != rel[0][1],
+              f"release: the box closes, and the squad row shows another player ({[(r[0], r[1]) for r in rel]})")
+        check(code == 0 and os.path.exists(os.path.join(release_user, "samesave.sav")) and "Error" not in log,
+              f"release: the game plays a day and saves (code {code})")
 
     if os.path.exists(os.path.join(edit_user, "samesave.sav")) and len(seen) >= 4:
         load_user = new_user(work, "load", os.path.join(edit_user, "samesave.sav"))

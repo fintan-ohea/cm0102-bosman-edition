@@ -11,7 +11,8 @@
  * (player data +0x05), potential ability (+0x07) and the 31 attributes of 0x5431e0, with - and + buttons, and
  * (slice 3) the condition with Full, the morale (+0x45), and the injury with Cure while the player has one, and
  * (slice 4) the contract's wage and end date. The club's balance and transfer funds (slice 5) moved to the Edit
- * Club tab of the club screen (club_editor.c), which uses the funds adjustments kept here.
+ * Club tab of the club screen (club_editor.c), which uses the funds adjustments kept here. Release player ends
+ * the contract and takes the player out of the club at once, as the daily free transfer queue does (0x8c18c0).
  * Each click changes the game's memory at once, so the box shows the game's own values. Save keeps the
  * changes and Cancel puts back the values that the player had when the box opened.
  *
@@ -99,10 +100,25 @@ extern const uint32_t rt_site_profile_note;
 #define FORMAT_MONEY 0x441c10u      /* cash_format_money, cdecl (text, size, s64): "£14,500,000" (0x463b3d) */
 #define MAX_ADJUSTMENTS 256
 
+/* Release player: the steps of TRANSFER_MANAGER::process_free_transfer_queue 0x8c18c0 for one person
+ * (0x8c1a4b..0x8c1a6e), without its board confidence and dislike steps (0x8c1990..0x8c1a47). */
+#define TRANSFERS 0xde1f54u         /* the transfer manager: the this of 0x8c5880 (0x5cd3e2) */
+#define STAFF_RECORDS 0xdd7f00u     /* the this of add_free_release_records (0x8c1a4b) */
+#define FREE_RECORDS 0x86d800u      /* Staff_Records::add_free_release_records, thiscall (staff) */
+#define CANCEL_OFFERS 0x8df9b0u     /* TRANSFER_MANAGER::cancel_offers_for_released_player, thiscall (staff) */
+#define FREE_TRANSFER 0x8c1af0u     /* TRANSFER_MANAGER::free_transfer_staff, thiscall (staff, club, reason,
+                                       compensation, record only): contract, squad, selections, offers */
+#define GET_CONTRACT 0x4cf5a0u      /* CONTRACT_MANAGER::get_contract, thiscall (staff): the record or 0 */
+#define GET_LOAN 0x4cf6d0u          /* CONTRACT_MANAGER::get_loan_contract: 0x8c1af0 skips a loaned player */
+#define CONTRACT_CLUB 0x04u         /* contract: the club id (0x8c1972) */
+#define CLUBS 0xae23b4u             /* the club table, 0x245 bytes a club (0x8c1975..0x8c1985) */
+#define CLUB_SIZE 0x245u
+
 #define ITEM_ID 0x7d40u             /* "Edit player" in the Action popup. Ids that the original does not use. */
 #define STEP_ID 0x7d41u             /* data: field * 4 + step (0: -1, 1: +1, 2: -10, 3: +10) */
 #define SAVE_ID 0x7d42u
 #define CANCEL_ID 0x7d43u
+#define RELEASE_ID 0x7d4du          /* Release player: the first click asks, the second releases */
 #define NEW_SCREEN 0xfffffffcu      /* -4: build the screen on top, after a push */
 #define REBUILD 0xfffffff5u         /* -0xb: build the box again */
 #define CLOSE 0xfffffff7u           /* -9: close the box, as Ok and Cancel of Game Settings (0x8259a0) */
@@ -143,6 +159,7 @@ static uint8_t old_end[8];
 static struct { int32_t club; int64_t amount; } adjustments[MAX_ADJUSTMENTS];
 static int adjustment_count;
 static int edited, edited_before;   /* the game is edited; and before the box opened */
+static int release_asked;           /* Release player was clicked once */
 static uint32_t handled_press = 0xffffffffu;
 
 static uint32_t call_this(uint32_t fn, uint32_t self, int n, const uint32_t *args)
@@ -250,6 +267,17 @@ static int has_end_date(uint32_t c)
 {
     int type = (int)(rd8(g_mem, c + CONTRACT_TYPE) & 0x3f);
     return type != 1 && type != 3 && type != 4;
+}
+
+/* The club of the player's contract, as 0x8c18c0 finds it, or 0 when Release player cannot act: no contract,
+ * no club, or a loan (free_transfer_staff 0x8c1af0 leaves a loaned player as he is, 0x8c1b0a). */
+static uint32_t release_club(void)
+{
+    uint32_t a[1] = {staff};
+    uint32_t manager = rd32(g_mem, CONTRACTS);
+    if (call_this(GET_LOAN, manager, 1, a)) return 0;
+    uint32_t c = call_this(GET_CONTRACT, manager, 1, a);
+    return c ? rd32(g_mem, CLUBS) + rd32(g_mem, c + CONTRACT_CLUB) * CLUB_SIZE : 0;
 }
 
 /* The finance record of a club (club_editor.c). */
@@ -495,6 +523,23 @@ static void step_end(int by)
     editor_mark_edited();
 }
 
+/* Release player: the player leaves the club on a free transfer today, with no payout. He keeps his history and
+ * gets the "released" records; the board and the player take no penalty (an edit, not a decision of the manager). */
+static void release(void)
+{
+    uint32_t club = release_club();
+    if (!club) return;
+    uint32_t transfers = rd32(g_mem, TRANSFERS), a[1] = {staff};
+    call_this(FREE_RECORDS, rd32(g_mem, STAFF_RECORDS), 1, a);
+    call_this(CANCEL_OFFERS, transfers, 1, a);
+    uint32_t f[5] = {staff, club, 0, 0, 0};
+    call_this(FREE_TRANSFER, transfers, 5, f);
+    fprintf(stderr, "recomp: player editor: staff %d released by club %d, now club %d, contract %s\n",
+            (int32_t)rd32(g_mem, staff), (int32_t)rd32(g_mem, club), (int32_t)(rd32(g_mem, staff + STAFF_CLUB) ?
+            rd32(g_mem, rd32(g_mem, staff + STAFF_CLUB)) : 0xffffffffu), contract() ? "kept" : "none");
+    editor_mark_edited();
+}
+
 static void step(int field, int op)
 {
     static const int by[4] = {-1, 1, -10, 10};
@@ -711,12 +756,18 @@ static void editor_build(void)
         value(r, 2, shown(k));
         button(r, 3, "+", k + 1, 1, green);
     }
-    int b = area(155, 509, 734, 539, 2, NULL, 1, 0);
+    int releasable = release_club() != 0;
+    int b = area(155, 509, 734, 539, releasable ? 3 : 2, NULL, 1, 0);
+    if (releasable) {
+        uint32_t rel[11] = {(uint32_t)b, 1, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3, colour16(BUTTON_TEXT),
+                            text(release_asked ? "Click again to release" : "Release player"), RELEASE_ID, 0};
+        call_this(CELL_BUTTON, SCREENS, 11, rel);
+    }
     uint32_t save[11] = {(uint32_t)b, 0, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3, colour16(BUTTON_TEXT),
                          text("Save"), SAVE_ID, 0};
     call_this(CELL_BUTTON, SCREENS, 11, save);
-    uint32_t cancel[11] = {(uint32_t)b, 1, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3, colour16(BUTTON_TEXT),
-                           text("Cancel"), CANCEL_ID, 0};
+    uint32_t cancel[11] = {(uint32_t)b, releasable ? 2u : 1u, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3,
+                           colour16(BUTTON_TEXT), text("Cancel"), CANCEL_ID, 0};
     call_this(CELL_BUTTON, SCREENS, 11, cancel);
     rt_ret_cdecl(0);
 }
@@ -732,7 +783,17 @@ static void editor_input(void)
         handled_press = win_press_count();
         uint32_t at = display() + WIDGETS + 8 + (uint32_t)w * WIDGET_SIZE;
         uint32_t id = (uint16_t)rd32(g_mem, at), d = rd32(g_mem, at + 0x40);
-        if (id == SAVE_ID) {
+        int asked = release_asked;
+        release_asked = 0;
+        if (id == RELEASE_ID && !asked) {
+            release_asked = 1;
+            r = REBUILD;
+        } else if (id == RELEASE_ID) {
+            /* The release cannot be undone, so the box closes as after Save and keeps the other changes. */
+            release();
+            log_values("saved");
+            r = CLOSE;
+        } else if (id == SAVE_ID) {
             log_values("saved");
             r = CLOSE;
         } else if (id == CANCEL_ID) {
@@ -759,6 +820,7 @@ static int editor_open(uint32_t person)
     staff = person;
     data = rd32(g_mem, person + PLAYER_DATA);
     set_slot(0, staff);
+    release_asked = 0;
     snapshot();
     handled_press = win_press_count();              /* the press that opened the box does not click in it */
     log_values("opened");

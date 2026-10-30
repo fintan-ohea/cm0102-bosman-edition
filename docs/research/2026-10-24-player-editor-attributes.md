@@ -95,3 +95,31 @@ Morale is player data `+0x45`, 1 to 20: staff_adjust_morale (0x544710) holds it 
 - Test (2026-10-24, start.sav, Arsenal): the function gave 14,392,763, which the finance screen shows as £14,500,000. After the editor's balance +1m it gave 14,492,763 (still £14,500,000 on the screen): the balance moves the budget by about a tenth here.
 - So the editor makes the funds editable as an adjustment per club: a wrap of 0x598800 adds the club's amount to the function's result (at least 0). After Funds +1m the function gave 15,492,763 and the finance screen showed £15,500,000. A purchase lowers the balance, which lowers the game's own figure, so the extra is spent as the club spends; where the board's limit holds the figure, it can last longer. The adjustments go into the save part `bosman_editor.dat`.
 - A player's club is staff `+0x39` (`compare.c`, `print_pdf.c`), 0 for a player without a club.
+
+## Release player (2026-10-30)
+
+The original has two ways to end a contract, both opened from the profile input 0x885820:
+- Action 9, the release dialog (open 0x8f8630, build 0x8f8670, input 0x8f8b00): Yes calls
+  TRANSFER_MANAGER::queue_free_transfer 0x8c16b0 on [0xde1f54] with (staff, reason 0, screen param 1, the payout)
+  (0x8f8bac..0x8f8bb6). The player leaves later, in the daily transfer update 0x8c5880 (called with
+  ecx = [0xde1f54] at 0x5cd3e2), which runs process_free_transfer_queue 0x8c18c0.
+- Action 0x1f, Terminate Contract (open 0x4e53e0, input 0x4e5610): Yes removes the contract 0x4d0b50, takes the
+  person out of the club 0x53c190 (club, staff, 0, 1, 0) and records the move with 0x8c1af0 (record only 1).
+
+For each queued person 0x8c18c0 finds the club from the contract (contract +4, the club id; club table [0xae23b4],
+0x245 bytes a club, 0x8c1972..0x8c1985). For a human club it applies the board confidence penalty 0x697430 and the
+dislikes 0x547e70 / 0x547af0 (0x8c1990..0x8c1a47). Then, for every club (0x8c1a4b..0x8c1a6e):
+- Staff_Records::add_free_release_records 0x86d800 on [0xdd7f00] (staff);
+- TRANSFER_MANAGER::cancel_offers_for_released_player 0x8df9b0 (staff);
+- TRANSFER_MANAGER::free_transfer_staff 0x8c1af0 (staff, club, reason, payout, 0).
+
+0x8c1af0 does nothing for a player with a loan contract (0x4cf6d0, 0x8c1b0a). Otherwise it records the move in
+the past transfers, archives the player's stats (0x7c5fe0), pays the payout from the club (0x5a0590, 0x599920),
+updates the shortlists (0x843e10), removes him from the club's selections (0x896c60, twice), takes him out of the
+club (0x53c190, 0x8c1d5a), removes contract offers and the contract (0x4cca70, 0x4d0b50), clears the clause records
+(0x8cb4f0, 0x8cb590, 0x8cb630), the work permit (0x8c7e20) and AWOL (0x4196a0).
+
+The editor's Release player (editor.c, release) makes the three calls of the second list with reason 0 and payout
+0, for the club of the contract, and skips the penalties. Test: the release run of
+tests/smoke/player_editor_run.py (Ray Parlour of start.sav: no club and no contract afterwards, the squad row
+shows another player, and the game plays a day and saves).
