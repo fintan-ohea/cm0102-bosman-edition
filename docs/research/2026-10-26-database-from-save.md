@@ -129,7 +129,10 @@ Season, so it is not a version of 2025/26):
 - `tools/release/make_custom_db_zip.py <folder> <out> --name "2026 Preview Data Update"` writes
   `<out>/2026 Preview Data Update.zip`: one folder with the 20 data files, the same zip for the same input,
   read back and compared with the folder.
-- `make_release.sh --custom-dbs <out>` copies the zips to `Seasons/Custom/` of the game folder and adds them to the
+- The zip of the 2026-10-26 build is in the repo, `data/custom-dbs/2026 Preview Data Update.zip` (13 MB, the 20
+  files of `2026 Preview Data Update (merged)`, checked file by file on 2026-10-30), so another machine needs
+  neither the save nor the build.
+- `make_release.sh --custom-dbs <out>` (default `data/custom-dbs`) copies the zips to `Seasons/Custom/` of the game folder and adds them to the
   download manifest.
 - The game: `seasons_db_unpack_bundled_in` (src/recomp_rt/win/seasons_db.c), called by the Choose Season scan,
   unpacks each zip once into `Databases/<name>` of the save folder, through `unpack-tmp` and a rename as a season

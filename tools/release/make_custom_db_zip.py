@@ -14,7 +14,8 @@ difference stops it with exit code 1 and leaves no zip.
 For the Update Team's 2026 preview: build the folder with tools/save/preview_db/build_preview_db.py first
 (docs/research/2026-10-26-database-from-save.md), then:
     python3 -I tools/release/make_custom_db_zip.py <new folder> <custom dbs folder> --name "2026 Preview Data Update"
-and give <custom dbs folder> to make_release.sh as --custom-dbs.
+and give <custom dbs folder> to make_release.sh as --custom-dbs. The repo keeps the zip of that build in
+data/custom-dbs, the default of --custom-dbs, so a release needs neither the save nor the build.
 """
 import argparse
 import hashlib

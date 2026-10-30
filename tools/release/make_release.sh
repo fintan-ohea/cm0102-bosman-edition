@@ -23,7 +23,8 @@
 #   --custom-dbs   the folder with the zips of the custom databases that the downloads carry, such as the Update
 #                  Team's 2026 preview (tools/release/make_custom_db_zip.py makes them). They go in Seasons/Custom/
 #                  of the game folder; the game unpacks each once into Databases of the save folder, where the
-#                  Choose Season screen lists it on the Custom tile (src/recomp_rt/win/seasons_db.h).
+#                  Choose Season screen lists it on the Custom tile (src/recomp_rt/win/seasons_db.h). Optional: the
+#                  default is data/custom-dbs of the repo, which holds the 2026 preview zip.
 #   --tactics      the folder that tools/release/make_benchmark_tactics.py made: its tactics folder (the best
 #                  800 tactics of the tactics benchmark and their credits) goes to tactics/ of the game folder,
 #                  where the Load dialog of the tactics screen lists them.
@@ -43,7 +44,7 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GH_REPO="maxevans60/cm0102-bosman-edition"
-GAME=""; DATA_3960=""; DATA_3965=""; SDL_MAC=""; SDL_MINGW=""; SITE=""; SEASON_DBS=""; OWN_DBS=""; CUSTOM_DBS=""; TACTICS=""; STAGE_ONLY=0; PUBLISH=0
+GAME=""; DATA_3960=""; DATA_3965=""; SDL_MAC=""; SDL_MINGW=""; SITE=""; SEASON_DBS=""; OWN_DBS=""; CUSTOM_DBS="$REPO/data/custom-dbs"; TACTICS=""; STAGE_ONLY=0; PUBLISH=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --game) GAME="$2"; shift 2 ;;
