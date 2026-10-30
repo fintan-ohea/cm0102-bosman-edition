@@ -18,12 +18,28 @@
  * column 3 where the band text goes, and the From and To drop-downs in columns 5 and 6, made as the Range one.
  * Picking a band of the original replaces the range.
  *
- * Same game (Q152): with the option off nothing is made, the input and the test go on unchanged, and the text
- * block is taken at the first Filters build with the option on or off. */
+ * Ability (hidden_tab = on, which shows hidden values): the Attributes page of a player search (page 2, 0x813bec; not the staff search,
+ * list type 3, 0x813c18) lays out the 31 attributes in a grid of two columns of 16 rows (0x813f9d..), so the right
+ * column's last row is free. The wrap of the build puts a row of its own there, Ability and Potential with - and +,
+ * the least current and potential ability a player must have, in steps of 10 (0 for none). They are kept in the
+ * last bytes of the filter block, which no code of the search, the session or the filters reads (+0x80..+0x98 in
+ * 0x7ae000..0x7b4000, 0x804000..0x808500, 0x8133a0 and 0x818100): a mark at +0x96 and the two minimums at +0x97
+ * and +0x98. Clear (SearchFilters::reset_attribute_filters 0x8065d0) clears them too. The test cannot sit in
+ * player_matches_filter: PLAYER_SEARCH::get_result_list 0x7af160 does not call it while the filter mask is the
+ * default one (0x7af3f0..0x7af40a), and the minimums do not change the mask. The loop leaves out an entry whose byte
+ * +0x20 has bit 0 (0x7af3ea), so in a call of 0x7af160 the wrap of purge_invalid_results 0x7b1520 (its last change
+ * of the entries before the loop, 0x7af3c5) sets that bit on the players below the minimums, and the wrap of 0x7af160
+ * puts the bits back after the call. These are hidden values
+ * (glossary): the fork's decision of 2026-10-30 (docs/specs/2026-10-30-hidden-tab-spec.md).
+ *
+ * Same game (Q152): with the options off nothing is made, the input and the test go on unchanged, and the text
+ * block is taken at the first Filters build with the options on or off. */
 #include "win.h"
 #include "options.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 extern const uint32_t rt_site_filters_value_band;
 
@@ -49,8 +65,31 @@ extern const uint32_t rt_site_filters_value_band;
 #define STAFF_TABLE 0xae23bcu       /* the staff table, 0x6e bytes a person */
 #define STAFF_SIZE 0x6eu
 #define RESULT_STAFF 0x0cu          /* a search result: the staff id (0x8075be) */
-#define STAFF_VALUE 0x52u           /* staff: the value (0x807a48) */
+#define STAFF_VALUE 0x52u
+#define RESULT_SIZE 0x2du           /* a search result entry (0x7af452) */
+#define SEARCH_FILTERS 0x1fau       /* PLAYER_SEARCH: its filter block (0x7af3f6) */
+#define SEARCH_COUNT 0x1f6u         /* PLAYER_SEARCH: the count of entries (0x7af3ca) */
+#define SEARCH_TABLE 0x1eeu         /* PLAYER_SEARCH: the entries (0x7af3e0) */
+#define RESULT_FLAGS 0x20u          /* bit 0: left out of the list (0x7af3ea) */           /* staff: the value (0x807a48) */
 
+#define PAGE_SLOT 2                 /* the Filters screen: 2 the Attributes page (0x813be8) */
+#define ATTRIBUTES_PAGE 2
+#define SEARCHES 1u                 /* the session's ten PLAYER_SEARCH records, 0x2b0 bytes (0x813bf4..0x813c0d) */
+#define SEARCH_SIZE 0x2b0u
+#define SEARCH_TYPE 0x0au
+#define STAFF_SEARCH 3              /* the list type of Staff Search: the non-player attributes (0x813c18) */
+#define ABILITY_MARK 0x96u          /* filter block: 0xca when the two bytes after it are ability minimums */
+#define ABILITY_MIN 0x97u
+#define POTENTIAL_MIN 0x98u
+#define MARK 0xcau
+#define PLAYER_DATA 0x61u           /* staff: the player data, 0 for no player */
+#define ABILITY 0x05u               /* player data: s16 current ability */
+#define POTENTIAL 0x07u             /* player data: s16 potential ability */
+#define ABILITY_STEP 10
+#define ABILITY_MAX 200
+#define ABILITY_ID 0x7d63u          /* data: 0 Ability -, 1 Ability +, 2 Potential -, 3 Potential + */
+#define BUTTON_FACE 0xae3150u       /* the u16 colours of an attribute's - and + (0x814077) */
+#define TEXT_LIGHT 0xae3154u
 #define FROM_ID 0x7d61u             /* ids that the screen does not use; data: the index of the amount */
 #define TO_ID 0x7d62u
 #define REBUILD 0xfffffff5u
@@ -183,16 +222,66 @@ void value_range_cell_button(void)
     value_row = (int)rt_arg(2);
 }
 
+/* The minimums of a filter block: 1 when it has them. */
+static int ability_of(uint32_t filters, int *ca, int *pa)
+{
+    *ca = *pa = 0;
+    if (!filters || rd8(g_mem, filters + ABILITY_MARK) != MARK) return 0;
+    *ca = (uint8_t)rd8(g_mem, filters + ABILITY_MIN);
+    *pa = (uint8_t)rd8(g_mem, filters + POTENTIAL_MIN);
+    return *ca || *pa;
+}
+
+/* The Attributes page of a player search: the session's current search is not a staff search. */
+static int player_attributes_page(void)
+{
+    uint32_t session = node_slot(0);
+    if (!session || (int)node_slot(PAGE_SLOT) != ATTRIBUTES_PAGE) return 0;
+    uint32_t search = session + SEARCHES + (uint32_t)(int8_t)rd8(g_mem, session) * SEARCH_SIZE;
+    return rd8(g_mem, search + SEARCH_TYPE) != STAFF_SEARCH;
+}
+
+/* The row in the free place of the grid: the right column's last row (classic pixels, the row of Work Rate). */
+static const uint8_t weights_ability[] = {20, 9, 10, 9, 3, 24, 9, 10, 9};
+static void ability_row(uint32_t filters)
+{
+    int ca, pa;
+    ability_of(filters, &ca, &pa);
+    uint32_t a[11] = {462, 465, 756, 484, sizeof weights_ability, scratch + TEXT_AT + TEXT_SIZE, 1, 0, 1, 0,
+                      0xffffffffu};
+    memcpy(g_mem + scratch + TEXT_AT + TEXT_SIZE, weights_ability, sizeof weights_ability);
+    uint32_t area = (uint32_t)(int32_t)(int16_t)call_this(AREA_CREATE, display(), 11, a);
+    for (int k = 0; k < 2; k++) {
+        int c = k * 5, v = k ? pa : ca;
+        char s[16];
+        uint32_t l[9] = {area, (uint32_t)c, 0, 1, 0, 1, 2, rd16(g_mem, v ? TEXT_YELLOW : TEXT_LIGHT),
+                         text(k ? "Potential" : "Ability")};
+        call_this(CELL_LABEL, SCREENS, 9, l);
+        for (int up = 0; up < 2; up++) {
+            uint32_t b[11] = {area, (uint32_t)(c + 1 + up * 2), 0, 0x30, rd16(g_mem, BUTTON_FACE), 0xc, 1,
+                              rd16(g_mem, BUTTON_TEXT), text(up ? "+" : "-"), ABILITY_ID, (uint32_t)(k * 2 + up)};
+            call_this(CELL_BUTTON, SCREENS, 11, b);
+        }
+        if (v) snprintf(s, sizeof s, "%d", v);
+        else snprintf(s, sizeof s, "-");
+        uint32_t t[9] = {area, (uint32_t)(c + 2), 0, 1, 0, 1, 2, rd16(g_mem, TEXT_YELLOW), text(s)};
+        call_this(CELL_LABEL, SCREENS, 9, t);
+    }
+}
+
 void o_008133a0(void);
 
 /* The Filters build: the range text and the From and To drop-downs, when the Value row is on Range. */
 RT_WRAP(008133a0, filters_build)
 {
-    if (!scratch) scratch = rt_alloc_zero(TEXT_AT + TEXT_SIZE);    /* on and off: the same heap blocks */
+    if (!scratch) scratch = rt_alloc_zero(TEXT_AT + TEXT_SIZE + 16);    /* on and off: the same heap blocks */
     value_area = -1;
     o_008133a0();
-    if (rt_unwinding || value_area < 0 || !options_bool(OPT_VALUE_RANGE)) return;
+    if (rt_unwinding) return;
     uint32_t eax = cpu.eax, filters = node_slot(1);
+    if (options_bool(OPT_HIDDEN_TAB) && filters && player_attributes_page()) ability_row(filters);
+    cpu.eax = eax;
+    if (value_area < 0 || !options_bool(OPT_VALUE_RANGE)) return;
     int from = 0, to = NO_LIMIT, ranged = range_of(filters, &from, &to);
     if (ranged) {
         char a[64], b[64], s[140];
@@ -213,13 +302,27 @@ void o_00818100(void);
 RT_WRAP(00818100, filters_input)
 {
     int16_t w = (int16_t)rt_arg(0);
-    if (w < 0 || !options_bool(OPT_VALUE_RANGE)) {
+    if (w < 0 || (!options_bool(OPT_VALUE_RANGE) && !options_bool(OPT_HIDDEN_TAB))) {
         o_00818100();
         return;
     }
     uint32_t at = display() + WIDGETS + 8 + (uint32_t)w * WIDGET_SIZE;
     uint32_t id = (uint16_t)rd32(g_mem, at), i = rd32(g_mem, at + 0x40), filters = node_slot(1);
-    if ((id != FROM_ID && id != TO_ID) || !filters || i > NO_LIMIT) {
+    if (id == ABILITY_ID && filters && i < 4 && options_bool(OPT_HIDDEN_TAB)) {
+        int ca, pa;
+        ability_of(filters, &ca, &pa);
+        int *v = i < 2 ? &ca : &pa;
+        *v += i % 2 ? ABILITY_STEP : -ABILITY_STEP;
+        if (*v < 0) *v = 0;
+        if (*v > ABILITY_MAX) *v = ABILITY_MAX;
+        wr8(g_mem, filters + ABILITY_MARK, MARK);
+        wr8(g_mem, filters + ABILITY_MIN, (uint32_t)ca);
+        wr8(g_mem, filters + POTENTIAL_MIN, (uint32_t)pa);
+        fprintf(stderr, "recomp: ability filter: ability %d potential %d\n", ca, pa);
+        rt_ret_cdecl(REBUILD);
+        return;
+    }
+    if ((id != FROM_ID && id != TO_ID) || !filters || i > NO_LIMIT || !options_bool(OPT_VALUE_RANGE)) {
         o_00818100();
         return;
     }
@@ -241,15 +344,82 @@ RT_WRAP(00818100, filters_input)
 void o_00807450(void);
 
 /* SearchFilters::player_matches_filter, thiscall (candidate), ret 4: a match of the original must also lie in the
- * range. */
+ * value range. */
 RT_WRAP(00807450, filter_match)
 {
     uint32_t filters = cpu.ecx, candidate = rt_arg(0);
     o_00807450();
-    int from, to;
-    if (rt_unwinding || !cpu.eax || !options_bool(OPT_VALUE_RANGE) || !candidate || !range_of(filters, &from, &to))
-        return;
+    if (rt_unwinding || !cpu.eax || !candidate) return;
     uint32_t staff = rd32(g_mem, STAFF_TABLE) + rd32(g_mem, candidate + RESULT_STAFF) * STAFF_SIZE;
-    int64_t v = (int32_t)rd32(g_mem, staff + STAFF_VALUE);
-    if (v < money_internal(amounts[from]) || (to != NO_LIMIT && v > money_internal(amounts[to]))) cpu.eax = 0;
+    int from, to;
+    if (options_bool(OPT_VALUE_RANGE) && range_of(filters, &from, &to)) {
+        int64_t v = (int32_t)rd32(g_mem, staff + STAFF_VALUE);
+        if (v < money_internal(amounts[from]) || (to != NO_LIMIT && v > money_internal(amounts[to]))) cpu.eax = 0;
+    }
+}
+
+static uint32_t pending;            /* the PLAYER_SEARCH whose get_result_list runs with ability minimums */
+static int pending_ca, pending_pa, marked_count, marked_room;
+static uint32_t *marked;
+
+void o_007b1520(void);
+
+/* PLAYER_SEARCH::purge_invalid_results, thiscall (relink), ret 4: the last change of the entries before the loop of
+ * get_result_list (0x7af3c5). In that call, the players below the minimums get bit 0 of +0x20. */
+RT_WRAP(007b1520, purge_results)
+{
+    uint32_t search = cpu.ecx;
+    o_007b1520();
+    if (rt_unwinding || search != pending) return;
+    int n = (int32_t)rd32(g_mem, search + SEARCH_COUNT);
+    uint32_t table = rd32(g_mem, search + SEARCH_TABLE), staff_table = rd32(g_mem, STAFF_TABLE);
+    if (n > marked_room) {
+        uint32_t *grown = realloc(marked, (size_t)n * sizeof *marked);
+        if (!grown) return;
+        marked = grown;
+        marked_room = n;
+    }
+    for (int i = 0; i < n; i++) {
+        uint32_t e = table + (uint32_t)i * RESULT_SIZE;
+        if (rd8(g_mem, e + RESULT_FLAGS) & 1) continue;
+        uint32_t data = rd32(g_mem, staff_table + rd32(g_mem, e + RESULT_STAFF) * STAFF_SIZE + PLAYER_DATA);
+        if (data && (int16_t)rd16(g_mem, data + ABILITY) >= pending_ca &&
+            (int16_t)rd16(g_mem, data + POTENTIAL) >= pending_pa)
+            continue;
+        wr8(g_mem, e + RESULT_FLAGS, rd8(g_mem, e + RESULT_FLAGS) | 1);
+        marked[marked_count++] = e;
+    }
+}
+
+void o_007af160(void);
+
+/* PLAYER_SEARCH::get_result_list, thiscall (LLIST *out, int *other, compare), ret 0xc: the players below the
+ * ability minimums of the search's filters (+0x1fa, 0x7af3f6) are left out of this list, and their bits go back
+ * after it. The entries: count at +0x1f6, table at +0x1ee, 0x2d bytes each (0x7af3ca..0x7af3e8). */
+RT_WRAP(007af160, result_list)
+{
+    uint32_t search = cpu.ecx;
+    if (!options_bool(OPT_HIDDEN_TAB) || !ability_of(search + SEARCH_FILTERS, &pending_ca, &pending_pa)) {
+        o_007af160();
+        return;
+    }
+    pending = search;
+    marked_count = 0;
+    o_007af160();
+    pending = 0;
+    for (int i = 0; i < marked_count; i++)
+        wr8(g_mem, marked[i] + RESULT_FLAGS, rd8(g_mem, marked[i] + RESULT_FLAGS) & ~1u);
+    marked_count = 0;
+}
+
+void o_008065d0(void);
+
+/* SearchFilters::reset_attribute_filters, thiscall: Clear of the Attributes page clears the minimums too. */
+RT_WRAP(008065d0, reset_attributes)
+{
+    uint32_t filters = cpu.ecx;
+    o_008065d0();
+    if (rt_unwinding || !options_bool(OPT_HIDDEN_TAB) || rd8(g_mem, filters + ABILITY_MARK) != MARK) return;
+    wr8(g_mem, filters + ABILITY_MIN, 0);
+    wr8(g_mem, filters + POTENTIAL_MIN, 0);
 }

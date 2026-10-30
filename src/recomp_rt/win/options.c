@@ -80,7 +80,7 @@ static const OptionDef defs[OPT_COUNT] = {
         "shortlist_all = on adds a Shortlist All button to Player & Staff Search. It adds every person the list shows, after its filters, to your shortlist."},
     /* Fork of fintan-ohea: docs/specs/2026-10-30-hidden-tab-spec.md. */
     [OPT_HIDDEN_TAB] = {"hidden_tab", KIND_SWITCH, "off", NULL,
-        "hidden_tab = on adds a Hidden tab to a player's profile. It shows the values the game keeps hidden: current and potential ability, and attributes such as Consistency, Important Matches, Injury Proneness, Ambition and Professionalism."},
+        "hidden_tab = on shows the values the game keeps hidden: a Hidden tab on a player's profile with current and potential ability and attributes such as Consistency, Important Matches, Injury Proneness, Ambition and Professionalism, and Ability and Potential minimums on the Attributes page of the search Filters."},
     /* Fork of fintan-ohea: docs/specs/2026-10-30-value-range-spec.md. */
     [OPT_VALUE_RANGE] = {"value_range", KIND_SWITCH, "off", NULL,
         "value_range = on adds From and To drop-downs to the Value row of the search Filters, so a search lists the players whose value lies between the two amounts."},

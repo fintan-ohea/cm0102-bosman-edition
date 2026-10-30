@@ -126,7 +126,7 @@ int main(void)
     CHECK(strstr(get(), "\nshortlist_all = off\n") != NULL);
     CHECK(strstr(get(), "shortlist_all = on adds a Shortlist All button") != NULL);
     CHECK(strstr(get(), "\nhidden_tab = off\n") != NULL);
-    CHECK(strstr(get(), "hidden_tab = on adds a Hidden tab") != NULL);
+    CHECK(strstr(get(), "hidden_tab = on shows the values the game keeps hidden") != NULL);
     CHECK(strstr(get(), "\nvalue_range = off\n") != NULL);
     CHECK(strstr(get(), "value_range = on adds From and To drop-downs") != NULL);
     CHECK(strstr(get(), "money_scale = 5, 7 or 10 shows every amount of money") != NULL);
