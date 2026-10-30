@@ -106,6 +106,14 @@ cmake --build build -j 8 --target cm0102_recomp
 
 The first command checks each file against [`tools/clean_files/manifest.tsv`](tools/clean_files/manifest.tsv) and stops on any difference. The tool needs `bsdtar` and `unshield`. The build needs CMake 3.20, a C compiler, Python 3 with `capstone`, and SDL2. [`tools/release/make_release.sh`](tools/release/make_release.sh) makes the Mac, Windows and Linux downloads.
 
+The repository holds the Update Team's 2026 preview data, already merged with May 2026, in [`data/custom-dbs`](data/custom-dbs). You do not need their preview save to use it. The downloads carry it, since `make_release.sh` takes that folder by default. To play it with your own build, unzip it into `Databases` in the save folder, then pick it on the Custom tile as in [Start a game](#start-a-game-with-the-data-updates-and-the-benchmark-tactics):
+
+```bash
+unzip "data/custom-dbs/2026 Preview Data Update.zip" -d ~/.local/share/cm0102/Databases
+```
+
+On a Mac the save folder is `~/Library/Application Support/cm0102`, on Windows `%APPDATA%\cm0102`.
+
 ## Report a problem or ask for a feature
 
 Open an [issue](https://github.com/maxevans60/cm0102-bosman-edition/issues/new/choose). For a problem, say which computer you use, which version of the game, and what you clicked before it happened.
