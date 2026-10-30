@@ -886,6 +886,7 @@ RT_WRAP(00888260, profile_input)
             return;
         }
     }
+    if (hidden_profile_input()) return;             /* the Hidden tab (hidden.c) */
     o_00888260();
 }
 

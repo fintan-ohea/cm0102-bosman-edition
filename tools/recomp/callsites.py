@@ -70,6 +70,9 @@ CALL_SITES = {
     # and the Filters button in it (docs/research/2026-10-25-shortlist-all.md). Shortlist All goes left of them.
     "search_buttons_area": (0x80ACEA, 0x55FBA0),
     "search_filters": (0x80AD2B, 0x8040A0),
+    # Hidden tab (fork): the tab bar of the profile build 0x870700 with its five tabs
+    # (docs/research/2026-10-30-hidden-attributes.md). Hidden joins them.
+    "profile_tab_bar": (0x874CC1, 0x5ED780),
     # Value range (fork): the Range drop-down button of the Value row in the Filters build 0x8133a0
     # (docs/research/2026-10-30-value-range.md). Its area and row take the From and To drop-downs.
     "filters_value_band": (0x8167BC, 0x8040A0),

@@ -382,6 +382,7 @@ void o_005ed780(void);
 /* The tab bar, cdecl (entries, count, selected, int *y_top, int *y_bottom, split). */
 RT_WRAP(005ed780, tab_bar)
 {
+    if (hidden_tab_bar()) return;                   /* the Hidden tab of a player's profile (hidden.c) */
     on_tab = 0;
     if (rd32(g_mem, cpu.esp) != rt_site_club_tab_bar || rt_arg(1) != CLUB_ENTRIES) {
         o_005ed780();

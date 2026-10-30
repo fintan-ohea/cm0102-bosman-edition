@@ -62,7 +62,7 @@ The fork builds with capstone 5 from `~/Documents/cm0102-venv` (`-DRECOMP_PYTHON
 
 fintan-ohea, 2026-10-24.
 
-1. **Hidden values.** The editor box shows and edits current ability and potential ability. This is the one place in the fork that shows hidden values, and only with `player_editor = on`. No other screen changes.
+1. **Hidden values.** The editor box shows and edits current ability and potential ability. This was the one place in the fork that showed hidden values, and only with `player_editor = on`. On 2026-10-30 the Hidden tab of the profile (`hidden_tab`, docs/specs/2026-10-30-hidden-tab-spec.md) joined it.
 2. **Whose players.** Any player in the game, at any club or none.
 3. **A mark on edited saves.** Yes. Once any edit is saved, the game is marked as edited and its save names end in " (edited)". Where the mark lives (a season part of the save or a field the save already has) is research for slice 1; it must survive a save and load.
 4. **Upstream.** The editor stays in the fork for now. It keeps the rules an offer would need (off by default, same-save check passes), so a pull request stays possible later.

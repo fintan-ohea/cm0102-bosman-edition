@@ -208,7 +208,7 @@ SAME_SAVE_RUNS = [
              "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
              "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off",
              "money_scale": "off", "club_editor": "off", "shortlist_all": "off",
-             "value_range": "off"}),
+             "value_range": "off", "hidden_tab": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
@@ -235,6 +235,9 @@ SAME_SAVE_RUNS = [
     # Value range (fork): on, with the Filters never opened, must give the save of normal.
     ("range-on", {"faster_days": "off", "value_range": "on"}),
     ("range-off", {"faster_days": "off", "value_range": "off"}),
+    # Hidden tab (fork): on, with no profile opened, must give the save of normal.
+    ("hidden-on", {"faster_days": "off", "hidden_tab": "on"}),
+    ("hidden-off", {"faster_days": "off", "hidden_tab": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),
@@ -338,6 +341,8 @@ MATCH_RUNS = [
     ("shortlist-off", {"shortlist_all": "off"}),
     ("range-on", {"value_range": "on"}),
     ("range-off", {"value_range": "off"}),
+    ("hidden-on", {"hidden_tab": "on"}),
+    ("hidden-off", {"hidden_tab": "off"}),
     ("rules-on", {"changing_rules": "on"}),
     ("rules-off", {"changing_rules": "off"}),
     ("sleep-off", {"_env": {"RECOMP_IDLE_SLEEP": "0"}}),

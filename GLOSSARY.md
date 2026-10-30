@@ -299,7 +299,7 @@ The player profile's attributes in Technical, Mental and Physical columns with h
 _Avoid_: attribute categories, sections
 
 **Hidden value**:
-A player value in the data that no screen of the original shows, such as current ability or potential ability. No feature shows it or feeds it into a shown number.
+A player value in the data that no screen of the original shows, such as current ability or potential ability. No feature shows it or feeds it into a shown number, except the fork's player editor box (`player_editor`) and Hidden tab (`hidden_tab`), both off by default.
 _Avoid_: secret attribute, intrinsic (for the whole set)
 
 **Printout**:
