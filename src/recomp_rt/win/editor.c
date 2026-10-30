@@ -10,7 +10,7 @@
  * (options_screen.c): the frame of Game Settings (0x823950), pushed with flag 1. It shows current ability
  * (player data +0x05), potential ability (+0x07) and the 31 attributes of 0x5431e0, with - and + buttons, and
  * (slice 3) the condition with Full, the morale (+0x45), and the injury with Cure while the player has one, and
- * (slice 4) the contract's wage and end date. The club's balance and transfer funds (slice 5) moved to the Edit
+ * (slice 4) the contract's wage and end date, and its type: Monthly or Fixed term, Part time or Full time. The club's balance and transfer funds (slice 5) moved to the Edit
  * Club tab of the club screen (club_editor.c), which uses the funds adjustments kept here. Release player ends
  * the contract and takes the player out of the club at once, as the daily free transfer queue does (0x8c18c0).
  * Each click changes the game's memory at once, so the box shows the game's own values. Save keeps the
@@ -86,6 +86,9 @@ extern const uint32_t rt_site_profile_note;
 #define CONTRACT_WAGE 0x0cu         /* int32 (0x4d0c59) */
 #define CONTRACT_END 0x2du          /* Date: s16 day of the year, s16 year, u32 leap flag (0x85e954) */
 #define CONTRACT_TYPE 0x35u         /* low 6 bits: 1 rolling, 3 expired, 4 free (0x85e8f0) */
+#define TYPE_MONTHLY 1              /* "Full Time Monthly Contract" (0x87cf38) */
+#define TYPE_FIXED 2                /* "Full Time Contract" (0x87cf3f); 5 trial, 6 and 7 loan (0x87dd58) */
+#define TYPE_PART_TIME 0x80u        /* the Part Time strings (0x87cee7); Offer Contract flips it (0x4e2f98) */
 #define END_TEXT 0x85e8f0u          /* thiscall on the contract (text): the profile's "Expires" text */
 #define DATE_SET 0x54a130u          /* Date::set, thiscall (day 1 to 31, month 0 to 11, year, weekday or -1) */
 #define WAGE_STEP 100
@@ -130,7 +133,9 @@ extern const uint32_t rt_site_profile_note;
 #define FIELD_INJURY (FIELD_CONDITION + 2)
 #define FIELD_WAGE (FIELD_CONDITION + 3)
 #define FIELD_END (FIELD_CONDITION + 4)
-#define FIELDS (FIELD_CONDITION + 5)
+#define FIELD_TERM (FIELD_CONDITION + 5)  /* Monthly or Fixed term */
+#define FIELD_TIME (FIELD_CONDITION + 6)  /* Part time or Full time */
+#define FIELDS (FIELD_CONDITION + 7)
 #define ABILITY_MAX 200
 #define VALUE_MAX 20
 #define TEXT_SIZE 0x200u
@@ -152,7 +157,7 @@ static uint8_t old_bytes[ATTRIBUTES + 1], old_morale;
 static int16_t old_ceiling, old_condition, old_recovery, old_injured;
 static uint32_t old_record;         /* the injury record when the box opened, 0 for none */
 static uint32_t old_contract, old_wage;
-static uint8_t old_end[8];
+static uint8_t old_end[8], old_type;
 
 /* Transfer funds adjustments: an amount per club id that the wrap of 0x598800 adds to the game's own figure.
  * They go into the save part, and a load or a new game replaces them. */
@@ -390,8 +395,9 @@ static void log_values(const char *what)
     fprintf(stderr, " condition %d morale %d injury %d %d", condition(), (int)rd8(g_mem, data + MORALE), status,
             injury_left(status));
     uint32_t c = contract();
-    if (c) fprintf(stderr, " wage %d end %d %d", (int32_t)rd32(g_mem, c + CONTRACT_WAGE),
-                   (int16_t)rd16(g_mem, c + CONTRACT_END + 2), (int16_t)rd16(g_mem, c + CONTRACT_END));
+    if (c) fprintf(stderr, " wage %d end %d %d type %d", (int32_t)rd32(g_mem, c + CONTRACT_WAGE),
+                   (int16_t)rd16(g_mem, c + CONTRACT_END + 2), (int16_t)rd16(g_mem, c + CONTRACT_END),
+                   (int)rd8(g_mem, c + CONTRACT_TYPE));
     else fprintf(stderr, " wage none");
     uint32_t f = finance();
     if (f) fprintf(stderr, " balance %lld funds %lld\n", (long long)balance_of(f), (long long)editor_funds(f));
@@ -523,6 +529,43 @@ static void step_end(int by)
     editor_mark_edited();
 }
 
+/* The type of a monthly or fixed term contract, as the Offer Contract screen sets it: the low 6 bits replaced and
+ * bits 6 and 7 kept (0x4e28eb, 0x4e298d). A monthly contract that becomes fixed term ends on 30 June of the next
+ * season: the year after next from July, else next year. Trial and loan contracts keep their type. */
+static void switch_term(void)
+{
+    uint32_t c = contract();
+    if (!c) return;
+    uint8_t b = (uint8_t)rd8(g_mem, c + CONTRACT_TYPE);
+    int type = b & 0x3f;
+    if (type != TYPE_MONTHLY && type != TYPE_FIXED) return;
+    int to = type == TYPE_MONTHLY ? TYPE_FIXED : TYPE_MONTHLY;
+    wr8(g_mem, c + CONTRACT_TYPE, (uint32_t)((b & 0xc0) | to));
+    if (to == TYPE_FIXED) {
+        int year = (int16_t)rd16(g_mem, TODAY + 2), month, day;
+        month_day((int16_t)rd16(g_mem, TODAY), year, &month, &day);
+        uint32_t a[4] = {30, 5, (uint32_t)(year + (month >= 6 ? 2 : 1)), 0xffffffffu};
+        call_this(DATE_SET, c + CONTRACT_END, 4, a);
+    }
+    fprintf(stderr, "recomp: player editor: staff %d contract type %d -> %d\n", (int32_t)rd32(g_mem, staff), b,
+            (int)rd8(g_mem, c + CONTRACT_TYPE));
+    editor_mark_edited();
+}
+
+/* Part time or full time: bit 7 of the type, as the Offer Contract screen flips it (0x4e2f98). */
+static void switch_time(void)
+{
+    uint32_t c = contract();
+    if (!c) return;
+    uint8_t b = (uint8_t)rd8(g_mem, c + CONTRACT_TYPE);
+    int type = b & 0x3f;
+    if (type != TYPE_MONTHLY && type != TYPE_FIXED) return;
+    wr8(g_mem, c + CONTRACT_TYPE, b ^ TYPE_PART_TIME);
+    fprintf(stderr, "recomp: player editor: staff %d contract type %d -> %d\n", (int32_t)rd32(g_mem, staff), b,
+            (int)rd8(g_mem, c + CONTRACT_TYPE));
+    editor_mark_edited();
+}
+
 /* Release player: the player leaves the club on a free transfer today, with no payout. He keeps his history and
  * gets the "released" records; the board and the player take no penalty (an edit, not a decision of the manager). */
 static void release(void)
@@ -550,6 +593,8 @@ static void step(int field, int op)
     else if (field == FIELD_INJURY && op == 3) cure();
     else if (field == FIELD_WAGE) step_wage(op);
     else if (field == FIELD_END && op < 2) step_end(by[op]);
+    else if (field == FIELD_TERM) switch_term();
+    else if (field == FIELD_TIME) switch_time();
     else if (field < FIELD_CONDITION && op < 2) step_attribute(field - 1, by[op]);
 }
 
@@ -572,6 +617,7 @@ static void snapshot(void)
     if (old_contract) {
         old_wage = rd32(g_mem, old_contract + CONTRACT_WAGE);
         memcpy(old_end, g_mem + old_contract + CONTRACT_END, sizeof old_end);
+        old_type = (uint8_t)rd8(g_mem, old_contract + CONTRACT_TYPE);
     }
     edited_before = edited;
 }
@@ -592,6 +638,7 @@ static void restore(void)
     if (old_contract) {
         wr32(g_mem, old_contract + CONTRACT_WAGE, old_wage);
         memcpy(g_mem + old_contract + CONTRACT_END, old_end, sizeof old_end);
+        wr8(g_mem, old_contract + CONTRACT_TYPE, old_type);
     }
     edited = edited_before;
 }
@@ -655,6 +702,13 @@ static const uint8_t weights_ability[] = {27, 8, 6, 9, 6, 8, 4, 27, 8, 6, 9, 6, 
 static const uint8_t weights_fitness[] = {18, 5, 9, 5, 8, 3, 14, 5, 16, 5, 3, 13, 22, 8};
 /* The contract row: wage (name, -10%, -, value, +, +10%) and end date (name, -1y, value, +1y). */
 static const uint8_t weights_contract[] = {14, 9, 5, 16, 5, 9, 3, 18, 8, 22, 8};
+/* The contract type row: name, the type, and the two switches. */
+static const uint8_t weights_type[] = {16, 32, 2, 14, 2, 14, 20};
+/* The profile's text of each type (the tables 0x87dd38 and 0x87dd58), after its two spaces: full time, then
+ * part time. Types 3 and 4 have none. */
+static const uint32_t type_text[2][8] = {
+    {0xa867ecu, 0xa867ccu, 0xa867b4u, 0, 0, 0xa86798u, 0xa8677cu, 0xa8677cu},
+    {0xa867ecu, 0xa86854u, 0xa86804u, 0, 0, 0xa86838u, 0xa8681cu, 0xa8681cu}};
 /* An attribute row: name, -, value, +. */
 static const uint8_t weights_attribute[] = {50, 10, 12, 10};
 #define ROW_X1 160
@@ -741,6 +795,18 @@ static void editor_build(void)
         if (has_end_date(con)) button(k, 8, "-1y", FIELD_END, 0, green);
         value_text(k, 9, end);
         if (has_end_date(con)) button(k, 10, "+1y", FIELD_END, 1, green);
+
+        /* The type, below the attributes: Monthly or Fixed term, Part time or Full time. */
+        int ty = area(ROW_X1, 482, ROW_X2, 505, 7, weights_type, 1, 0);
+        uint8_t b = (uint8_t)rd8(g_mem, con + CONTRACT_TYPE);
+        int type = b & 0x3f;
+        plain(ty, 0, "Contract type", light);
+        uint32_t at = type < 8 ? type_text[(b & TYPE_PART_TIME) != 0][type] : 0;
+        value_text(ty, 1, at ? win_str(at) + 2 : "N/A");
+        if (type == TYPE_MONTHLY || type == TYPE_FIXED) {
+            button(ty, 3, type == TYPE_MONTHLY ? "Fixed term" : "Monthly", FIELD_TERM, 0, green);
+            button(ty, 5, b & TYPE_PART_TIME ? "Full time" : "Part time", FIELD_TIME, 0, green);
+        }
     }
 
     for (int k = 1; k <= ATTRIBUTES; k++) {

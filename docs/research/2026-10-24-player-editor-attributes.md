@@ -82,6 +82,18 @@ Morale is player data `+0x45`, 1 to 20: staff_adjust_morale (0x544710) holds it 
 - Wage: int32 at `+0x0c` (get_wage returns it at 0x4d0c59).
 - Dates: two Date objects (s16 day of the year, s16 year, u32 leap flag, as the game date at 0xae2c90) at `+0x25` and `+0x2d`, copied by Date::operator= 0x417c10 in STAFF_CONTRACT::operator= (0x4cc86e, 0x4cc882).
 - The end date is `+0x2d`: STAFF_CONTRACT::format_end_date_text (0x85e8f0), which the profile's "  Expires" line calls (0x87d281), writes it with 0x54a650 from `this + 0x2d` (0x85e954). Before that it tests the type, the low 6 bits of `+0x35`: 3 "Contract Expired" (0xa8370c), 4 "Free" (0xa836e4), 1 "Rolling" (0xa836dc) (0x85e8f0..0x85e942).
+- The type (2026-10-30), read in the profile's Contract tab 0x87cd90: bit 7 of `+0x35` chooses the Part Time
+  strings (`test al, 0x80` at 0x87cee7), and the low 6 bits, signed, index two jump tables (0x87dd38 part time,
+  0x87dd58 full time; 0x87ceeb, 0x87cf1c): 0 "Invalid Contract Type", 1 "Monthly Contract" (0xa867cc, 0xa86854),
+  2 "Contract" (0xa867b4, 0xa86804), 3 and 4 "N/A", 5 "Trial Contract", 6 and 7 "Loan Contract". The text has two
+  leading spaces. STAFF_CONTRACT::is_rolling 0x85fa20 is type 1.
+- The Offer Contract screen's input 0x4e2280 sets the type the same way: Month to Month on a monthly offer writes
+  `(b & 0xc2) | 2` (0x4e28eb), on another `(b & 0xc1) | 1` (0x4e298d), so bits 6 and 7 stay; its part time
+  switch flips bit 7 (0x4e2f98..0x4e2fac). The editor writes `(b & 0xc0) | type` and flips bit 7, and only for
+  types 1 and 2.
+- The contract tab shows the "Started" line only for type 2 (0x87d05d..0x87d066). Inference: a monthly contract's
+  end date is not read (0x85e8f0 writes "Rolling" before it), so the editor gives a monthly contract that becomes
+  fixed term a new end date with Date::set.
 - At the start of a game STAFF_CONTRACT::generate_initial_contract (0x85e960) copies the end date from the staff record `+0x46` (0x85ec81..0x85ec8d). Inference: from then on the contract record is the end date the game uses; no other code reads staff `+0x46` as a date (no `lea reg, [reg + 0x46]` in the generated code). The editor changes only the contract record.
 - The editor moves the end date with Date::set 0x54a130 (thiscall: day 1 to 31, month 0 to 11, year, weekday or -1; `season.c`), so the leap flag stays right.
 

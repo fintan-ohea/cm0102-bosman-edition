@@ -9,8 +9,7 @@ Runs, in classic mode, from start.sav (tests/fixtures):
             drop-down, clicks Finishing + and Acceleration +, and Cancel. Opens the box again, clicks current
             ability +10, potential ability +, Finishing +, Pace +, Condition Full and Morale +, and Save. Then
             Continue Game: the runtime saves the game a day later (RECOMP_SAVE_AFTER_DAYS=1) as samesave.sav.
-            Wage +10% and Contract +1y are clicked before Save too, and where the club row was (it moved to the
-            Edit Club tab, club_editor_run.py).
+            Wage +10% and Contract +1y are clicked before Save too.
     load    player_editor = on. Loads that save and opens the box for the same player.
     cure    player_editor = on. Opens the box of an injured player (Van Bronckhorst), clicks Cure and Save, then
             Continue Game to the test save.
@@ -18,6 +17,8 @@ Runs, in classic mode, from start.sav (tests/fixtures):
     release player_editor = on. Opens the box of the same Arsenal player, clicks Release player twice (the first
             click asks), opens the box of the same row of the Arsenal squad again and cancels, then Continue Game
             to the test save.
+    type    player_editor = on. Opens the box of the same Arsenal player, clicks Monthly and Part time, and Save;
+            opens it again, clicks Fixed term and Full time, and Save; then Continue Game to the test save.
     off     player_editor = off. Opens the Action drop-down and clicks where Edit player would be.
 
 Checks:
@@ -30,6 +31,8 @@ Checks:
     - cure: the player is injured when the box opens and fit after Cure; cured: still fit after the load.
     - release: the second click releases the player: no club and no contract, the box closes; the same row of
       the squad now shows another player; the game plays a day and saves.
+    - type: the full time contract becomes a part time monthly one (type 0x81), then a full time contract again
+      that ends on 30 June; the game plays a day and saves.
     - off: the box never opens.
 The editor writes "recomp: player editor <opened|cancelled|saved> staff <id> ca <n> pa <n> values <31 values>".
 Pictures in <out>/<run>/: box.bmp, profile.bmp.
@@ -51,8 +54,8 @@ import savfile  # noqa: E402
 
 # Positions for 800x600 (classic). The box: current ability +10 at 420 132, potential ability + at 682 132;
 # Condition Full at 334 165, Morale + at 523 165, Cure at 712 165; Wage +10% at 421 195, Contract +1y at
-# 710 195; the attribute + buttons at x 334 (first column) and 524 (second), rows from y 225 every 24; where the
-# club row's Balance +1m and Funds +1m were, 419 494 and 707 494; Save 300 524, Release player 445 524 (for a player with a club), Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
+# 710 195; the attribute + buttons at x 334 (first column) and 524 (second), rows from y 225 every 24; the
+# contract type's Monthly or Fixed term at 484 493 and Part time or Full time at 576 493; Save 300 524, Release player 445 524 (for a player with a club), Cancel 590 524. The profile's Action button at 722 14, Edit player the 11th item at 680 267.
 PROFILE = ["1000 click 45 165",          # the manager's menu
            "2500 click 150 156",         # Arsenal Squad
            "6000 click 210 369"]         # a player of the squad list
@@ -74,8 +77,6 @@ EDIT_STEPS = fixtures.LOAD_STEPS + PROFILE + [
     "30300 click 523 165",               # Morale +
     "30600 click 421 195",               # Wage +10%
     "30800 click 710 195",               # Contract +1y
-    "30900 click 419 494",               # where Club balance +1m was
-    "30950 click 707 494",               # where Transfer funds +1m was
     "31000 click 300 524",               # Save
     "34000 dump {d}/profile.bmp",
     "35000 click 45 120",                # Continue Game: the test save follows a day later
@@ -130,17 +131,37 @@ RELEASED = re.compile(r"recomp: player editor: staff (-?\d+) released by club (-
 OFF_STEPS = fixtures.LOAD_STEPS + PROFILE + ["9500 " + ACTION, "12000 " + EDIT, "14000 dump {d}/after.bmp", "15000 quit"]
 
 LINE = re.compile(r"recomp: player editor (opened|cancelled|saved) staff (-?\d+) ca (-?\d+) pa (-?\d+) values((?: -?\d+){31})"
-                  r" condition (-?\d+) morale (-?\d+) injury (\d+) (-?\d+) wage (?:none|(-?\d+) end (-?\d+) (-?\d+))"
+                  r" condition (-?\d+) morale (-?\d+) injury (\d+) (-?\d+) wage (?:none|(-?\d+) end (-?\d+) (-?\d+) type (\d+))"
                   r" balance (?:none|(-?\d+) funds (-?\d+))")
+TERM, TIME = "click 484 493", "click 576 493"
+TYPE_STEPS = fixtures.LOAD_STEPS + PROFILE + [
+    "9500 " + ACTION,
+    "12000 " + EDIT,
+    "14000 " + TERM,                     # Monthly
+    "15000 " + TIME,                     # Part time
+    "16000 dump {d}/box.bmp",
+    "16500 click 300 524",               # Save
+    "19000 " + ACTION,
+    "21500 " + EDIT,
+    "23500 " + TERM,                     # Fixed term
+    "24500 " + TIME,                     # Full time
+    "25500 dump {d}/fixed.bmp",
+    "26000 click 300 524",               # Save
+    "29000 click 45 120",
+    "39000 click 45 120",
+    "49000 click 45 120",
+    "59000 quit",
+]
 FINISHING, PACE = 12, 21                 # attribute indices (docs/research/2026-10-24-player-editor-attributes.md)
 
 
 def lines(log):
     return [(m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), [int(v) for v in m.group(5).split()],
              int(m.group(6)), int(m.group(7)), int(m.group(8)),
-             None if m.group(10) is None else (int(m.group(10)), int(m.group(11)), int(m.group(12))),
-             None if m.group(13) is None else int(m.group(13)),
-             None if m.group(14) is None else int(m.group(14)))
+             None if m.group(10) is None else (int(m.group(10)), int(m.group(11)), int(m.group(12)),
+                                               int(m.group(13))),
+             None if m.group(14) is None else int(m.group(14)),
+             None if m.group(15) is None else int(m.group(15)))
             for m in LINE.finditer(log)]
 
 
@@ -184,7 +205,10 @@ def main(argv):
     off_user = new_user(work, "off", start)
     cure_user = new_user(work, "cure", start)
     release_user = new_user(work, "release", start)
-    with ThreadPoolExecutor(4) as pool:
+    type_user = new_user(work, "type", start)
+    with ThreadPoolExecutor(5) as pool:
+        typed = pool.submit(play, program, game, type_user, os.path.join(out, "type"), TYPE_STEPS,
+                            [("player_editor", "on")], {"RECOMP_SAVE_AFTER_DAYS": "1"})
         release = pool.submit(play, program, game, release_user, os.path.join(out, "release"), RELEASE_STEPS,
                               [("player_editor", "on")], {"RECOMP_SAVE_AFTER_DAYS": "1"})
         cure = pool.submit(play, program, game, cure_user, os.path.join(out, "cure"), CURE_STEPS,
@@ -215,7 +239,7 @@ def main(argv):
                   f"edit: condition {first[5]} -> {after[5]}, morale {first[6]} -> {after[6]}")
             # wage, end year, end day of the year; +10% steps at least WAGE_STEP (editor.c).
             fc, ac = first[8], after[8]
-            check(fc is not None and ac == (fc[0] + max(fc[0] // 10, 100), fc[1] + 1, fc[2]),
+            check(fc is not None and ac[:3] == (fc[0] + max(fc[0] // 10, 100), fc[1] + 1, fc[2]),
                   f"edit: contract {fc} -> {ac} (wage +10%, a year longer)")
             check(first[9] is not None and after[9:11] == first[9:11] and "transfer funds" not in log,
                   f"edit: the box has no club row: balance and funds {first[9:11]} -> {after[9:11]}")
@@ -251,6 +275,14 @@ def main(argv):
               f"release: the box closes, and the squad row shows another player ({[(r[0], r[1]) for r in rel]})")
         check(code == 0 and os.path.exists(os.path.join(release_user, "samesave.sav")) and "Error" not in log,
               f"release: the game plays a day and saves (code {code})")
+        code, log = typed.result()
+        ty = [(t[0], t[8]) for t in lines(log)]
+        # (wage, end year, end day of the year, type); 30 June is day 180, or 181 in a leap year.
+        check([t[0] for t in ty] == ["opened", "saved", "opened", "saved"] and ty[0][1][3] == 2 and
+              ty[1][1][3] == 0x81 and ty[3][1][3] == 2 and ty[3][1][2] in (180, 181),
+              f"type: full time, then part time monthly, then full time to 30 June ({ty})")
+        check(code == 0 and os.path.exists(os.path.join(type_user, "samesave.sav")) and "Error" not in log,
+              f"type: the game plays a day and saves (code {code})")
 
     if os.path.exists(os.path.join(edit_user, "samesave.sav")) and len(seen) >= 4:
         load_user = new_user(work, "load", os.path.join(edit_user, "samesave.sav"))
