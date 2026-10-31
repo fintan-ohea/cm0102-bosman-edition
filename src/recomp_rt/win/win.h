@@ -147,6 +147,9 @@ int shortlist_all_cell_button(void);           /* the cell button create: 1 when
 int hidden_tab_bar(void);
 int hidden_profile_input(void);                /* the profile input on the Hidden tab: 1 when it handled it */                      /* the tab bar: 1 when it was the profile's (hidden.c) */
 void value_range_cell_button(void);            /* the cell button create: the Value row of the search Filters */
+void subs_option_fixture(uint32_t fixture);    /* bench and subs_used: the two nibbles of fixture +0x4d (subs_option.c) */
+void subs_option_match(uint32_t fixture);      /* bench and subs_used: a match that starts (init_match) */
+void subs_option_turn(void);                   /* bench and subs_used: the human's unplayed fixtures, once a game day */
 uint32_t win_press_count(void);                /* user32.c: the count of mouse presses so far */
 void win_sharp_picture_changed(void);          /* user32.c: applies the option sharp_picture at once */
 void win_picture_way(char *out, size_t n);    /* user32.c: how the picture is scaled now, for the display report */

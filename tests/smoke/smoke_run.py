@@ -208,7 +208,7 @@ SAME_SAVE_RUNS = [
              "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
              "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off",
              "money_scale": "off", "club_editor": "off", "shortlist_all": "off",
-             "value_range": "off", "hidden_tab": "off"}),
+             "value_range": "off", "hidden_tab": "off", "bench": "off", "subs_used": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
@@ -238,6 +238,8 @@ SAME_SAVE_RUNS = [
     # Hidden tab (fork): on, with no profile opened, must give the save of normal.
     ("hidden-on", {"faster_days": "off", "hidden_tab": "on"}),
     ("hidden-off", {"faster_days": "off", "hidden_tab": "off"}),
+    # Bench and substitutes used (fork): off must give the save of normal. On changes the matches on purpose.
+    ("subs-off", {"faster_days": "off", "bench": "off", "subs_used": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),
@@ -343,6 +345,7 @@ MATCH_RUNS = [
     ("range-off", {"value_range": "off"}),
     ("hidden-on", {"hidden_tab": "on"}),
     ("hidden-off", {"hidden_tab": "off"}),
+    ("subs-off", {"bench": "off", "subs_used": "off"}),
     ("rules-on", {"changing_rules": "on"}),
     ("rules-off", {"changing_rules": "off"}),
     ("sleep-off", {"_env": {"RECOMP_IDLE_SLEEP": "0"}}),
@@ -542,7 +545,7 @@ SEARCH_RUNS = [
 OPTIONS_OPEN = ["1000 click 45 344", "wait popup", "1000 click 175 417 | 225 525", "wait options"]
 OPTIONS_CLOSE = ["5500 click 444 524", "wait screen:0x7881e0"]
 OPTIONS_STEPS = OPTIONS_OPEN + [
-    "1000 click 444 155",                   # the Game tab
+    "1000 click 375 155",                   # the Game tab
     "2500 click 452 367",                   # Faster holidays: Off
     "4000 click 371 367",                   # Faster holidays: On
 ] + OPTIONS_CLOSE
@@ -558,11 +561,11 @@ OPTIONS_USER_SUB = "options-box-runs-" + "x" * 100
 def options_runs(load, holiday):
     """The runs of the options box check, each with its own steps."""
     switch = load + OPTIONS_STEPS + holiday
-    tabs = load + OPTIONS_OPEN + ["1000 click 444 155", "2500 click 304 155", "4000 click 444 155"] + OPTIONS_CLOSE + \
+    tabs = load + OPTIONS_OPEN + ["1000 click 375 155", "2500 click 235 155", "4000 click 375 155"] + OPTIONS_CLOSE + \
         holiday
-    rules = load + OPTIONS_OPEN + ["1000 click 444 155", "2500 click 452 437", "4000 click 371 437"] + \
+    rules = load + OPTIONS_OPEN + ["1000 click 375 155", "2500 click 452 437", "4000 click 371 437"] + \
         OPTIONS_CLOSE + holiday
-    backups = load + OPTIONS_OPEN + ["1000 click 444 155", "2500 click 452 402", "4000 click 371 402"] + \
+    backups = load + OPTIONS_OPEN + ["1000 click 375 155", "2500 click 452 402", "4000 click 371 402"] + \
         OPTIONS_CLOSE + holiday
 
     def run(name, steps):

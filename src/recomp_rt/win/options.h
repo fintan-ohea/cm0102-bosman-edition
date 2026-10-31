@@ -44,6 +44,8 @@ typedef enum {
     OPT_SHORTLIST_ALL,         /* switch, off: the Shortlist All button of Player & Staff Search (shortlist_all.c) */
     OPT_HIDDEN_TAB,            /* switch, off: hidden values: the profile's Hidden tab (hidden.c), ability filters (value_range.c) */
     OPT_VALUE_RANGE,           /* switch, off: From and To value amounts in the search Filters (value_range.c) */
+    OPT_BENCH,                 /* enum: off (default), 5 to 9: the named substitutes of every match (subs_option.c) */
+    OPT_SUBS_USED,             /* enum: off (default), 3 to 9: the substitutes used in every match (subs_option.c) */
     OPT_COUNT
 } OptionId;
 

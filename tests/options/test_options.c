@@ -129,6 +129,11 @@ int main(void)
     CHECK(strstr(get(), "hidden_tab = on shows the values the game keeps hidden") != NULL);
     CHECK(strstr(get(), "\nvalue_range = off\n") != NULL);
     CHECK(strstr(get(), "value_range = on adds From and To drop-downs") != NULL);
+    CHECK(strstr(get(), "\nbench = off\n") != NULL);
+    CHECK(strstr(get(), "bench = 5 to 9 names that many substitutes in every match") != NULL);
+    CHECK(strstr(get(), "\nsubs_used = off\n") != NULL);
+    CHECK(strstr(get(), "subs_used = 3 to 9 lets each side bring on that many substitutes") != NULL);
+    CHECK(options_enum(OPT_BENCH) == 0 && options_enum(OPT_SUBS_USED) == 0);
     CHECK(strstr(get(), "money_scale = 5, 7 or 10 shows every amount of money") != NULL);
     static char first[16384];
     snprintf(first, sizeof first, "%s", get());

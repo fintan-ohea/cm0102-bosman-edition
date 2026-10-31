@@ -87,6 +87,11 @@ static const OptionDef defs[OPT_COUNT] = {
     /* Fork of fintan-ohea: docs/specs/2026-10-24-money-scale-spec.md. */
     [OPT_MONEY_SCALE] = {"money_scale", KIND_ENUM, "off", "off|5|7|10",
         "money_scale = 5, 7 or 10 shows every amount of money (values, wages, fees, budgets, balances) that many times larger, for the money of today, and divides the amounts you enter by it. The game itself keeps its own amounts."},
+    /* Fork of fintan-ohea: substitutes of every match (subs_option.c). */
+    [OPT_BENCH] = {"bench", KIND_ENUM, "off", "off|5|6|7|8|9",
+        "bench = 5 to 9 names that many substitutes in every match, including matches already in the fixture list. off keeps the count of each competition: 5 in the original, the real count of the season with changing rules or a later start season. The match engine holds at most 9."},
+    [OPT_SUBS_USED] = {"subs_used", KIND_ENUM, "off", "off|3|4|5|6|7|8|9",
+        "subs_used = 3 to 9 lets each side bring on that many substitutes in every match, including matches already in the fixture list. off keeps the count of each competition: 3 in the original, the real count of the season with changing rules or a later start season."},
 };
 
 #define TEXT_MAX 1100
