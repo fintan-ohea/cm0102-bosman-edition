@@ -116,34 +116,49 @@ static void apply(uint32_t comp)
 void o_0048f2d0(void);
 RT_WRAP(0048f2d0, comp_set_fixture_subs)
 {
+    uint32_t fixture = rd32(g_mem, cpu.esp + 4);
     apply(cpu.ecx);
     o_0048f2d0();
+    if (!rt_unwinding) subs_option_fixture(fixture);   /* the options bench and subs_used (subs_option.c) */
 }
 
 /* AusNsl::set_fixture_substitutes 0x4124e0 (same arguments). */
 void o_004124e0(void);
 RT_WRAP(004124e0, aus_nsl_set_fixture_subs)
 {
+    uint32_t fixture = rd32(g_mem, cpu.esp + 4);
     apply(cpu.ecx);
     o_004124e0();
+    if (!rt_unwinding) subs_option_fixture(fixture);   /* the options bench and subs_used (subs_option.c) */
 }
 
 /* FraCup and FraLgeCup set_fixture_substitutes 0x5bb100. */
 void o_005bb100(void);
 RT_WRAP(005bb100, fra_cup_set_fixture_subs)
 {
+    uint32_t fixture = rd32(g_mem, cpu.esp + 4);
     apply(cpu.ecx);
     o_005bb100();
+    if (!rt_unwinding) subs_option_fixture(fixture);   /* the options bench and subs_used (subs_option.c) */
 }
 
 /* GreCup::set_fixture_substitutes 0x5ea3d0, thiscall (fixture), ret 4: the original writes the word (0x77 for
  * round 10, else 0x37) and ignores +0x49 and +0x4a, so the table's counts go into the nibbles afterwards. */
 void o_005ea3d0(void);
+static void gre_cup_rules(uint32_t comp, uint32_t fixture);
 RT_WRAP(005ea3d0, gre_cup_set_fixture_subs)
 {
     uint32_t comp = cpu.ecx, fixture = rd32(g_mem, cpu.esp + 4);
     o_005ea3d0();
-    if (rt_unwinding || !active() || !readable(comp) || !readable(fixture)) return;
+    if (rt_unwinding) return;
+    gre_cup_rules(comp, fixture);
+    subs_option_fixture(fixture);       /* the options bench and subs_used (subs_option.c) */
+}
+
+/* The table's counts for a Greek cup fixture, after the original wrote its word. */
+static void gre_cup_rules(uint32_t comp, uint32_t fixture)
+{
+    if (!active() || !readable(comp) || !readable(fixture)) return;
     const char *file = season_change_file(comp);
     int used = 0, bench = 0;
     int mask = strcmp(file, "?") ? lookup(file, season_of(comp), &used, &bench) : 0;

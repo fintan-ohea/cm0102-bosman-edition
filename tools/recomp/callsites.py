@@ -60,6 +60,22 @@ CALL_SITES = {
     # Options box (#56): the Game Settings item create of the side bar drop-down "Game Options" in 0x75db00
     # (docs/research/2026-10-16-options-screen.md, 1a). The new item follows it.
     "options_item": (0x760602, 0x55F990),
+    # Player editor (fork): the "Add/Edit Manager Note" item create of the profile's Action popup in 0x870700,
+    # made for every profile (docs/research/2026-10-24-player-editor-attributes.md). Edit player follows it.
+    "profile_note": (0x874653, 0x55F990),
+    # Club editor (fork): the tab bar of the club screen build 0x454900, with the ten entries of its tabs and
+    # links (docs/research/2026-10-25-club-editor.md). Edit Club joins them.
+    "club_tab_bar": (0x455243, 0x5ED780),
+    # Shortlist All (fork): the area of the Filters and Delete buttons of the Player & Staff Search build 0x808690,
+    # and the Filters button in it (docs/research/2026-10-25-shortlist-all.md). Shortlist All goes left of them.
+    "search_buttons_area": (0x80ACEA, 0x55FBA0),
+    "search_filters": (0x80AD2B, 0x8040A0),
+    # Hidden tab (fork): the tab bar of the profile build 0x870700 with its five tabs
+    # (docs/research/2026-10-30-hidden-attributes.md). Hidden joins them.
+    "profile_tab_bar": (0x874CC1, 0x5ED780),
+    # Value range (fork): the Range drop-down button of the Value row in the Filters build 0x8133a0
+    # (docs/research/2026-10-30-value-range.md). Its area and row take the From and To drop-downs.
+    "filters_value_band": (0x8167BC, 0x8040A0),
     # Options box (#56): the input poll of the main loop 0x7fc7e0. Its result goes to the Game Settings hook
     # test at 0x7fcd25.
     "main_poll": (0x7FCC14, 0x55F620),

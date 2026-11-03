@@ -61,6 +61,37 @@ static const OptionDef defs[OPT_COUNT] = {
     [OPT_SEASON] = {"season", KIND_ENUM, "2001/02",
         "2001/02|2002/03|2003/04|2004/05|2005/06|2006/07|2007/08|2008/09|2009/10|2010/11|2011/12|2012/13|2013/14|2014/15|2015/16|2016/17|2017/18|2018/19|2019/20|2020/21|2021/22|2022/23|2023/24|2024/25|2025/26",
         "season = the season of a new game, 2001/02 to 2025/26. The Choose Season screen sets it together with database."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-24-player-editor-spec.md. */
+    [OPT_PLAYER_EDITOR] = {"player_editor", KIND_SWITCH, "off", NULL,
+        "player_editor = on adds Edit player to the Action drop-down of a player's profile, and Edit coach to the profile of a coach or other staff member. It changes their attributes, current ability and potential ability, and marks the game as edited."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-24-training-assistant-spec.md. */
+    [OPT_TRAINING_ASSISTANT] = {"training_assistant", KIND_SWITCH, "off", NULL,
+        "training_assistant = on adds Training setup to the Assistant drop-down of your squad screen. It sets up training schedules for your first team."},
+    [OPT_TRAINING_CYCLE] = {"training_cycle", KIND_SWITCH, "off", NULL,
+        "training_cycle = on makes the Outfield schedule of the training assistant train Intensive from Sunday to Thursday and Medium on Friday and Saturday, every week."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-24-auto-scouting-spec.md. */
+    [OPT_AUTO_SCOUTING] = {"auto_scouting", KIND_SWITCH, "off", NULL,
+        "auto_scouting = on gives your free scouts duties on their own and turns what they find into Scout reports, in the Assistant drop-down of your squad screen."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-25-club-editor-spec.md. */
+    [OPT_CLUB_EDITOR] = {"club_editor", KIND_SWITCH, "off", NULL,
+        "club_editor = on adds an Edit Club tab to the club screen. It changes the club's money, reputation, facilities, board confidence and stadium, and marks the game as edited."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-25-shortlist-all-spec.md. */
+    [OPT_SHORTLIST_ALL] = {"shortlist_all", KIND_SWITCH, "off", NULL,
+        "shortlist_all = on adds a Shortlist All button to Player & Staff Search. It adds every person the list shows, after its filters, to your shortlist."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-30-hidden-tab-spec.md. */
+    [OPT_HIDDEN_TAB] = {"hidden_tab", KIND_SWITCH, "off", NULL,
+        "hidden_tab = on shows the values the game keeps hidden: a Hidden tab on a player's profile with current and potential ability and attributes such as Consistency, Important Matches, Injury Proneness, Ambition and Professionalism, and Ability and Potential minimums on the Attributes page of the search Filters."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-30-value-range-spec.md. */
+    [OPT_VALUE_RANGE] = {"value_range", KIND_SWITCH, "off", NULL,
+        "value_range = on adds From and To drop-downs to the Value row of the search Filters, so a search lists the players whose value lies between the two amounts."},
+    /* Fork of fintan-ohea: docs/specs/2026-10-24-money-scale-spec.md. */
+    [OPT_MONEY_SCALE] = {"money_scale", KIND_ENUM, "off", "off|5|7|10",
+        "money_scale = 5, 7 or 10 shows every amount of money (values, wages, fees, budgets, balances) that many times larger, for the money of today, and divides the amounts you enter by it. The game itself keeps its own amounts."},
+    /* Fork of fintan-ohea: substitutes of every match (subs_option.c). */
+    [OPT_BENCH] = {"bench", KIND_ENUM, "off", "off|5|6|7|8|9",
+        "bench = 5 to 9 names that many substitutes in every match, including matches already in the fixture list. off keeps the count of each competition: 5 in the original, the real count of the season with changing rules or a later start season. The match engine holds at most 9."},
+    [OPT_SUBS_USED] = {"subs_used", KIND_ENUM, "off", "off|3|4|5|6|7|8|9",
+        "subs_used = 3 to 9 lets each side bring on that many substitutes in every match, including matches already in the fixture list. off keeps the count of each competition: 3 in the original, the real count of the season with changing rules or a later start season."},
 };
 
 #define TEXT_MAX 1100

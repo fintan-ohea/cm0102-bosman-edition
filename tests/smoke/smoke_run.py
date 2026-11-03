@@ -37,8 +37,9 @@ With --save, each run loads that saved test game (tests/fixtures/fixtures.py) in
 takes the same Go on Holiday steps. The game is saved n game days after the load.
 
 Search check (--same-save --save <name> --search): the runs open the player search and close it before
-the holiday: search-off, search-on and search-on-again (full_player_search). Each save is compared with
-the save of search-off.
+the holiday: search-off, search-on and search-on-again (full_player_search), and shortlist-on and
+shortlist-off (shortlist_all, whose button the screen then shows). Each save is compared with the save of
+search-off.
 
 Options box check (--same-save --save <name> --options): the runs open the Bosman Edition Options box from the
 side bar before the holiday (0.5.0 slice 6). options and options-again switch Faster holidays off and on and
@@ -204,11 +205,41 @@ SAME_SAVE_RUNS = [
              "clickable_names": "off", "attribute_colours": "off", "faster_days": "off",
              "match_columns": "off", "condition_colours": "off", "save_backups": "off", "remember_window": "off",
              "squad_views": "off", "attribute_groups": "off", "foreign_colours": "off",
-             "full_player_search": "off", "changing_rules": "off"}),
+             "full_player_search": "off", "changing_rules": "off", "player_editor": "off",
+             "training_assistant": "off", "training_cycle": "off", "auto_scouting": "off",
+             "money_scale": "off", "club_editor": "off", "shortlist_all": "off",
+             "value_range": "off", "hidden_tab": "off", "bench": "off", "subs_used": "off"}),
     ("foreign-on", {"faster_days": "off", "foreign_colours": "on"}),
     ("foreign-off", {"faster_days": "off", "foreign_colours": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
     ("search-off", {"faster_days": "off", "full_player_search": "off"}),
+    # Player editor (fork): on, with the box never opened, must give the save of normal.
+    ("editor-on", {"faster_days": "off", "player_editor": "on"}),
+    ("editor-off", {"faster_days": "off", "player_editor": "off"}),
+    # Training assistant (fork): on, with the box never opened, must give the save of normal.
+    ("training-on", {"faster_days": "off", "training_assistant": "on"}),
+    ("training-off", {"faster_days": "off", "training_assistant": "off"}),
+    # The cycle (fork) acts only on the assistant's Outfield schedule, which a new game does not have.
+    ("cycle-on", {"faster_days": "off", "training_assistant": "on", "training_cycle": "on"}),
+    # Automatic scouting (fork): off must give the save of normal. On changes the game on purpose (the scouts work).
+    ("scouting-off", {"faster_days": "off", "auto_scouting": "off"}),
+    # Money scale (fork): only what is shown and entered changes; the game's logic runs with its own rates.
+    ("money-7", {"faster_days": "off", "money_scale": "7"}),
+    ("money-off", {"faster_days": "off", "money_scale": "off"}),
+    # Club editor (fork): on, with the tab never opened, must give the save of normal.
+    ("club-on", {"faster_days": "off", "club_editor": "on"}),
+    ("club-off", {"faster_days": "off", "club_editor": "off"}),
+    # Shortlist All (fork): on, with the button never clicked, must give the save of normal.
+    ("shortlist-on", {"faster_days": "off", "shortlist_all": "on"}),
+    ("shortlist-off", {"faster_days": "off", "shortlist_all": "off"}),
+    # Value range (fork): on, with the Filters never opened, must give the save of normal.
+    ("range-on", {"faster_days": "off", "value_range": "on"}),
+    ("range-off", {"faster_days": "off", "value_range": "off"}),
+    # Hidden tab (fork): on, with no profile opened, must give the save of normal.
+    ("hidden-on", {"faster_days": "off", "hidden_tab": "on"}),
+    ("hidden-off", {"faster_days": "off", "hidden_tab": "off"}),
+    # Bench and substitutes used (fork): off must give the save of normal. On changes the matches on purpose.
+    ("subs-off", {"faster_days": "off", "bench": "off", "subs_used": "off"}),
     # Changing rules (0.6.0 slice 11): a new game with it on gets the season part bosman_season.dat in its save
     # and must equal the game with it off in every other part (RULES_PART). A loaded old save has it off.
     ("rules-on", {"faster_days": "off", "changing_rules": "on"}),
@@ -299,6 +330,22 @@ MATCH_RUNS = [
     ("foreign-off", {"foreign_colours": "off"}),
     ("search-on", {"full_player_search": "on"}),
     ("search-off", {"full_player_search": "off"}),
+    ("editor-on", {"player_editor": "on"}),
+    ("editor-off", {"player_editor": "off"}),
+    ("training-on", {"training_assistant": "on"}),
+    ("training-off", {"training_assistant": "off"}),
+    ("cycle-on", {"training_assistant": "on", "training_cycle": "on"}),
+    ("money-7", {"money_scale": "7"}),
+    ("money-off", {"money_scale": "off"}),
+    ("club-on", {"club_editor": "on"}),
+    ("club-off", {"club_editor": "off"}),
+    ("shortlist-on", {"shortlist_all": "on"}),
+    ("shortlist-off", {"shortlist_all": "off"}),
+    ("range-on", {"value_range": "on"}),
+    ("range-off", {"value_range": "off"}),
+    ("hidden-on", {"hidden_tab": "on"}),
+    ("hidden-off", {"hidden_tab": "off"}),
+    ("subs-off", {"bench": "off", "subs_used": "off"}),
     ("rules-on", {"changing_rules": "on"}),
     ("rules-off", {"changing_rules": "off"}),
     ("sleep-off", {"_env": {"RECOMP_IDLE_SLEEP": "0"}}),
@@ -486,6 +533,9 @@ SEARCH_RUNS = [
     ("search-off", {"faster_days": "off", "full_player_search": "off"}),
     ("search-on", {"faster_days": "off", "full_player_search": "on"}),
     ("search-on-again", {"faster_days": "off", "full_player_search": "on"}),
+    # Shortlist All (fork): the screen shows the button but nobody clicks it.
+    ("shortlist-on", {"faster_days": "off", "shortlist_all": "on"}),
+    ("shortlist-off", {"faster_days": "off", "shortlist_all": "off"}),
 ]
 
 
@@ -495,7 +545,7 @@ SEARCH_RUNS = [
 OPTIONS_OPEN = ["1000 click 45 344", "wait popup", "1000 click 175 417 | 225 525", "wait options"]
 OPTIONS_CLOSE = ["5500 click 444 524", "wait screen:0x7881e0"]
 OPTIONS_STEPS = OPTIONS_OPEN + [
-    "1000 click 584 155",                   # the Game tab
+    "1000 click 375 155",                   # the Game tab
     "2500 click 452 367",                   # Faster holidays: Off
     "4000 click 371 367",                   # Faster holidays: On
 ] + OPTIONS_CLOSE
@@ -511,11 +561,11 @@ OPTIONS_USER_SUB = "options-box-runs-" + "x" * 100
 def options_runs(load, holiday):
     """The runs of the options box check, each with its own steps."""
     switch = load + OPTIONS_STEPS + holiday
-    tabs = load + OPTIONS_OPEN + ["1000 click 584 155", "2500 click 304 155", "4000 click 584 155"] + OPTIONS_CLOSE + \
+    tabs = load + OPTIONS_OPEN + ["1000 click 375 155", "2500 click 235 155", "4000 click 375 155"] + OPTIONS_CLOSE + \
         holiday
-    rules = load + OPTIONS_OPEN + ["1000 click 584 155", "2500 click 452 437", "4000 click 371 437"] + \
+    rules = load + OPTIONS_OPEN + ["1000 click 375 155", "2500 click 452 437", "4000 click 371 437"] + \
         OPTIONS_CLOSE + holiday
-    backups = load + OPTIONS_OPEN + ["1000 click 584 155", "2500 click 452 402", "4000 click 371 402"] + \
+    backups = load + OPTIONS_OPEN + ["1000 click 375 155", "2500 click 452 402", "4000 click 371 402"] + \
         OPTIONS_CLOSE + holiday
 
     def run(name, steps):
@@ -546,6 +596,11 @@ RULES_ON_PARTS = ("fifa_rankings.dat", "general.dat", "national_teams.dat", "sta
 # top row's layout (Q422) meets the memory move that those options already make (foreign_colours draws names in
 # another colour); it is not decision code. Only those two runs of the new-game check use this.
 NEW_GAME_LAYOUT_PARTS = ("club records.dat",)
+# Club editor (fork): with club_editor on, the club screen's tab bar 0x5ed780 copies 11 entries in place of 10 into
+# its heap block, and the new game shows the club screen. In a 14-day run (2026-10-25) the save differed from
+# normal only in these two parts, in 202 bytes that are all heap addresses the game writes as they are, every one
+# 0x930 higher; no other byte of the save differs. Only the club-on run of the new-game check uses this.
+CLUB_EDITOR_LAYOUT_PARTS = ("general.dat", "staff history.tmp")
 
 
 # A saved test game that opens on another screen than the news ends its load at another wait (0.6.0 slice 11).
@@ -566,7 +621,7 @@ def same_save(program, game, mode, days, save_name=None, search=False, options=F
         return compare_runs(program, game, mode, new_game_runs(SAME_SAVE_RUNS),
                             without_intro_click(steps) + ["400000 quit"], days,
                             allowed={"rules-on": (RULES_PART,) + RULES_ON_PARTS, "off": NEW_GAME_LAYOUT_PARTS,
-                                     "foreign-off": NEW_GAME_LAYOUT_PARTS},
+                                     "foreign-off": NEW_GAME_LAYOUT_PARTS, "club-on": CLUB_EDITOR_LAYOUT_PARTS},
                             required={"rules-on": RULES_PART}, text_050=True)
     # --save: load the saved test game, then the same Go on Holiday steps as the new game.
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fixtures"))

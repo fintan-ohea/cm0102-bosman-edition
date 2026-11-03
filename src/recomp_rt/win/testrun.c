@@ -47,6 +47,9 @@ void o_005cde40(void);
 RT_WRAP(005cde40, human_turn)
 {
     holiday_next_turn();
+    training_turn();               /* the weekly cycle of the training assistant (training.c, fork) */
+    scouting_turn();               /* automatic scouting (scouting.c, fork) */
+    subs_option_turn();            /* the options bench and subs_used (subs_option.c, fork) */
     season_log_turn();
     season_dates_log_turn();
     season_history_log_turn();

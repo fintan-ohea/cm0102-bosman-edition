@@ -127,6 +127,29 @@ int options_screen_open(int from);             /* pushes the box (from: 1 start 
 void options_screen_after_poll(uint32_t ret, uint32_t display, uint32_t widget);   /* after each input poll */
 int options_screen_widget_before(void);        /* at each widget create: 1 for the Game Settings item */
 void options_screen_widget_after(void);        /* after that create: adds the Bosman Edition Options item */
+/* The player editor (editor.c, fork). */
+int editor_widget_before(void);                /* at each widget create: 1 for the profile's Manager Note item */
+void editor_widget_after(void);                /* after that create: adds Edit player for a player */
+int editor_game_edited(void);                  /* 1 when the game that runs has an edit */
+void editor_saved(const char *path);           /* after a save that wrote path: adds the edited mark */
+void editor_loading(const char *path);         /* before a load of path: reads its edited mark */
+void editor_loaded(int ok);                    /* after that load */
+void editor_new_game(void);                    /* a new game has no edit */
+void editor_mark_edited(void);                 /* marks the game as edited (the club editor too) */
+uint32_t editor_finance(uint32_t club);        /* the club's finance record, 0 for none */
+int64_t editor_adjustment(int32_t club);       /* the club's transfer funds adjustment */
+int editor_set_adjustment(int32_t club, int64_t amount);   /* 0 when the table is full */
+int64_t editor_funds(uint32_t finance);        /* the transfer funds, with the adjustment */
+void editor_money_text(int64_t v, int round, char *out, size_t room);   /* money as shown */
+int club_editor_input(int16_t widget);         /* the club screen input: 1 when the Edit Club tab took it */
+void shortlist_all_area_before(void);          /* the area create: the row of Filters and Delete (shortlist_all.c) */
+int shortlist_all_cell_button(void);           /* the cell button create: 1 when it made Filters and Shortlist All */
+int hidden_tab_bar(void);
+int hidden_profile_input(void);                /* the profile input on the Hidden tab: 1 when it handled it */                      /* the tab bar: 1 when it was the profile's (hidden.c) */
+void value_range_cell_button(void);            /* the cell button create: the Value row of the search Filters */
+void subs_option_fixture(uint32_t fixture);    /* bench and subs_used: the two nibbles of fixture +0x4d (subs_option.c) */
+void subs_option_match(uint32_t fixture);      /* bench and subs_used: a match that starts (init_match) */
+void subs_option_turn(void);                   /* bench and subs_used: the human's unplayed fixtures, once a game day */
 uint32_t win_press_count(void);                /* user32.c: the count of mouse presses so far */
 void win_sharp_picture_changed(void);          /* user32.c: applies the option sharp_picture at once */
 void win_picture_way(char *out, size_t n);    /* user32.c: how the picture is scaled now, for the display report */
@@ -176,6 +199,23 @@ int picker_attribute_known(uint32_t viewer, uint32_t staff, uint32_t k);
 int picker_check_turn(void);                   /* at each human turn: the picker check; 1 when done */
 /* The Team views screen (views.c): pushes it for a club and team (0 = first team) of a squad screen. */
 void views_open(uint32_t club, uint32_t team);
+int training_open(uint32_t club);              /* the training assistant (training.c, fork); 0 when it fails */
+void training_turn(void);                      /* each human turn: the weekly cycle (training.c) */
+void scouting_turn(void);                      /* each human turn: automatic scouting (scouting.c, fork) */
+int scouting_open(void);                       /* the Scout reports box; 0 when it fails */
+void scouting_saved(const char *path);         /* after a save that wrote path: adds the reports */
+void scouting_loading(const char *path);       /* before a load of path: reads its reports */
+void scouting_loaded(int ok);                  /* after that load */
+void scouting_new_game(void);                  /* a new game has no reports */
+int scouting_news_item(uint32_t item);          /* 1 for the weekly news item of scouting.c */
+int scouting_news_write(uint32_t item, uint32_t text, int full);  /* its headline or body; 0 for other items */
+int money_factor(void);                        /* money_scale: 1, 5, 7 or 10 (money.c, fork) */
+void money_apply(void);                        /* after money_scale changes: sets the game's rates again */
+int64_t money_shown(int64_t v);                /* an amount of the game as the player sees it (currency, scale) */
+int64_t money_internal(int64_t shown);         /* an amount the player sees as the game keeps it */
+/* Parts of the fork in a saved game (savepart.c): write 0 on success; read the size, 0 none, -1 damaged. */
+int savepart_write(const char *host, const char *name, const uint8_t *data, uint32_t size);
+int savepart_read(const char *host, const char *name, uint8_t *data, uint32_t room);
 uint32_t columns_attribute_colour(int value);   /* 1 to 20: the attribute colour (RGB565), else 0 */
 void views_widget_drawn(uint32_t widget);      /* after the game draws a widget: the pitch */
 /* Faster commentary (commentary.c): at each widget create, before the rect is scaled. */

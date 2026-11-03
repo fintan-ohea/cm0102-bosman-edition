@@ -35,6 +35,17 @@ typedef enum {
     OPT_FULL_PLAYER_SEARCH,    /* switch, off: the player search lists every player (playersearch.c) */
     OPT_CHANGING_RULES,        /* switch, on: the default of changing rules for a new game (season.c) */
     OPT_SEASON,                /* enum: 2001/02 (default) to 2025/26: the season of a new game (season_screen.c) */
+    OPT_PLAYER_EDITOR,         /* switch, off: Edit player in the profile's Action drop-down (editor.c) */
+    OPT_TRAINING_ASSISTANT,    /* switch, off: Training setup in the squad's Assistant drop-down (training.c) */
+    OPT_TRAINING_CYCLE,        /* switch, off: the weekly Intensive/Medium cycle of the Outfield schedule (training.c) */
+    OPT_AUTO_SCOUTING,         /* switch, off: free scouts get duties and file reports on their own (scouting.c) */
+    OPT_MONEY_SCALE,           /* enum: off (default), 5, 7, 10: every amount shown x the factor (money.c) */
+    OPT_CLUB_EDITOR,           /* switch, off: the Edit Club tab of the club screen (club_editor.c) */
+    OPT_SHORTLIST_ALL,         /* switch, off: the Shortlist All button of Player & Staff Search (shortlist_all.c) */
+    OPT_HIDDEN_TAB,            /* switch, off: hidden values: the profile's Hidden tab (hidden.c), ability filters (value_range.c) */
+    OPT_VALUE_RANGE,           /* switch, off: From and To value amounts in the search Filters (value_range.c) */
+    OPT_BENCH,                 /* enum: off (default), 5 to 9: the named substitutes of every match (subs_option.c) */
+    OPT_SUBS_USED,             /* enum: off (default), 3 to 9: the substitutes used in every match (subs_option.c) */
     OPT_COUNT
 } OptionId;
 

@@ -78,6 +78,12 @@ static void check_defaults(void)
     CHECK(options_enum(OPT_DATABASE) == DATABASE_3968);
     CHECK(!strcmp(options_string(OPT_DATABASE), "3.9.68"));
     CHECK(options_enum(OPT_SEASON) == 0 && !strcmp(options_string(OPT_SEASON), "2001/02"));
+    CHECK(options_bool(OPT_PLAYER_EDITOR) == 0);
+    CHECK(options_bool(OPT_TRAINING_ASSISTANT) == 0);
+    CHECK(options_bool(OPT_TRAINING_CYCLE) == 0);
+    CHECK(options_bool(OPT_AUTO_SCOUTING) == 0);
+    CHECK(options_enum(OPT_MONEY_SCALE) == 0 && !strcmp(options_string(OPT_MONEY_SCALE), "off"));
+    CHECK(options_bool(OPT_CLUB_EDITOR) == 0);
 }
 
 int main(void)
@@ -107,6 +113,28 @@ int main(void)
     CHECK(strstr(get(), "changing_rules = on lets the rules of each league and cup change each July") != NULL);
     CHECK(strstr(get(), "\nseason = 2001/02\n") != NULL);
     CHECK(strstr(get(), "season = the season of a new game, 2001/02 to 2025/26.") != NULL);
+    CHECK(strstr(get(), "\nplayer_editor = off\n") != NULL);
+    CHECK(strstr(get(), "player_editor = on adds Edit player to the Action drop-down") != NULL);
+    CHECK(strstr(get(), "\ntraining_assistant = off\n") != NULL);
+    CHECK(strstr(get(), "training_assistant = on adds Training setup to the Assistant drop-down") != NULL);
+    CHECK(strstr(get(), "\ntraining_cycle = off\n") != NULL);
+    CHECK(strstr(get(), "training_cycle = on makes the Outfield schedule") != NULL);
+    CHECK(strstr(get(), "\nauto_scouting = off\n") != NULL);
+    CHECK(strstr(get(), "auto_scouting = on gives your free scouts duties") != NULL);
+    CHECK(strstr(get(), "\nmoney_scale = off\n") != NULL);
+    CHECK(strstr(get(), "\nclub_editor = off\n") != NULL);
+    CHECK(strstr(get(), "\nshortlist_all = off\n") != NULL);
+    CHECK(strstr(get(), "shortlist_all = on adds a Shortlist All button") != NULL);
+    CHECK(strstr(get(), "\nhidden_tab = off\n") != NULL);
+    CHECK(strstr(get(), "hidden_tab = on shows the values the game keeps hidden") != NULL);
+    CHECK(strstr(get(), "\nvalue_range = off\n") != NULL);
+    CHECK(strstr(get(), "value_range = on adds From and To drop-downs") != NULL);
+    CHECK(strstr(get(), "\nbench = off\n") != NULL);
+    CHECK(strstr(get(), "bench = 5 to 9 names that many substitutes in every match") != NULL);
+    CHECK(strstr(get(), "\nsubs_used = off\n") != NULL);
+    CHECK(strstr(get(), "subs_used = 3 to 9 lets each side bring on that many substitutes") != NULL);
+    CHECK(options_enum(OPT_BENCH) == 0 && options_enum(OPT_SUBS_USED) == 0);
+    CHECK(strstr(get(), "money_scale = 5, 7 or 10 shows every amount of money") != NULL);
     static char first[16384];
     snprintf(first, sizeof first, "%s", get());
     options_load(path);                         /* a second start changes nothing */
@@ -180,6 +208,49 @@ int main(void)
     put("full_player_search = maybe\n");
     options_load(path);
     CHECK(options_bool(OPT_FULL_PLAYER_SEARCH) == 0);
+
+    /* 5b2. player_editor (fork): off by default, on when the file says so. A bad word keeps off. */
+    put("player_editor = on\n");
+    options_load(path);
+    CHECK(options_bool(OPT_PLAYER_EDITOR) == 1);
+    put("player_editor = maybe\n");
+    options_load(path);
+    CHECK(options_bool(OPT_PLAYER_EDITOR) == 0);
+
+    /* 5b3. training_assistant (fork): off by default, on when the file says so. */
+    put("training_assistant = on\n");
+    options_load(path);
+    CHECK(options_bool(OPT_TRAINING_ASSISTANT) == 1);
+    put("training_assistant = sometimes\n");
+    options_load(path);
+    CHECK(options_bool(OPT_TRAINING_ASSISTANT) == 0);
+
+    /* 5b4. training_cycle (fork): off by default, on when the file says so. */
+    put("training_cycle = on\n");
+    options_load(path);
+    CHECK(options_bool(OPT_TRAINING_CYCLE) == 1);
+    put("training_cycle = weekly\n");
+    options_load(path);
+    CHECK(options_bool(OPT_TRAINING_CYCLE) == 0);
+
+    /* 5b5. auto_scouting (fork): off by default, on when the file says so. */
+    put("auto_scouting = on\n");
+    options_load(path);
+    CHECK(options_bool(OPT_AUTO_SCOUTING) == 1);
+    put("auto_scouting = always\n");
+    options_load(path);
+    CHECK(options_bool(OPT_AUTO_SCOUTING) == 0);
+
+    /* 5b6. money_scale (fork): off by default; 5, 7 or 10; a bad value keeps off. */
+    put("money_scale = 7\n");
+    options_load(path);
+    CHECK(options_enum(OPT_MONEY_SCALE) == 2);
+    put("money_scale = 8\n");
+    options_load(path);
+    CHECK(options_enum(OPT_MONEY_SCALE) == 0);
+    CHECK(options_set(OPT_MONEY_SCALE, "10") == 1 && options_enum(OPT_MONEY_SCALE) == 3);
+    CHECK(options_set(OPT_MONEY_SCALE, "x7") == 0 && options_enum(OPT_MONEY_SCALE) == 3);
+    CHECK(options_set(OPT_MONEY_SCALE, "off") == 1 && options_enum(OPT_MONEY_SCALE) == 0);
 
     /* 5c. changing_rules (0.6.0 slice 11): on by default, off when the file says so. A bad word keeps on. */
     put("changing_rules = off\n");

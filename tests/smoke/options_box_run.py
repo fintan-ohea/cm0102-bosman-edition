@@ -47,7 +47,7 @@ import smoke_run  # noqa: E402
 
 # Positions for 800x600. The box scales as every area does. The side bar drop-down items keep their size,
 # so the item has its own widescreen position after "|". Box rows: y = 192 + 35 * row; On and the
-# first value at x 371, Off and the second value at 452; tabs Screen 304, Game 584 at y 155; Close 444, 524.
+# first value at x 371, Off and the second value at 452; tabs Graphics 235, Game 375, Tools 514, Match 654 at y 155 (four tabs); Close 444, 524.
 GAME_OPTIONS = "click 45 344"
 OPTIONS_ITEM = "click 175 417 | 225 525"
 SIDE_STEPS = [
@@ -60,7 +60,7 @@ SIDE_STEPS = [
     "14000 dump {d}/screen.bmp",
     "15000 click 452 332",                      # Attribute colours: Off
     "16500 dump {d}/screen-off.bmp",
-    "17500 click 584 155",                      # the Game tab
+    "17500 click 375 155",                      # the Game tab
     "19000 dump {d}/game.bmp",
     "20000 click 452 402",                      # Save backups: Off
     "21500 dump {d}/game-off.bmp",
@@ -98,7 +98,7 @@ START_STEPS = fixtures.LOAD_STEPS[:fixtures.LOAD_STEPS.index("wait setup") + 1] 
     "4500 click 452 227",                       # Sharp picture: Off
     "5000 dump {d}/box-sharp-off.bmp",
     "5500 click 371 227",                       # Sharp picture: On
-    "6000 click 584 155",                       # the Game tab
+    "6000 click 375 155",                       # the Game tab
     "7000 dump {d}/game.bmp",
     "7500 click 444 524",                       # Close
     "wait setup",

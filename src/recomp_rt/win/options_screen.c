@@ -46,7 +46,7 @@
  * it. A switch in the box does not change the game: smoke_run.py --same-save --options compares two
  * switches with two tab clicks.
  *
- * Node slots: 0 the tab (1 Graphics, 2 Game), 1 the place that opened the box (1 start screen, 2 game). Only
+ * Node slots: 0 the tab (1 Graphics, 2 Game, 3 Tools, 4 Match), 1 the place that opened the box (1 start screen, 2 game). Only
  * numbers, so the box needs no leave function. */
 #include "win.h"
 #include "options.h"
@@ -91,7 +91,8 @@ extern const uint32_t rt_site_options_item, rt_site_main_poll;
 #define BUTTON_TEXT 0xae3184u
 
 #define VALUE_ID 0x7d3au            /* data: row index * 16 + value index. Ids that the original does not use. */
-#define TAB_ID 0x7d3bu              /* data: the tab, 1 or 2 */
+#define TAB_ID 0x7d3bu              /* data: the tab, 1 to TABS */
+#define TABS 4                      /* Graphics, Game, Tools (fork: player_editor) and Match (fork: bench) */
 #define CLOSE_ID 0x7d3cu
 #define ITEM_ID 0x4b8u              /* the side bar item; the side bar input 0x7615d0 uses no such id */
 #define REBUILD 0xfffffff5u         /* -0xb: build the box again */
@@ -100,10 +101,10 @@ extern const uint32_t rt_site_options_item, rt_site_main_poll;
 #define ROWS 9
 #define TEXT_SIZE 0x200u
 
-typedef enum { ROW_SWITCH, ROW_DISPLAY, ROW_PATH } RowKind;
+typedef enum { ROW_SWITCH, ROW_DISPLAY, ROW_PATH, ROW_SCALE, ROW_STEP } RowKind;   /* ROW_STEP: - value + */
 
 typedef struct {
-    int tab;                        /* 1 Graphics, 2 Game */
+    int tab;                        /* 1 Graphics, 2 Game, 3 Tools, 4 Match */
     OptionId id;
     RowKind kind;
     const char *label;
@@ -129,12 +130,30 @@ static const Row rows[] = {
     {2, OPT_SAVE_BACKUPS, ROW_SWITCH, "Save backups", ""},
     {2, OPT_CHANGING_RULES, ROW_SWITCH, "Changing rules", "Default for a new game\nSetup Game sets each game"},
     {2, OPT_SAVE_FOLDER, ROW_PATH, "Save folder", "Applies at the next start\nOld saves do not move"},
+    {3, OPT_PLAYER_EDITOR, ROW_SWITCH, "Player editor", "Edit player in the\nprofile's Action menu"},
+    {3, OPT_TRAINING_ASSISTANT, ROW_SWITCH, "Training assistant", "Training setup in the\nsquad's Assistant menu"},
+    {3, OPT_TRAINING_CYCLE, ROW_SWITCH, "Training cycle", "Outfield: Intensive Sun-Thu,\nMedium Fri-Sat"},
+    {3, OPT_AUTO_SCOUTING, ROW_SWITCH, "Automatic scouting", "Free scouts get duties;\nScout reports in Assistant"},
+    {3, OPT_CLUB_EDITOR, ROW_SWITCH, "Club editor", "Edit Club tab on the\nclub screen"},
+    {3, OPT_SHORTLIST_ALL, ROW_SWITCH, "Shortlist all", "Button on Player &\nStaff Search"},
+    {3, OPT_HIDDEN_TAB, ROW_SWITCH, "Hidden values", "Profile tab and ability\nin search Filters"},
+    {3, OPT_VALUE_RANGE, ROW_SWITCH, "Value range", "From and To on the Value\nrow of search Filters"},
+    {3, OPT_MONEY_SCALE, ROW_SCALE, "Money scale", "All money shown x factor,\nfor today's amounts"},
+    {4, OPT_BENCH, ROW_STEP, "Bench", "Substitutes named in every\nmatch, also fixtures made"},
+    {4, OPT_SUBS_USED, ROW_STEP, "Substitutes used", "Substitutions in every\nmatch, also fixtures made"},
 };
 #define ROW_COUNT ((int)(sizeof rows / sizeof rows[0]))
 
 static const char *const switch_text[] = {"On", "Off"}, *const switch_word[] = {"on", "off"};
 static const char *const display_text[] = {"Widescreen", "Classic"};
 static const char *const display_word[] = {"widescreen", "classic"};
+static const char *const scale_text[] = {"Off", "x5", "x7", "x10"}, *const scale_word[] = {"off", "5", "7", "10"};
+/* The values of a step row, as in its list in options.c: off, then counts from the first. */
+static const char *const step_word[] = {"off", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+
+static int step_first(OptionId id) { return id == OPT_BENCH ? 5 : 3; }
+static int step_count(OptionId id) { return 10 - step_first(id) + 1; }   /* off and first..9 */
+static const char *step_value(OptionId id, int index) { return index > 0 ? step_word[step_first(id) + index - 1] : "off"; }
 
 /* Game memory for the texts and the column weights. The create functions copy each text. */
 static uint32_t scratch;
@@ -260,7 +279,7 @@ static void folder_text(char *out, size_t room)
 static int current_index(const Row *r)
 {
     if (r->kind == ROW_SWITCH) return options_bool(r->id) ? 0 : 1;
-    if (r->kind == ROW_DISPLAY) return options_enum(r->id);
+    if (r->kind == ROW_DISPLAY || r->kind == ROW_SCALE || r->kind == ROW_STEP) return options_enum(r->id);
     return 0;
 }
 
@@ -269,6 +288,8 @@ static int current_index(const Row *r)
  * column. */
 static const uint8_t weights_two[] = {38, 17, 17, 48};
 static const uint8_t weights_path[] = {38, 44, 15, 28};
+static const uint8_t weights_scale[] = {38, 9, 9, 9, 9, 46};
+static const uint8_t weights_step[] = {38, 9, 18, 9, 46};
 #define ROW_X1 160
 #define ROW_X2 729
 
@@ -322,6 +343,28 @@ static void build_row(const Row *r, int index, int y1, int y2, uint32_t green, u
         return;
     }
     int cur = current_index(r);
+    if (r->kind == ROW_STEP) {
+        int a = area(ROW_X1, y1, ROW_X2, y2, 5, weights_step, 1, 0);
+        plain(a, 0, r->label, 3, light);
+        if (cur > 0) choice(a, 1, "-", VALUE_ID, (uint32_t)index * 16u + (uint32_t)(cur - 1), green);
+        current(a, 2, cur > 0 ? step_value(r->id, cur) : "Off");
+        if (cur + 1 < step_count(r->id))
+            choice(a, 3, "+", VALUE_ID, (uint32_t)index * 16u + (uint32_t)(cur + 1), green);
+        note(index == failed_row ? "Not saved: settings.txt\ncannot be written" : r->note, weights_step, 5, y1, y2,
+             light);
+        return;
+    }
+    if (r->kind == ROW_SCALE) {
+        int a = area(ROW_X1, y1, ROW_X2, y2, 6, weights_scale, 1, 0);
+        plain(a, 0, r->label, 3, light);
+        for (int i = 0; i < 4; i++) {
+            if (i == cur) current(a, i + 1, scale_text[i]);
+            else choice(a, i + 1, scale_text[i], VALUE_ID, (uint32_t)index * 16u + (uint32_t)i, green);
+        }
+        note(index == failed_row ? "Not saved: settings.txt\ncannot be written" : r->note, weights_scale, 6, y1, y2,
+             light);
+        return;
+    }
     int a = area(ROW_X1, y1, ROW_X2, y2, 4, weights_two, 1, 0);
     plain(a, 0, r->label, 3, light);
     for (int i = 0; i < 2; i++) {
@@ -339,7 +382,7 @@ static void options_build(void)
 {
     if (!scratch) scratch = rt_alloc_zero(TEXT_SIZE + 16);
     int tab = (int)node_slot(0);
-    if (tab != 1 && tab != 2) {
+    if (tab < 1 || tab > TABS) {
         tab = 1;
         set_slot(0, 1);
     }
@@ -356,10 +399,10 @@ static void options_build(void)
     box_text(165, 115, 420, 135, 1, 0, 1, 1, light, "Bosman Edition " CM0102_VERSION);
     box_text(490, 115, 724, 135, 1, 0, 1, 1, light, "Changes save at once to settings.txt");
 
-    /* The tabs: the open tab as a framed label, the other as a button. */
-    int t = area(165, 142, 724, 168, 2, NULL, 1, 0);
-    static const char *const tab_names[2] = {"Graphics", "Game"};
-    for (int i = 1; i <= 2; i++) {
+    /* The tabs: the open tab as a framed label, the others as buttons. */
+    int t = area(165, 142, 724, 168, TABS, NULL, 1, 0);
+    static const char *const tab_names[TABS] = {"Graphics", "Game", "Tools", "Match"};
+    for (int i = 1; i <= TABS; i++) {
         if (i == tab) current(t, i - 1, tab_names[i - 1]);
         else choice(t, i - 1, tab_names[i - 1], TAB_ID, (uint32_t)i, green);
     }
@@ -419,6 +462,8 @@ static void apply(const Row *r, int index, int value)
     const char *word = NULL;
     if (r->kind == ROW_SWITCH && value < 2) word = switch_word[value];
     if (r->kind == ROW_DISPLAY && value < 2) word = display_word[value];
+    if (r->kind == ROW_SCALE && value < 4) word = scale_word[value];
+    if (r->kind == ROW_STEP && value < step_count(r->id)) word = step_value(r->id, value);
     if (!word) return;
     char old[1100];
     snprintf(old, sizeof old, "%s", options_string(r->id));
@@ -432,6 +477,7 @@ static void apply(const Row *r, int index, int value)
     failed_row = -1;
     fprintf(stderr, "recomp: option %s = %s (%d)\n", options_name(r->id), word, ok);
     if (r->id == OPT_SHARP_PICTURE) win_sharp_picture_changed();
+    if (r->id == OPT_MONEY_SCALE) money_apply();
 }
 
 /* The input of the box: cdecl (s16 widget). Only the box's own widgets: the box covers the screen. */
@@ -451,7 +497,7 @@ static void options_input(void)
         uint32_t id = (uint16_t)rd32(g_mem, at), data = rd32(g_mem, at + 0x40);
         if (id == CLOSE_ID) {
             r = CLOSE;
-        } else if (id == TAB_ID && (data == 1 || data == 2)) {
+        } else if (id == TAB_ID && data >= 1 && data <= TABS) {
             set_slot(0, data);
             r = REBUILD;
         } else if (id == VALUE_ID && data / 16 < (uint32_t)ROW_COUNT) {

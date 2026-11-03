@@ -21,5 +21,5 @@ Every feature that a player may not want is an option. The settings file (`setti
 
 - A switch takes `on` or `off`. Use the default the spec gives.
 - The option off must give the original's behaviour exactly.
-- No option may show a hidden value (current or potential ability, or any value the original does not show).
+- No option may show a hidden value (current or potential ability, or any value the original does not show). The fork's exceptions are `player_editor` and `hidden_tab` (docs/specs/2026-10-30-hidden-tab-spec.md); ask before adding another.
 - `options_set` writes the file through a temporary file and a rename and keeps the player's lines and comments. Never write `settings.txt` another way.
