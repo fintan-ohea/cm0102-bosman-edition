@@ -26,6 +26,12 @@
  * id, s64 amount), added after the save, as season.c adds its part. The original reads only parts that end in .tmp, so it never reads this one. A load reads it, a new
  * game clears it, and Save Game suggests "<club> <date> (edited)" (savename.c).
  *
+ * The coach editor (2026-11-03): for a person with no player data but a non-player record (staff +0x69: coaches,
+ * assistants, scouts, physios, managers), the item is "Edit coach" and the box is the coach editor. It shows the
+ * non-player current ability (+0x04) and potential ability (+0x06), the 12 attributes of
+ * staff_compute_non_player_attribute 0x543fd0 with the names of 0x543b10, and the same contract rows and Release
+ * button. A coach has no player data, so the box has no condition, morale or injury row.
+ *
  * Same game (Q152): with the option off the item is not made and the box never opens. The item's text block
  * is made at the first profile build whatever the option, so on and off make the same heap blocks. */
 #include "win.h"
@@ -51,6 +57,8 @@ extern const uint32_t rt_site_profile_note;
 #define PERSON_NAME 0x53dba0u       /* cdecl (staff, buffer, size, 1): the full name (0x8766bb) */
 #define ATTRIBUTE 0x543540u         /* cdecl (staff, player data, index 1..31): the shown value */
 #define ATTRIBUTE_NAME 0x5428a0u    /* cdecl (index 1..31, text, size >= 100, 0): the long name */
+#define COACH_ATTRIBUTE 0x543fd0u   /* cdecl (staff, non-player data, index 1..12): the shown value */
+#define COACH_ATTRIBUTE_NAME 0x543b10u  /* cdecl (index 1..12, text, size >= 100, 0): the long name */
 
 #define DISPLAYS 0xb74c4cu          /* the Display of a player slot, 0x300 bytes apart */
 #define PLAYER_SLOT 0xb77c7au       /* s16: the player slot that has the turn */
@@ -68,6 +76,10 @@ extern const uint32_t rt_site_profile_note;
 #define POTENTIAL 0x07u             /* player data: s16 potential ability (0x8e8345) */
 #define DETERMINATION 0x58u         /* staff: attribute 10, the only one outside the player data (0x54376c) */
 #define MORALE 0x45u                /* player data: morale, 1 to 20 (0x544710) */
+#define NON_PLAYER_DATA 0x69u       /* staff: the non-player data, 0 for none (68-byte rows) */
+#define COACH_ABILITY 0x04u         /* non-player data: s16 current ability (0x544419, non_player_attribute_rating) */
+#define COACH_POTENTIAL 0x06u       /* non-player data: s16 potential ability (at or above +0x04 in 45,076 of the
+                                       45,732 rows of the 2026 preview database; -1 and -2 codes as players) */
 
 /* Condition and injury (docs/research/2026-10-24-player-editor-attributes.md, slice 3). */
 #define INJURIES 0xb63d28u          /* the injury object: the this of 0x62c400 and 0x62c590 */
@@ -127,6 +139,7 @@ extern const uint32_t rt_site_profile_note;
 #define CLOSE 0xfffffff7u           /* -9: close the box, as Ok and Cancel of Game Settings (0x8259a0) */
 
 #define ATTRIBUTES 31
+#define COACH_ATTRIBUTES 12
 /* 0 current ability, 1 potential ability, 2.. attributes 1..31, then condition, morale and injury. */
 #define FIELD_CONDITION (2 + ATTRIBUTES)
 #define FIELD_MORALE (FIELD_CONDITION + 1)
@@ -150,8 +163,16 @@ static const uint8_t attribute_byte[ATTRIBUTES + 1] = {
     0, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x43, 0x23, 0x24, DETERMINATION, 0x26, 0x27, 0x28, 0x2a, 0x2b, 0x2f,
     0x2e, 0x31, 0x32, 0x33, 0x36, 0x37, 0x39, 0x3a, 0x29, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x44};
 
+/* The byte of each coach attribute (index 1..12), as the cases of 0x543fd0 (jump table 0x5442b4) read it: staff +
+ * offset for Adaptability (0x54404f) and Determination (0x544144), else non-player data + offset. Stored as it is:
+ * 1, 4, Discipline (0x544186) and Working With Youngsters (0x54420c); the others are computed with the current
+ * ability, as player attributes are. */
+static const uint8_t coach_byte[COACH_ATTRIBUTES + 1] = {
+    0, 0x56, 0x11, 0x10, 0x58, 0x17, 0x18, 0x14, 0x19, 0x1b, 0x1e, 0x21, 0x22};
+
 static uint32_t scratch;
-static uint32_t staff, data;        /* the player in the box */
+static uint32_t staff, data;        /* the person in the box; data: player data, or non-player data for a coach */
+static int coach;                   /* the box edits a coach (non-player data) */
 static int16_t old_ability, old_potential;
 static uint8_t old_bytes[ATTRIBUTES + 1], old_morale;
 static int16_t old_ceiling, old_condition, old_recovery, old_injured;
@@ -210,12 +231,20 @@ static uint32_t text(const char *s)
 }
 
 /* The address of the byte of attribute k. */
-static uint32_t byte_at(int k) { return (k == 10 ? staff : data) + attribute_byte[k]; }
+static uint32_t byte_at(int k)
+{
+    if (coach) return (k == 1 || k == 4 ? staff : data) + coach_byte[k];
+    return (k == 10 ? staff : data) + attribute_byte[k];
+}
+
+static int attribute_count(void) { return coach ? COACH_ATTRIBUTES : ATTRIBUTES; }
+static uint32_t ability_at(void) { return data + (coach ? COACH_ABILITY : ABILITY); }
+static uint32_t potential_at(void) { return data + (coach ? COACH_POTENTIAL : POTENTIAL); }
 
 static int shown(int k)
 {
     uint32_t a[3] = {staff, data, (uint32_t)k};
-    return (int)(call(ATTRIBUTE, 3, a) & 0xff);
+    return (int)(call(coach ? COACH_ATTRIBUTE : ATTRIBUTE, 3, a) & 0xff);
 }
 
 /* The player's row of the injury object. */
@@ -388,12 +417,14 @@ int editor_game_edited(void) { return edited; }
  * tests/smoke/player_editor_run.py. */
 static void log_values(const char *what)
 {
-    fprintf(stderr, "recomp: player editor %s staff %d ca %d pa %d values", what, (int32_t)rd32(g_mem, staff),
-            (int16_t)rd16(g_mem, data + ABILITY), (int16_t)rd16(g_mem, data + POTENTIAL));
-    for (int k = 1; k <= ATTRIBUTES; k++) fprintf(stderr, " %d", shown(k));
-    int status = injury_status();
-    fprintf(stderr, " condition %d morale %d injury %d %d", condition(), (int)rd8(g_mem, data + MORALE), status,
-            injury_left(status));
+    fprintf(stderr, "recomp: %s editor %s staff %d ca %d pa %d values", coach ? "coach" : "player", what,
+            (int32_t)rd32(g_mem, staff), (int16_t)rd16(g_mem, ability_at()), (int16_t)rd16(g_mem, potential_at()));
+    for (int k = 1; k <= attribute_count(); k++) fprintf(stderr, " %d", shown(k));
+    if (!coach) {
+        int status = injury_status();
+        fprintf(stderr, " condition %d morale %d injury %d %d", condition(), (int)rd8(g_mem, data + MORALE), status,
+                injury_left(status));
+    }
     uint32_t c = contract();
     if (c) fprintf(stderr, " wage %d end %d %d type %d", (int32_t)rd32(g_mem, c + CONTRACT_WAGE),
                    (int16_t)rd16(g_mem, c + CONTRACT_END + 2), (int16_t)rd16(g_mem, c + CONTRACT_END),
@@ -435,18 +466,19 @@ static void step_attribute(int k, int dir)
  * had current ability 160 a day later (tests/smoke/player_editor_run.py). Inference: the game cuts current
  * ability to potential. So a step keeps the pair in order: current ability above potential raises potential,
  * potential below current ability lowers it. */
-static void step_ability(uint32_t offset, int by)
+static void step_ability(int current, int by)
 {
-    int v0 = (int16_t)rd16(g_mem, data + offset), v = v0 + by;
+    uint32_t at = current ? ability_at() : potential_at(), other = current ? potential_at() : ability_at();
+    int v0 = (int16_t)rd16(g_mem, at), v = v0 + by;
     if (v < 1) v = 1;
     if (v > ABILITY_MAX) v = ABILITY_MAX;
     if (v == v0) return;
-    wr16(g_mem, data + offset, (uint32_t)v);
-    int ca = (int16_t)rd16(g_mem, data + ABILITY), pa = (int16_t)rd16(g_mem, data + POTENTIAL);
-    if (ca > pa) wr16(g_mem, data + (offset == ABILITY ? POTENTIAL : ABILITY), (uint32_t)v);
+    wr16(g_mem, at, (uint32_t)v);
+    int ca = (int16_t)rd16(g_mem, ability_at()), pa = (int16_t)rd16(g_mem, potential_at());
+    if (ca > pa) wr16(g_mem, other, (uint32_t)v);
     fprintf(stderr, "recomp: player editor: staff %d %s %d -> %d (ca %d, pa %d)\n", (int32_t)rd32(g_mem, staff),
-            offset == ABILITY ? "current ability" : "potential ability", v0, v,
-            (int16_t)rd16(g_mem, data + ABILITY), (int16_t)rd16(g_mem, data + POTENTIAL));
+            current ? "current ability" : "potential ability", v0, v,
+            (int16_t)rd16(g_mem, ability_at()), (int16_t)rd16(g_mem, potential_at()));
     editor_mark_edited();
 }
 
@@ -586,8 +618,9 @@ static void release(void)
 static void step(int field, int op)
 {
     static const int by[4] = {-1, 1, -10, 10};
-    if (field == 0) step_ability(ABILITY, by[op]);
-    else if (field == 1) step_ability(POTENTIAL, by[op]);
+    if (field == 0) step_ability(1, by[op]);
+    else if (field == 1) step_ability(0, by[op]);
+    else if (coach && field >= FIELD_CONDITION && field <= FIELD_INJURY) return;   /* no player data */
     else if (field == FIELD_CONDITION) step_condition(op == 3 ? 0 : by[op] * CONDITION_STEP);
     else if (field == FIELD_MORALE && op < 2) step_morale(by[op]);
     else if (field == FIELD_INJURY && op == 3) cure();
@@ -600,15 +633,18 @@ static void step(int field, int op)
 
 static void snapshot(void)
 {
-    old_ability = (int16_t)rd16(g_mem, data + ABILITY);
-    old_potential = (int16_t)rd16(g_mem, data + POTENTIAL);
-    for (int k = 1; k <= ATTRIBUTES; k++) old_bytes[k] = (uint8_t)rd8(g_mem, byte_at(k));
-    old_morale = (uint8_t)rd8(g_mem, data + MORALE);
-    condition();                                    /* the row up to today, so Cancel restores today's values */
-    uint32_t row = injury_row();
-    old_ceiling = (int16_t)rd16(g_mem, row + 0x08);
-    old_condition = (int16_t)rd16(g_mem, row + 0x0a);
-    old_record = injury_record();
+    old_ability = (int16_t)rd16(g_mem, ability_at());
+    old_potential = (int16_t)rd16(g_mem, potential_at());
+    for (int k = 1; k <= attribute_count(); k++) old_bytes[k] = (uint8_t)rd8(g_mem, byte_at(k));
+    old_record = 0;
+    if (!coach) {
+        old_morale = (uint8_t)rd8(g_mem, data + MORALE);
+        condition();                                /* the row up to today, so Cancel restores today's values */
+        uint32_t row = injury_row();
+        old_ceiling = (int16_t)rd16(g_mem, row + 0x08);
+        old_condition = (int16_t)rd16(g_mem, row + 0x0a);
+        old_record = injury_record();
+    }
     if (old_record) {
         old_recovery = (int16_t)rd16(g_mem, old_record + 0x28);
         old_injured = (int16_t)rd16(g_mem, old_record + 0x2a);
@@ -624,13 +660,15 @@ static void snapshot(void)
 
 static void restore(void)
 {
-    wr16(g_mem, data + ABILITY, (uint32_t)old_ability);
-    wr16(g_mem, data + POTENTIAL, (uint32_t)old_potential);
-    for (int k = 1; k <= ATTRIBUTES; k++) wr8(g_mem, byte_at(k), old_bytes[k]);
-    wr8(g_mem, data + MORALE, old_morale);
-    uint32_t row = injury_row();
-    wr16(g_mem, row + 0x08, (uint32_t)old_ceiling);
-    wr16(g_mem, row + 0x0a, (uint32_t)old_condition);
+    wr16(g_mem, ability_at(), (uint32_t)old_ability);
+    wr16(g_mem, potential_at(), (uint32_t)old_potential);
+    for (int k = 1; k <= attribute_count(); k++) wr8(g_mem, byte_at(k), old_bytes[k]);
+    if (!coach) {
+        wr8(g_mem, data + MORALE, old_morale);
+        uint32_t row = injury_row();
+        wr16(g_mem, row + 0x08, (uint32_t)old_ceiling);
+        wr16(g_mem, row + 0x0a, (uint32_t)old_condition);
+    }
     if (old_record) {
         wr16(g_mem, old_record + 0x28, (uint32_t)old_recovery);
         wr16(g_mem, old_record + 0x2a, (uint32_t)old_injured);
@@ -711,10 +749,14 @@ static const uint32_t type_text[2][8] = {
     {0xa867ecu, 0xa86854u, 0xa86804u, 0, 0, 0xa86838u, 0xa8681cu, 0xa8681cu}};
 /* An attribute row: name, -, value, +. */
 static const uint8_t weights_attribute[] = {50, 10, 12, 10};
+/* A coach attribute row: the same, with more room for the name. */
+static const uint8_t weights_coach[] = {80, 10, 12, 10};
 #define ROW_X1 160
 #define ROW_X2 729
 #define COLUMN_W 190
 #define ROWS_PER_COLUMN 11
+#define COACH_COLUMN_W 285
+#define COACH_ROW_Y 186
 #define ROW_Y 214
 #define ROW_STEP 24
 
@@ -739,7 +781,8 @@ static void editor_build(void)
     uint32_t green = call(COLOUR, 4, g) & 0xffff;
     uint32_t light = colour16(TEXT_LIGHT);
     area(145, 50, 744, 549, 1, NULL, 0x30, box_colour);
-    box_text(155, 58, 734, 92, 0x30, colour16(TEXT_TITLE), 0xc, 4, colour16(BUTTON_TEXT), "Player editor");
+    box_text(155, 58, 734, 92, 0x30, colour16(TEXT_TITLE), 0xc, 4, colour16(BUTTON_TEXT),
+             coach ? "Coach editor" : "Player editor");
     uint32_t n[4] = {staff, scratch + NAME_AT, 0x100, 1};
     call(PERSON_NAME, 4, n);
     char name[0x100];
@@ -747,33 +790,37 @@ static void editor_build(void)
     box_text(160, 96, 729, 114, 1, 0, 0xc, 3, colour16(TEXT_YELLOW), name);
 
     int a = area(ROW_X1, 120, ROW_X2, 146, 13, weights_ability, 1, 0);
-    ability_cells(a, 0, "Current ability", (int16_t)rd16(g_mem, data + ABILITY), 0, green, light);
-    ability_cells(a, 7, "Potential ability", (int16_t)rd16(g_mem, data + POTENTIAL), 1, green, light);
+    ability_cells(a, 0, "Current ability", (int16_t)rd16(g_mem, ability_at()), 0, green, light);
+    ability_cells(a, 7, "Potential ability", (int16_t)rd16(g_mem, potential_at()), 1, green, light);
 
-    /* Condition, morale and injury: - and + steps, Full, and Cure while the player is injured or recovering. */
-    int f = area(ROW_X1, 152, ROW_X2, 178, 14, weights_fitness, 1, 0);
     char s[32];
-    plain(f, 0, "Condition", light);
-    button(f, 1, "-", FIELD_CONDITION, 0, green);
-    snprintf(s, sizeof s, "%d%%", condition());
-    value_text(f, 2, s);
-    button(f, 3, "+", FIELD_CONDITION, 1, green);
-    button(f, 4, "Full", FIELD_CONDITION, 3, green);
-    plain(f, 6, "Morale", light);
-    button(f, 7, "-", FIELD_MORALE, 0, green);
-    int m = (int)rd8(g_mem, data + MORALE);
-    snprintf(s, sizeof s, "%s %d", morale_word(m), m);
-    value_text(f, 8, s);
-    button(f, 9, "+", FIELD_MORALE, 1, green);
-    plain(f, 11, "Injury", light);
-    int status = injury_status();
-    if (status) snprintf(s, sizeof s, "%s %dd", status == 2 ? "Injured" : "Recov.", injury_left(status));
-    else snprintf(s, sizeof s, "None");
-    value_text(f, 12, s);
-    if (status) button(f, 13, "Cure", FIELD_INJURY, 3, green);
+    /* Condition, morale and injury: - and + steps, Full, and Cure while the player is injured or recovering. A
+     * coach has no player data, so his box has no such row. */
+    if (!coach) {
+        int f = area(ROW_X1, 152, ROW_X2, 178, 14, weights_fitness, 1, 0);
+        plain(f, 0, "Condition", light);
+        button(f, 1, "-", FIELD_CONDITION, 0, green);
+        snprintf(s, sizeof s, "%d%%", condition());
+        value_text(f, 2, s);
+        button(f, 3, "+", FIELD_CONDITION, 1, green);
+        button(f, 4, "Full", FIELD_CONDITION, 3, green);
+        plain(f, 6, "Morale", light);
+        button(f, 7, "-", FIELD_MORALE, 0, green);
+        int m = (int)rd8(g_mem, data + MORALE);
+        snprintf(s, sizeof s, "%s %d", morale_word(m), m);
+        value_text(f, 8, s);
+        button(f, 9, "+", FIELD_MORALE, 1, green);
+        plain(f, 11, "Injury", light);
+        int status = injury_status();
+        if (status) snprintf(s, sizeof s, "%s %dd", status == 2 ? "Injured" : "Recov.", injury_left(status));
+        else snprintf(s, sizeof s, "None");
+        value_text(f, 12, s);
+        if (status) button(f, 13, "Cure", FIELD_INJURY, 3, green);
+    }
 
     /* The contract: wage and end date, or "No contract". */
-    int k = area(ROW_X1, 182, ROW_X2, 208, 11, weights_contract, 1, 0);
+    int ky = coach ? 152 : 182;                     /* a coach's box has no fitness row */
+    int k = area(ROW_X1, ky, ROW_X2, ky + 26, 11, weights_contract, 1, 0);
     uint32_t con = contract();
     plain(k, 0, "Wage", light);
     if (!con) {
@@ -809,12 +856,16 @@ static void editor_build(void)
         }
     }
 
-    for (int k = 1; k <= ATTRIBUTES; k++) {
-        int col = (k - 1) / ROWS_PER_COLUMN, row = (k - 1) % ROWS_PER_COLUMN;
-        int x = ROW_X1 + col * COLUMN_W, y = ROW_Y + row * ROW_STEP;
-        int r = area(x, y, x + COLUMN_W - 6, y + ROW_STEP - 3, 4, weights_attribute, 1, 0);
+    /* The attributes: 31 in three columns of 11 for a player; 12 in two wider columns of 6 for a coach, whose
+     * names are longer ("Judging Player Potential"). */
+    int per_column = coach ? 6 : ROWS_PER_COLUMN, column_w = coach ? COACH_COLUMN_W : COLUMN_W;
+    int top = coach ? COACH_ROW_Y : ROW_Y;
+    for (int k = 1; k <= attribute_count(); k++) {
+        int col = (k - 1) / per_column, row = (k - 1) % per_column;
+        int x = ROW_X1 + col * column_w, y = top + row * ROW_STEP;
+        int r = area(x, y, x + column_w - 6, y + ROW_STEP - 3, 4, coach ? weights_coach : weights_attribute, 1, 0);
         uint32_t na[4] = {(uint32_t)k, scratch + NAME_AT, 100, 0};
-        call(ATTRIBUTE_NAME, 4, na);
+        call(coach ? COACH_ATTRIBUTE_NAME : ATTRIBUTE_NAME, 4, na);
         char label[100];
         snprintf(label, sizeof label, "%s", win_str(scratch + NAME_AT));
         plain(r, 0, label, light);
@@ -826,7 +877,8 @@ static void editor_build(void)
     int b = area(155, 509, 734, 539, releasable ? 3 : 2, NULL, 1, 0);
     if (releasable) {
         uint32_t rel[11] = {(uint32_t)b, 1, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3, colour16(BUTTON_TEXT),
-                            text(release_asked ? "Click again to release" : "Release player"), RELEASE_ID, 0};
+                            text(release_asked ? "Click again to release" : coach ? "Release coach" : "Release player"),
+                            RELEASE_ID, 0};
         call_this(CELL_BUTTON, SCREENS, 11, rel);
     }
     uint32_t save[11] = {(uint32_t)b, 0, 0, 0x30, colour16(BUTTON_COLOUR), 0xc, 3, colour16(BUTTON_TEXT),
@@ -874,9 +926,15 @@ static void editor_input(void)
     rt_ret_cdecl(r);
 }
 
+/* 1 for a person the coach editor edits: no player data, and a non-player record. */
+static int is_coach(uint32_t person)
+{
+    return person && !rd32(g_mem, person + PLAYER_DATA) && rd32(g_mem, person + NON_PLAYER_DATA);
+}
+
 static int editor_open(uint32_t person)
 {
-    if (!person || !rd32(g_mem, person + PLAYER_DATA)) return 0;
+    if (!person || (!rd32(g_mem, person + PLAYER_DATA) && !is_coach(person))) return 0;
     uint32_t p[5] = {rt_host_fn("editor_build", editor_build), rt_host_fn("editor_input", editor_input), 1, 0, 0};
     if (!call_this(PUSH, SCREENS, 5, p)) {
         fprintf(stderr, "recomp: player editor not opened\n");
@@ -884,7 +942,8 @@ static int editor_open(uint32_t person)
     }
     if (!scratch) scratch = rt_alloc_zero(SCRATCH_SIZE);
     staff = person;
-    data = rd32(g_mem, person + PLAYER_DATA);
+    coach = is_coach(person);
+    data = rd32(g_mem, person + (coach ? NON_PLAYER_DATA : PLAYER_DATA));
     set_slot(0, staff);
     release_asked = 0;
     snapshot();
@@ -895,26 +954,30 @@ static int editor_open(uint32_t person)
 
 /* ---- The profile ---- */
 
-static uint32_t item_args[18], item_display, item_label;
+static uint32_t item_args[18], item_display, item_label, coach_label;
 
 int editor_widget_before(void)
 {
     if (rd32(g_mem, cpu.esp) != rt_site_profile_note) return 0;
-    if (!item_label) item_label = rt_alloc_str("Edit player");      /* on and off: the same heap blocks */
+    if (!item_label) {                                              /* on and off: the same heap blocks */
+        item_label = rt_alloc_str("Edit player");
+        coach_label = rt_alloc_str("Edit coach");
+    }
     if (!options_bool(OPT_PLAYER_EDITOR)) return 0;
     for (int i = 0; i < 18; i++) item_args[i] = rt_arg(i);
     item_display = cpu.ecx;
     return 1;
 }
 
-/* After the Manager Note item: one more item in the same popup, for a player only. */
+/* After the Manager Note item: one more item in the same popup, Edit player for a player and Edit coach for a
+ * person with a non-player record only. */
 void editor_widget_after(void)
 {
     uint32_t person = node_slot(0);
-    if (!person || !rd32(g_mem, person + PLAYER_DATA)) return;
+    if (!person || (!rd32(g_mem, person + PLAYER_DATA) && !is_coach(person))) return;
     uint32_t args[18];
     memcpy(args, item_args, sizeof args);
-    args[13] = item_label;
+    args[13] = is_coach(person) ? coach_label : item_label;
     args[15] = ITEM_ID;
     args[16] = 0;
     uint32_t eax = cpu.eax;

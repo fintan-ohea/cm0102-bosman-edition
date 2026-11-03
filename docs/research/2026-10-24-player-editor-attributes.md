@@ -135,3 +135,40 @@ The editor's Release player (editor.c, release) makes the three calls of the sec
 0, for the club of the contract, and skips the penalties. Test: the release run of
 tests/smoke/player_editor_run.py (Ray Parlour of start.sav: no club and no contract afterwards, the squad row
 shows another player, and the game plays a day and saves).
+
+## Coach editor (2026-11-03)
+
+A person without player data (staff `+0x61` = 0) may have a non-player record: staff `+0x69`, 68-byte rows (the
+coaching data of `docs/research/2026-10-24-scouting.md`).
+
+- **Attributes.** staff_compute_non_player_attribute 0x543fd0, cdecl (staff, non-player data, index 1..12), checks the
+  index (0x543fe9..0x543ff5) and jumps through the table at 0x5442b4 on index - 1 (0x544048). The cases:
+
+  | Index | Name (0x543b10) | Byte | Kind |
+  |---|---|---|---|
+  | 1 | Adaptability | staff +0x56 | stored (0x54404f) |
+  | 2 | Coaching Goalkeepers | +0x11 | computed (0x544059) |
+  | 3 | Coaching Outfield Players | +0x10 | computed (0x5440ec) |
+  | 4 | Determination | staff +0x58 | stored (0x544144) |
+  | 5 | Judging Player Ability | +0x17 | computed (0x54414e) |
+  | 6 | Judging Player Potential | +0x18 | computed (0x54416a) |
+  | 7 | Level of Discipline | +0x14 | stored (0x544186) |
+  | 8 | Man Management | +0x19 | computed (0x544190) |
+  | 9 | Motivating | +0x1b | computed (0x5441af) |
+  | 10 | Physiotherapy | +0x1e | computed (0x5441ce) |
+  | 11 | Tactical Knowledge | +0x21 | computed (0x5441ed) |
+  | 12 | Working With Youngsters | +0x22 | stored (0x54420c) |
+
+  A computed case takes the signed byte and the s16 at `+0x04` (0x54405d) into the formula of the player attributes
+  (`(2 * byte + ability) * 0.05 + ...`, 0x544059..0x5440eb; non_player_attribute_rating 0x544410 does the same).
+  This settles the scouting note's open question: cases 1, 4 and 7 each read one byte. The editor steps a byte and
+  asks 0x543fd0 for the result, as for a player. The names are the long ones of database_get_non_player_attribute_name
+  0x543b10, cdecl (index, text, size, 0), the same shape as 0x5428a0.
+- **Current ability** is the s16 at `+0x04`: every computed case reads it (0x54405d, 0x5440f0 and the others).
+- **Potential ability** is the s16 at `+0x06`. Inference from the data, not from code: in the 2026 preview database
+  (45,732 non-player rows) it is at or above `+0x04` in 45,076 rows, below it in 111, and -1 or -2 (the random codes of
+  player data) in 545; Pep Guardiola 190/195, Jürgen Klopp 180/190, José Mourinho 158/178. It sits two bytes after
+  current ability, as player data `+0x07` after `+0x05`.
+- **Test.** `tests/smoke/coach_editor_run.py` (start.sav, Pat Rice of Arsenal, current ability 180, potential 180):
+  the box shows the 12 values of his profile.
+

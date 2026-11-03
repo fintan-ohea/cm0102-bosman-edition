@@ -43,6 +43,7 @@ import shutil
 import struct
 import sys
 import tempfile
+from datetime import date, timedelta
 from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -239,8 +240,12 @@ def main(argv):
                   f"edit: condition {first[5]} -> {after[5]}, morale {first[6]} -> {after[6]}")
             # wage, end year, end day of the year; +10% steps at least WAGE_STEP (editor.c).
             fc, ac = first[8], after[8]
-            check(fc is not None and ac[:3] == (fc[0] + max(fc[0] // 10, 100), fc[1] + 1, fc[2]),
-                  f"edit: contract {fc} -> {ac} (wage +10%, a year longer)")
+            # (year, day of the year from 0): the same date a year later, which is another day number when a leap
+            # year lies between (30 June 2004 is day 181, 30 June 2005 day 180).
+            end = lambda c: date(c[1], 1, 1) + timedelta(days=c[2])
+            check(fc is not None and ac[0] == fc[0] + max(fc[0] // 10, 100) and
+                  end(ac) == end(fc).replace(year=end(fc).year + 1),
+                  f"edit: contract {fc} -> {ac}: wage +10%, end {end(fc) if fc else None} -> {end(ac) if ac else None}")
             check(first[9] is not None and after[9:11] == first[9:11] and "transfer funds" not in log,
                   f"edit: the box has no club row: balance and funds {first[9:11]} -> {after[9:11]}")
         if os.path.exists(saved):

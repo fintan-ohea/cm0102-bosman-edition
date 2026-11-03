@@ -24,7 +24,22 @@ In order. Each step is a slice of its own, and each ends with a working, tested 
    - **Release player** (2026-10-30): a button between Save and Cancel, for a player with a contract at a club who is not on loan. The first click turns it into "Click again to release"; the second ends the contract and takes the player out of the club today, as a free transfer with no payout, and closes the box, since a release cannot be undone. It runs the game's own steps for one player of the free transfer queue, without the board confidence and dislike penalties. Research: the release section of the research note.
 5. **The club's money**: balance and transfer budget (`cash.cpp` in the data map, 52 globals). Built: the bank balance and the transfer funds of the player's club, a row of the player editor box (-1m and +1m each), because a side bar item that only the option makes would move memory on every screen. The funds have no field: Finance::get_transfer_budget (0x598800) works them out each time, so the editor keeps an adjustment per club that a wrap of 0x598800 adds to the result, and the save part keeps the adjustments (research note). The box shows both amounts as the game writes money. On 2026-10-25 the row moved to the Edit Club tab of the club screen (docs/specs/2026-10-25-club-editor-spec.md); the adjustments stay in this part.
 
-Not in this plan (apart from Release player, slice 4): moving a player to another club, new players, new clubs, staff who are not players. A move touches the squads of two clubs, the contract, the history and the transfer lists, and a wrong one corrupts the save. The GK editor does it with its validation pass; it is a later plan if wanted.
+Not in this plan (apart from Release player, slice 4): moving a player to another club, new players, new clubs. Staff who are not players got their own box later (Coach editor, below). A move touches the squads of two clubs, the contract, the history and the transfer lists, and a wrong one corrupts the save. The GK editor does it with its validation pass; it is a later plan if wanted.
+
+## Coach editor (2026-11-03)
+
+fintan-ohea asked for an edit page for coaches that works as Edit player does. With `player_editor = on`, the Action
+drop-down of a person who has no player data but a non-player record (staff `+0x69`: coaches, assistant managers,
+scouts, physios, managers) ends with "Edit coach". It opens the same box as the coach editor:
+
+- current ability and potential ability of the non-player record (`+0x04` and `+0x06`, s16), with the same rule as a
+  player's (current ability above potential raises potential);
+- the 12 attributes of the profile (Adaptability to Working With Youngsters), each 1 to 20, in two columns of six;
+- the contract rows of a player (wage, end date, type) and Release coach, which runs the release steps of Edit player.
+
+A coach has no player data, so the box has no condition, morale or injury row. The edited mark and the save part are the
+ones of Edit player. Research: the coach editor section of `docs/research/2026-10-24-player-editor-attributes.md`.
+Check: `tests/smoke/coach_editor_run.py`.
 
 ## How it fits in the game
 
